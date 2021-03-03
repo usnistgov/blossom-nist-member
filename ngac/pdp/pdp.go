@@ -65,7 +65,7 @@ func checkPermissions(ctx contractapi.TransactionContextInterface, ledgerGraph p
 
 	// check if user can execute all cmds
 	for _, graphCmd := range graphCmds {
-		if ok, err := graphCmd.canExecute(user, ledgerGraph); err != nil {
+		if ok, err := graphCmd.CanExecute(user, ledgerGraph); err != nil {
 			return nil, fmt.Errorf("error checking if user can execute command %v: %v", graphCmd, err)
 		} else if !ok {
 			return nil, fmt.Errorf("could not execute %s", graphCmd.String())
@@ -249,7 +249,7 @@ func differDissociations(ledgerGraph pip.Graph, jsonGraph pip.Graph) []GraphCmd 
 
 func updateGraph(graph pip.Graph, cmds ...GraphCmd) error {
 	for _, cmd := range cmds {
-		if err := cmd.execute(graph); err != nil {
+		if err := cmd.Execute(graph); err != nil {
 			return err
 		}
 	}

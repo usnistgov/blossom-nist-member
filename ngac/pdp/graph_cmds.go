@@ -10,8 +10,11 @@ import (
 type (
 	// GraphCmd provides methods used to execute graph commands on an NGAC graph
 	GraphCmd interface {
-		canExecute(user string, graph pip.Graph) (bool, error)
-		execute(graph pip.Graph) error
+		// CanExecute checks that the user can execute the GraphCmd on the graph
+		CanExecute(user string, graph pip.Graph) (bool, error)
+		// execute the GraphCmd on the graph
+		Execute(graph pip.Graph) error
+
 		fmt.Stringer
 	}
 
@@ -63,7 +66,7 @@ const (
 	DissociatePermission   = "dissociate"
 )
 
-func (c CreateNodeCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c CreateNodeCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 	for parent := range c.parents {
 		if ok, err := decider.Decide(user, parent, CreateNodePermission); err != nil {
@@ -76,7 +79,7 @@ func (c CreateNodeCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return true, nil
 }
 
-func (c CreateNodeCmd) execute(graph pip.Graph) error {
+func (c CreateNodeCmd) Execute(graph pip.Graph) error {
 	// create the node
 	if err := graph.CreateNode(c.node.Name, c.node.Kind, c.node.Properties); err != nil {
 		return fmt.Errorf("could not execute command %v: %v", c, err)
@@ -96,7 +99,7 @@ func (c CreateNodeCmd) String() string {
 	return fmt.Sprintf("create node %v in %v", c.node, c.parents)
 }
 
-func (c DeleteNodeCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c DeleteNodeCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	parents, err := graph.GetParents(c.name)
@@ -121,7 +124,7 @@ func (c DeleteNodeCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return true, nil
 }
 
-func (c DeleteNodeCmd) execute(graph pip.Graph) error {
+func (c DeleteNodeCmd) Execute(graph pip.Graph) error {
 	return graph.DeleteNode(c.name)
 }
 
@@ -129,7 +132,7 @@ func (c DeleteNodeCmd) String() string {
 	return fmt.Sprintf("delete node %v", c.name)
 }
 
-func (c AssignCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c AssignCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
@@ -143,7 +146,7 @@ func (c AssignCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return decider.Decide(user, c.parent, AssignToPermission)
 }
 
-func (c AssignCmd) execute(graph pip.Graph) error {
+func (c AssignCmd) Execute(graph pip.Graph) error {
 	return graph.Assign(c.child, c.parent)
 }
 
@@ -151,7 +154,7 @@ func (c AssignCmd) String() string {
 	return fmt.Sprintf("assign %v to %v", c.child, c.parent)
 }
 
-func (c DeassignCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c DeassignCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
@@ -165,7 +168,7 @@ func (c DeassignCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return decider.Decide(user, c.parent, DeassignFromPermission)
 }
 
-func (c DeassignCmd) execute(graph pip.Graph) error {
+func (c DeassignCmd) Execute(graph pip.Graph) error {
 	return graph.Deassign(c.child, c.parent)
 }
 
@@ -173,7 +176,7 @@ func (c DeassignCmd) String() string {
 	return fmt.Sprintf("deassign %v from %v", c.child, c.parent)
 }
 
-func (c AssociateCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c AssociateCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
@@ -187,7 +190,7 @@ func (c AssociateCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return decider.Decide(user, c.target, AssociatePermission)
 }
 
-func (c AssociateCmd) execute(graph pip.Graph) error {
+func (c AssociateCmd) Execute(graph pip.Graph) error {
 	return graph.Associate(c.subject, c.target, c.operations)
 }
 
@@ -195,7 +198,7 @@ func (c AssociateCmd) String() string {
 	return fmt.Sprintf("associate %v with %v with ops %v", c.subject, c.target, c.operations)
 }
 
-func (c DissociateCmd) canExecute(user string, graph pip.Graph) (bool, error) {
+func (c DissociateCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
@@ -209,7 +212,7 @@ func (c DissociateCmd) canExecute(user string, graph pip.Graph) (bool, error) {
 	return decider.Decide(user, c.target, DissociatePermission)
 }
 
-func (c DissociateCmd) execute(graph pip.Graph) error {
+func (c DissociateCmd) Execute(graph pip.Graph) error {
 	return graph.Dissociate(c.subject, c.target)
 }
 

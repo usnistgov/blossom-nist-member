@@ -2,6 +2,7 @@ package ngac
 
 import (
 	"fmt"
+
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"

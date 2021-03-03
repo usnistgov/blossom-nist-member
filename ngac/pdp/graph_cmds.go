@@ -41,7 +41,7 @@ type (
 		parent string
 	}
 
-	// AssociateCmd stores the subject, target, and operatinos of a new association
+	// AssociateCmd stores the subject, target, and operations of a new association
 	AssociateCmd struct {
 		subject    string
 		target     string
@@ -179,14 +179,14 @@ func (c DeassignCmd) String() string {
 func (c AssociateCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
-	// check user can assign child
+	// check user can associate the subject
 	if ok, err := decider.Decide(user, c.subject, AssociatePermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
-	// check user can assign to parent
+	// check user can associate the target
 	return decider.Decide(user, c.target, AssociatePermission)
 }
 

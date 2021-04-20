@@ -20,7 +20,12 @@ func (c Contract) OffboardLicense(ctx contractapi.TransactionContextInterface, l
 	return nil
 }
 
-// GetLicenseInfo returns the info for the license with the given license ID.
+// Licenses returns all licenses in Blossom.
+func (c Contract) Licenses(ctx contractapi.TransactionContextInterface) ([]License, error) {
+	return nil, nil
+}
+
+// LicenseInfo returns the info for the license with the given license ID.
 func (c Contract) LicenseInfo(ctx contractapi.TransactionContextInterface, licenseID string) (License, error) {
 	return License{}, nil
 }

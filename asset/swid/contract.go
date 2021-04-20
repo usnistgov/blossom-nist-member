@@ -18,7 +18,7 @@ func (c Contract) GetSwID(ctx contractapi.TransactionContextInterface, primaryTa
 	return SwID{}, nil
 }
 
-// GetLicenseSwIDs returns the SwIDs that are associated with the given license ID.
-func (c Contract) GetLicenseSwIDs(ctx contractapi.TransactionContextInterface) ([]SwID, error) {
+// GetLicenseSwIDs returns the primary tags of the SwIDs that are associated with the given license ID.
+func (c Contract) GetLicenseSwIDs(ctx contractapi.TransactionContextInterface) ([]string, error) {
 	return nil, nil
 }

@@ -14,7 +14,6 @@ type PDP struct {
 // UpdateGraph updates the NGAC graph with the given graph json. It first identifies the differences between the ledger
 // graph and the provided graph and checks the requesting user has permission to carry out all the actions.
 // If the user can carry out all the actions, the ledger graph is replaced with the graph provided.
-// The graphJson is only the graph json object not the entire Policy Machine.
 func (c *PDP) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) error {
 	// check the client can execute request
 	var (
@@ -75,6 +74,8 @@ func checkPermissions(ctx contractapi.TransactionContextInterface, ledgerGraph p
 	return graphCmds, nil
 }
 
+// differGraphs finds the difference between the ledger graph and the json graph and formulates the differences into a
+// series of commands
 func differGraphs(ledgerGraph pip.Graph, jsonGraph pip.Graph) []GraphCmd {
 	// get new nodes
 	createdNodes := differCreatedNodes(ledgerGraph, jsonGraph)

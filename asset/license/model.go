@@ -19,5 +19,7 @@ type (
 		OnboardingDate timestamp.Timestamp
 		// Expiration is the date in which the license will expire from Blossom
 		Expiration timestamp.Timestamp
+		// Keys is a set of license keys associated with this license
+		Keys []string
 	}
 )

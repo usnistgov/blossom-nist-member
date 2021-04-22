@@ -66,7 +66,7 @@ func (c *AssetContract) CreateAsset(ctx contractapi.TransactionContextInterface,
 
 	// create asset in ngac
 	// create the object node representing the asset
-	if err := graph.CreateNode(assetID, pip.Object, nil); err != nil {
+	if _, err := graph.CreateNode(assetID, pip.Object, nil); err != nil {
 		return err
 	}
 

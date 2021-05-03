@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"ngac/pdp"
 
-	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 )
 
 // NGACContract contract for managing ngac
@@ -14,74 +13,7 @@ type NGACContract struct {
 	contractapi.Contract
 }
 
-// InitNGAC initializes the ngac components on the ledger
-func (c *NGACContract) InitNGAC(ctx contractapi.TransactionContextInterface) error {
-	graph := memory.NewGraph()
-
-	// create the initial configuration
-	if err := graph.CreateNode("assets_pc", pip.PolicyClass, nil); err != nil {
-		return err
-	}
-	if err := graph.CreateNode("assets", pip.ObjectAttribute, nil); err != nil {
-		return err
-	}
-	if err := graph.CreateNode("reader", pip.UserAttribute, nil); err != nil {
-		return err
-	}
-	if err := graph.CreateNode("writer", pip.UserAttribute, nil); err != nil {
-		return err
-	}
-	if err := graph.CreateNode("creator", pip.UserAttribute, nil); err != nil {
-		return err
-	}
-
-	// testUser1
-	testUser1 := "eDUwOTo6Q049dGVzdFVzZXIxLE9VPWNsaWVudDo6Q049T3JnMSBDQQ==:Org1MSP"
-	if err := graph.CreateNode(testUser1, pip.User, nil); err != nil {
-		return err
-	}
-	if err := graph.Assign(testUser1, "reader"); err != nil {
-		return err
-	}
-
-	// org1 admin
-	org1Admin := "eDUwOTo6Q049T3JnMSBBZG1pbixPVT1hZG1pbjo6Q049T3JnMSBDQQ==:Org1MSP"
-	if err := graph.CreateNode(org1Admin, pip.User, nil); err != nil {
-		return err
-	}
-	if err := graph.Assign(org1Admin, "creator"); err != nil {
-		return err
-	}
-
-	if err := graph.Assign("creator", "writer"); err != nil {
-		return err
-	}
-
-	if err := graph.Assign("writer", "reader"); err != nil {
-		return err
-	}
-
-	if err := graph.Assign("assets", "assets_pc"); err != nil {
-		return err
-	}
-
-	if err := graph.Associate("creator", "assets", pip.ToOps("CreateAsset", pdp.CreateNodePermission)); err != nil {
-		return err
-	}
-	if err := graph.Associate("writer", "assets", pip.ToOps("UpdateAsset")); err != nil {
-		return err
-	}
-	if err := graph.Associate("reader", "assets", pip.ToOps("ReadAsset")); err != nil {
-		return err
-	}
-
-	bytes, _ := graph.MarshalJSON()
-	if err := ctx.GetStub().PutState("graph", bytes); err != nil {
-		return err
-	}
-
-	return nil
-}
+func main() {}
 
 func (c *NGACContract) graphExists(ctx contractapi.TransactionContextInterface) (bool, error) {
 	data, err := ctx.GetStub().GetState("graph")

@@ -1,4 +1,4 @@
-package agency
+package asset
 
 type (
 	// Agency stores information on an agency in Blossom
@@ -29,9 +29,13 @@ type (
 	}
 )
 
-// TODO finalize possible statuses for accounts
 const (
-	Pending  Status = "pending"
-	Active   Status = "active"
-	Inactive Status = "inactive"
+	PendingApproval           Status = "Pending: waiting for approval"
+	PendingATO                Status = "Pending: waiting for ATO"
+	PendingDenied             Status = "Pending: request denied"
+	Approved                  Status = "Approved"
+	InactiveATO               Status = "Inactive: waiting for ATO renewal"
+	InactiveOptOut            Status = "Inactive: opted out"
+	InactiveSecurityRisk      Status = "Inactive: security risk"
+	InactiveRulesOfEngagement Status = "Inactive: breach in rules of engagement"
 )

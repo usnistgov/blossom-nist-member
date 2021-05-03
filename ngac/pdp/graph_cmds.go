@@ -81,7 +81,7 @@ func (c CreateNodeCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 
 func (c CreateNodeCmd) Execute(graph pip.Graph) error {
 	// create the node
-	if err := graph.CreateNode(c.node.Name, c.node.Kind, c.node.Properties); err != nil {
+	if _, err := graph.CreateNode(c.node.Name, c.node.Kind, c.node.Properties); err != nil {
 		return fmt.Errorf("could not execute command %v: %v", c, err)
 	}
 

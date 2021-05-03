@@ -1,4 +1,4 @@
-package license
+package asset
 
 import "github.com/golang/protobuf/ptypes/timestamp"
 

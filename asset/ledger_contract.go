@@ -1,20 +1,17 @@
-package ledger
+package asset
 
 import (
-	"asset/agency"
-	"asset/license"
-	"asset/ngac"
-	"asset/operations"
-	"asset/swid"
 	"encoding/json"
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/usnistgov/blossom/chaincode/asset/ngac"
+	"github.com/usnistgov/blossom/chaincode/asset/operations"
 )
 
-// Contract for managing the ledger
-type Contract struct {
+// BlossomContract for managing the ledger
+type BlossomContract struct {
 	contractapi.Contract
 }
 
@@ -26,7 +23,7 @@ const (
 
 // InitLedger initializes the ledger components including: Agencies, Licenses, and SwID tags. This method also
 // invokes NGAC chaincode to initialize the NGAC components.
-func (c Contract) InitLedger(ctx contractapi.TransactionContextInterface) error {
+func (b *BlossomContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
 	// if the ledger is already initialized do nothing
 	if data, err := ctx.GetStub().GetState(AgenciesKey); err != nil {
 		return err
@@ -40,7 +37,7 @@ func (c Contract) InitLedger(ctx contractapi.TransactionContextInterface) error 
 	}
 
 	// init agency, license, and swid collections
-	agencies := make([]agency.Agency, 0)
+	agencies := make([]Agency, 0)
 	agenciesBytes, err := json.Marshal(agencies)
 	if err != nil {
 		return fmt.Errorf("error marshaling agency array: %w", err)
@@ -49,7 +46,7 @@ func (c Contract) InitLedger(ctx contractapi.TransactionContextInterface) error 
 		return fmt.Errorf("error initializing agency collection on ledger")
 	}
 
-	licenses := make([]license.License, 0)
+	licenses := make([]License, 0)
 	licensesBytes, err := json.Marshal(licenses)
 	if err != nil {
 		return fmt.Errorf("error marshaling license array: %w", err)
@@ -58,7 +55,7 @@ func (c Contract) InitLedger(ctx contractapi.TransactionContextInterface) error 
 		return fmt.Errorf("error initializing license collection on ledger")
 	}
 
-	swids := make([]swid.SwID, 0)
+	swids := make([]SwID, 0)
 	swidsBytes, err := json.Marshal(swids)
 	if err != nil {
 		return fmt.Errorf("error marshaling swid array: %w", err)
@@ -109,6 +106,10 @@ func initGraph() (pip.Graph, error) {
 	rbacOA, err := graph.CreateNode("RBAC_OA", pip.ObjectAttribute, nil)
 	graph.Assign(rbacOA.Name, rbacPC.Name)
 
+	// create a UA to hold each agency UA
+	agenciesUA, err := graph.CreateNode("agencies_ua", pip.UserAttribute, nil)
+	graph.Assign(agenciesUA.Name, rbacUA.Name)
+
 	// associate the admin UA with the default attributes, giving them * permissions on all nodes in the policy class
 	graph.Associate(a0AdminUA.Name, rbacUA.Name, pip.ToOps(pip.AllOps))
 	graph.Associate(a0AdminUA.Name, rbacOA.Name, pip.ToOps(pip.AllOps))
@@ -130,6 +131,8 @@ func initGraph() (pip.Graph, error) {
 	// system admins can read, assign, deassign (assign and deassign for the license keys) "licenses"
 	graph.Associate(systemAdminsUA.Name, licensesOA.Name,
 		pip.ToOps(operations.ViewLicense, operations.CheckOutLicense, operations.CheckInLicense))
+	// acquisition specialists can audit agency licenses
+	graph.Associate(acqSpecUA.Name, licensesOA.Name, pip.ToOps(operations.ViewLicense, operations.ViewAgency))
 
 	// create DAC policy class node
 	graph.CreateNode("DAC", pip.PolicyClass, nil)

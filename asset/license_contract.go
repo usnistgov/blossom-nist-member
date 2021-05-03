@@ -1,20 +1,15 @@
-package license
+package asset
 
 import "github.com/hyperledger/fabric-contract-api-go/contractapi"
 
 type (
-	// Contract for managing licenses
-	Contract struct {
-		contractapi.Contract
-	}
-
-	// Interface provides the functions to interact with Licenses in fabric.
-	Interface interface {
+	// LicenseInterface provides the functions to interact with Licenses in fabric.
+	LicenseInterface interface {
 		// OnboardLicense adds a new license to Blossom.  This will create a new license object on the ledger and in the
 		// NGAC graph. Licenses are identified by the LicenseNumber field. The user performing the request will need to
 		// have permission to add a license to the ledger/NGAC. The license will be an object attribute in NGAC and the
 		// license keys will be objects that are assigned to the license.
-		OnboardLicense(ctx contractapi.TransactionContextInterface, license License) error
+		OnboardLicense(ctx contractapi.TransactionContextInterface, license *License) error
 
 		// OffboardLicense removes an existing license in Blossom.  This will remove the license from the ledger
 		// and from NGAC.
@@ -48,38 +43,38 @@ type (
 	}
 )
 
-func New() Interface {
-	return Contract{}
+func NewLicenseContract() LicenseInterface {
+	return &BlossomContract{}
 }
 
-func (c Contract) OnboardLicense(ctx contractapi.TransactionContextInterface, license License) error {
+func (b *BlossomContract) OnboardLicense(ctx contractapi.TransactionContextInterface, license *License) error {
 	return nil
 }
 
-func (c Contract) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
+func (b *BlossomContract) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	return nil
 }
 
-func (c Contract) Licenses(ctx contractapi.TransactionContextInterface) ([]License, error) {
+func (b *BlossomContract) Licenses(ctx contractapi.TransactionContextInterface) ([]License, error) {
 	return nil, nil
 }
 
-func (c Contract) LicenseInfo(ctx contractapi.TransactionContextInterface, licenseID string) (License, error) {
+func (b *BlossomContract) LicenseInfo(ctx contractapi.TransactionContextInterface, licenseID string) (License, error) {
 	return License{}, nil
 }
 
-func (c Contract) LicenseKeys(ctx contractapi.TransactionContextInterface, licenseID string) (map[string][]string, error) {
+func (b *BlossomContract) LicenseKeys(ctx contractapi.TransactionContextInterface, licenseID string) (map[string][]string, error) {
 	return nil, nil
 }
 
-func (c Contract) AgencyLicenseKeys(ctx contractapi.TransactionContextInterface, agency string) (map[int][]string, error) {
+func (b *BlossomContract) AgencyLicenseKeys(ctx contractapi.TransactionContextInterface, agency string) (map[int][]string, error) {
 	return nil, nil
 }
 
-func (c Contract) CheckoutLicense(ctx contractapi.TransactionContextInterface, licenseID string, agency string, amount int) ([]string, error) {
+func (b *BlossomContract) CheckoutLicense(ctx contractapi.TransactionContextInterface, licenseID string, agency string, amount int) ([]string, error) {
 	return nil, nil
 }
 
-func (c Contract) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
+func (b *BlossomContract) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	return nil
 }

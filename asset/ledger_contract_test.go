@@ -1,10 +1,11 @@
-package ledger
+package asset
 
 import (
-	"asset/operations"
+	"github.com/usnistgov/blossom/chaincode/asset/operations"
+	"testing"
+
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/pip"
-	"testing"
 )
 
 func TestInitNGAC(t *testing.T) {

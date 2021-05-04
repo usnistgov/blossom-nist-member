@@ -1,8 +1,10 @@
-package asset
+package chaincode
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/asset/chaincode/ngac"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 )
@@ -62,7 +64,7 @@ func AgencyKey(name string) string {
 func (b *BlossomContract) agencyExists(ctx contractapi.TransactionContextInterface, agencyName string) (bool, error) {
 	data, err := ctx.GetStub().GetState(AgencyKey(agencyName))
 	if err != nil {
-		return false, fmt.Errorf("error checking if agency %q aleady exists on the ledger: %w", agencyName, err)
+		return false, errors.Wrapf(err, "error checking if agency %q aleady exists on the ledger", agencyName)
 	}
 
 	return data != nil, nil
@@ -71,9 +73,15 @@ func (b *BlossomContract) agencyExists(ctx contractapi.TransactionContextInterfa
 func (b *BlossomContract) RequestAccount(ctx contractapi.TransactionContextInterface, agency Agency) error {
 	// check that an agency doesn't already exist with the same name
 	if ok, err := b.agencyExists(ctx, agency.Name); err != nil {
-		return fmt.Errorf("error requesting account: %w", err)
+		return errors.Wrapf(err, "error requesting account")
 	} else if ok {
-		return fmt.Errorf("an agency with the name %q already exists", agency.Name)
+		return errors.Errorf("an agency with the name %q already exists", agency.Name)
+	}
+
+	// check for permissions and add agency to NGAC
+	agencyPEP := new(ngac.AgencyPEP)
+	if err := agencyPEP.RequestAccount(ctx, agency); err != nil {
+		return errors.Wrapf(err, "error adding agency to NGAC")
 	}
 
 	// add agency to ledger with pending status
@@ -82,30 +90,92 @@ func (b *BlossomContract) RequestAccount(ctx contractapi.TransactionContextInter
 	// convert agency to bytes
 	bytes, err := json.Marshal(agency)
 	if err != nil {
-		return fmt.Errorf("error marshaling agency %q: %w", agency.Name, err)
+		return errors.Wrapf(err, "error marshaling agency %q", agency.Name)
 	}
 
 	// add agency to world state
 	if err = ctx.GetStub().PutState(AgencyKey(agency.Name), bytes); err != nil {
-		return fmt.Errorf("error adding agency to ledger: %w", err)
+		return errors.Wrapf(err, "error adding agency to ledger")
 	}
 
-	// add agency to NGAC
-	err = ngacCreateAgency(ctx, agency)
+	return nil
+}
+
+func (b *BlossomContract) UploadATO(ctx contractapi.TransactionContextInterface, agencyName string, ato string) error {
+	if ok, err := b.agencyExists(ctx, agencyName); err != nil {
+		return errors.Wrapf(err, "error checking if agency %q exists", agencyName)
+	} else if !ok {
+		return errors.Errorf("an agency with the name %q does not exist", agencyName)
+	}
+
+	// check permissions in NGAC
+	agencyPEP := new(ngac.AgencyPEP)
+	if err := agencyPEP.UploadATO(ctx, agencyName); err != nil {
+		return errors.Wrapf(err, "error checking if user can update ATO")
+	}
+
+	bytes, err := ctx.GetStub().GetState(AgencyKey(agencyName))
 	if err != nil {
-		return fmt.Errorf("error adding agency to NGAC: %w", err)
+		return errors.Wrapf(err, "error getting agency %q from world state", agencyName)
+	}
+
+	agency := &Agency{}
+	if err = json.Unmarshal(bytes, agency); err != nil {
+		return errors.Wrapf(err, "error unmarshaling agency %q", agency)
+	}
+
+	// update ATO value
+	agency.ATO = ato
+
+	// marshal back to json
+	if bytes, err = json.Marshal(agency); err != nil {
+		return errors.Wrapf(err, "error marshaling agency %q", agency)
+	}
+
+	// update world state
+	if err = ctx.GetStub().PutState(AgencyKey(agencyName), bytes); err != nil {
+		return errors.Wrapf(err, "error updating ATO for agency %q", agencyName)
 	}
 
 	return nil
 }
 
-func (b *BlossomContract) UploadATO(ctx contractapi.TransactionContextInterface, agency string, ato string) error {
-	// change agency status to pending approval from pending ato
-	return nil
-}
+func (b *BlossomContract) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agencyName string, status Status) error {
+	if ok, err := b.agencyExists(ctx, agencyName); err != nil {
+		return errors.Wrapf(err, "error checking if agency %q exists", agencyName)
+	} else if !ok {
+		return errors.Errorf("an agency with the name %q does not exist", agencyName)
+	}
 
-func (b *BlossomContract) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agency string, status Status) error {
-	// if downgrading agency status remove permissions
+	// check permissions in NGAC
+	agencyPEP := new(ngac.AgencyPEP)
+	if err := agencyPEP.UpdateAgencyStatus(ctx, agencyName); err != nil {
+		return errors.Wrapf(err, "error checking if user can update agency status")
+	}
+
+	bytes, err := ctx.GetStub().GetState(AgencyKey(agencyName))
+	if err != nil {
+		return errors.Wrapf(err, "error getting agency %q from world state", agencyName)
+	}
+
+	agency := &Agency{}
+	if err = json.Unmarshal(bytes, agency); err != nil {
+		return errors.Wrapf(err, "error unmarshaling agency %q", agency)
+	}
+
+	// update ATO value
+	agency.Status = status
+
+	// marshal back to json
+	if bytes, err = json.Marshal(agency); err != nil {
+		return errors.Wrapf(err, "error marshaling agency %q", agency)
+	}
+
+	// update world state
+	if err = ctx.GetStub().PutState(AgencyKey(agencyName), bytes); err != nil {
+		return errors.Wrapf(err, "error updating ATO for agency %q", agencyName)
+	}
+
 	return nil
 }
 

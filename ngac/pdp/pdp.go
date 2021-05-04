@@ -19,16 +19,21 @@ func (c *PDP) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGra
 	var (
 		cmds []GraphCmd
 		err  error
+		user string
 	)
 
+	if user, err = getUser(ctx); err != nil {
+		return fmt.Errorf("error getting user from request: %w", err)
+	}
+
 	// check the user can update graph
-	if cmds, err = checkPermissions(ctx, ledgerGraph, jsonGraph); err != nil {
-		return fmt.Errorf("client %v does not have permissions to update graph: %v", ctx, err)
+	if cmds, err = checkPermissions(user, ledgerGraph, jsonGraph); err != nil {
+		return fmt.Errorf("client %v does not have permissions to update graph: %w", user, err)
 	}
 
 	// execute graph update
 	if err := updateGraph(ledgerGraph, cmds...); err != nil {
-		return fmt.Errorf("client %v does not have permissions to update graph: %v", ctx, err)
+		return fmt.Errorf("error updating NGAC graph: %w", err)
 	}
 
 	return nil
@@ -36,36 +41,38 @@ func (c *PDP) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGra
 
 func getUser(ctx contractapi.TransactionContextInterface) (string, error) {
 	var (
-		cID   string
+		user  string
 		mspID string
 		err   error
 	)
 
-	// get the client and msp ids from the request to formulate user id
-	if cID, err = ctx.GetClientIdentity().GetID(); err != nil {
-		return "", fmt.Errorf("error retrieving client ID from request: %v", err)
+	cert, err := ctx.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return "", fmt.Errorf("error reading client X509 certificate: %w", err)
 	}
+
+	user = cert.Subject.CommonName
+
+	// get the client and msp ids from the request to formulate user id
+	/*if cID, err = ctx.GetClientIdentity().GetID(); err != nil {
+		return "", fmt.Errorf("error retrieving client ID from request: %w", err)
+	}*/
 
 	if mspID, err = ctx.GetClientIdentity().GetMSPID(); err != nil {
-		return "", fmt.Errorf("error retrieving MSP ID from request: %v", err)
+		return "", fmt.Errorf("error retrieving MSP ID from request: %w", err)
 	}
 
-	return fmt.Sprintf("%s:%s", cID, mspID), nil
+	return fmt.Sprintf("%s:%s", user, mspID), nil
 }
 
-func checkPermissions(ctx contractapi.TransactionContextInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) ([]GraphCmd, error) {
+func checkPermissions(user string, ledgerGraph pip.Graph, jsonGraph pip.Graph) ([]GraphCmd, error) {
 	// get differences between ledger graph and json graph
 	graphCmds := differGraphs(ledgerGraph, jsonGraph)
-
-	user, err := getUser(ctx)
-	if err != nil {
-		return nil, err
-	}
 
 	// check if user can execute all cmds
 	for _, graphCmd := range graphCmds {
 		if ok, err := graphCmd.CanExecute(user, ledgerGraph); err != nil {
-			return nil, fmt.Errorf("error checking if user can execute command %v: %v", graphCmd, err)
+			return nil, fmt.Errorf("error checking if user can execute command %v: %w", graphCmd, err)
 		} else if !ok {
 			return nil, fmt.Errorf("could not execute %s", graphCmd.String())
 		}

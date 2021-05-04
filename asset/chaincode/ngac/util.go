@@ -9,21 +9,28 @@ import (
 
 func GetUser(ctx contractapi.TransactionContextInterface) (string, error) {
 	var (
-		cID   string
+		user   string
 		mspID string
 		err   error
 	)
 
-	// get the client and msp ids from the request to formulate user id
-	if cID, err = ctx.GetClientIdentity().GetID(); err != nil {
-		return "", fmt.Errorf("error retrieving client ID from request: %v", err)
+	cert, err := ctx.GetClientIdentity().GetX509Certificate()
+	if err != nil {
+		return "", fmt.Errorf("error reading client X509 certificate: %w", err)
 	}
+
+	user = cert.Subject.CommonName
+
+	// get the client and msp ids from the request to formulate user id
+	/*if cID, err = ctx.GetClientIdentity().GetID(); err != nil {
+		return "", fmt.Errorf("error retrieving client ID from request: %w", err)
+	}*/
 
 	if mspID, err = ctx.GetClientIdentity().GetMSPID(); err != nil {
-		return "", fmt.Errorf("error retrieving MSP ID from request: %v", err)
+		return "", fmt.Errorf("error retrieving MSP ID from request: %w", err)
 	}
 
-	return fmt.Sprintf("%s:%s", cID, mspID), nil
+	return fmt.Sprintf("%s:%s", user, mspID), nil
 }
 
 func GetGraph(ctx contractapi.TransactionContextInterface) (pip.Graph, error) {

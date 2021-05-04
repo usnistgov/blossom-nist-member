@@ -3,6 +3,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/DATA-DOG/go-txdb v0.1.3/go.mod h1:DhAhxMXZpUJVGnT+p9IbzJoRKvlArO2pkHjnGX7o0n0=
 github.com/PM-Master/policy-machine-go v0.0.0-20210422155530-7dc32913424f h1:AIuFeFP1g1guPNZ4L5sEgzVcrpbbZqxRg8+1lkw0J5I=
 github.com/PM-Master/policy-machine-go v0.0.0-20210422155530-7dc32913424f/go.mod h1:rizNOsL2PvgZlblbL1fqNgwT+QGWZwFUG/vLmBfLj8w=
+github.com/PM-Master/policy-machine-go v0.0.0-20210504003034-d6d32ea7bb48 h1:WoyE4YPOuTEtmVy6jZIv8+dx0kaIVpD0IR5laTJ7kSI=
+github.com/PM-Master/policy-machine-go v0.0.0-20210504003034-d6d32ea7bb48/go.mod h1:rizNOsL2PvgZlblbL1fqNgwT+QGWZwFUG/vLmBfLj8w=
 github.com/PuerkitoBio/purell v1.1.1 h1:WEQqlqaGbrPkxLJWfBwQmfEAE1Z7ONdDLqrN38tNFfI=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578 h1:d+Bc7a5rLufV/sSk/8dngufqelfh6jnri85riMAaF/M=

@@ -1,4 +1,4 @@
-package asset
+package chaincode
 
 type (
 	// Agency stores information on an agency in Blossom

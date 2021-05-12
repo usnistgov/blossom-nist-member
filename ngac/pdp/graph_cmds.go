@@ -69,7 +69,7 @@ const (
 func (c CreateNodeCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 	for parent := range c.parents {
-		if ok, err := decider.Decide(user, parent, CreateNodePermission); err != nil {
+		if ok, err := decider.HasPermissions(user, parent, CreateNodePermission); err != nil {
 			return false, err
 		} else if !ok {
 			return false, nil
@@ -107,14 +107,14 @@ func (c DeleteNodeCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 		return false, fmt.Errorf("could not get parents of %q", c.name)
 	}
 
-	if ok, err := decider.Decide(user, c.name, DeleteNodePermission); err != nil {
+	if ok, err := decider.HasPermissions(user, c.name, DeleteNodePermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
 	for parent := range parents {
-		if ok, err := decider.Decide(user, parent, DeassignFromPermission); err != nil {
+		if ok, err := decider.HasPermissions(user, parent, DeassignFromPermission); err != nil {
 			return false, err
 		} else if !ok {
 			return false, nil
@@ -136,14 +136,14 @@ func (c AssignCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
-	if ok, err := decider.Decide(user, c.child, AssignPermission); err != nil {
+	if ok, err := decider.HasPermissions(user, c.child, AssignPermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
 	// check user can assign to parent
-	return decider.Decide(user, c.parent, AssignToPermission)
+	return decider.HasPermissions(user, c.parent, AssignToPermission)
 }
 
 func (c AssignCmd) Execute(graph pip.Graph) error {
@@ -158,14 +158,14 @@ func (c DeassignCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
-	if ok, err := decider.Decide(user, c.child, DeassignPermission); err != nil {
+	if ok, err := decider.HasPermissions(user, c.child, DeassignPermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
 	// check user can assign to parent
-	return decider.Decide(user, c.parent, DeassignFromPermission)
+	return decider.HasPermissions(user, c.parent, DeassignFromPermission)
 }
 
 func (c DeassignCmd) Execute(graph pip.Graph) error {
@@ -180,14 +180,14 @@ func (c AssociateCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can associate the subject
-	if ok, err := decider.Decide(user, c.subject, AssociatePermission); err != nil {
+	if ok, err := decider.HasPermissions(user, c.subject, AssociatePermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
 	// check user can associate the target
-	return decider.Decide(user, c.target, AssociatePermission)
+	return decider.HasPermissions(user, c.target, AssociatePermission)
 }
 
 func (c AssociateCmd) Execute(graph pip.Graph) error {
@@ -202,14 +202,14 @@ func (c DissociateCmd) CanExecute(user string, graph pip.Graph) (bool, error) {
 	decider := pdp.NewDecider(graph)
 
 	// check user can assign child
-	if ok, err := decider.Decide(user, c.subject, DissociatePermission); err != nil {
+	if ok, err := decider.HasPermissions(user, c.subject, DissociatePermission); err != nil {
 		return false, err
 	} else if !ok {
 		return false, nil
 	}
 
 	// check user can assign to parent
-	return decider.Decide(user, c.target, DissociatePermission)
+	return decider.HasPermissions(user, c.target, DissociatePermission)
 }
 
 func (c DissociateCmd) Execute(graph pip.Graph) error {

@@ -1,20 +1,109 @@
 package pdp
 
 import (
+	"crypto/x509"
+	"encoding/json"
 	"fmt"
-
+	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/pip"
+	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/ngac/operations"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 )
 
-// PDP is the Policy Decision Point
-type PDP struct {
+var ErrAccessDenied = errors.New("access denied")
+
+func FormatUsername(user string, mspid string) string {
+	return fmt.Sprintf("%s:%s", user, mspid)
+}
+
+func GetUser(ctx contractapi.TransactionContextInterface) (string, error) {
+	cID := ctx.GetClientIdentity()
+
+	var (
+		cert  *x509.Certificate
+		mspid string
+		err   error
+	)
+
+	if cert, err = cID.GetX509Certificate(); err != nil {
+		return "", errors.Wrap(err, "error getting client X509 certificate")
+	}
+
+	if mspid, err = cID.GetMSPID(); err != nil {
+		return "", errors.Wrap(err, "error getting client MSPID")
+	}
+
+	return FormatUsername(cert.Subject.CommonName, mspid), nil
+}
+
+// AdminDecider is the administrative Policy Decision Point (PDP) for the Blossom NGAC smart contract.
+// An administrative PDP performs permission checks for all actions on an NGAC graph.  The permissions it is looking for
+// are NGAC specific such as "create node" or "assign to"
+type AdminDecider struct {
+	user string
+}
+
+func NewAdminDecider(ctx contractapi.TransactionContextInterface) (AdminDecider, error) {
+	user, err := GetUser(ctx)
+	if err != nil {
+		return AdminDecider{}, errors.Wrapf(err, "error getting user from request")
+	}
+
+	return AdminDecider{user: user}, nil
+}
+
+func (a AdminDecider) InitGraph(ctx contractapi.TransactionContextInterface) error {
+	graph := memory.NewGraph()
+
+	if err := policy.Configure(graph); err != nil {
+		return errors.Wrap(err, "error configuring access control policy")
+	}
+
+	var (
+		bytes []byte
+		err   error
+	)
+
+	decider := pdp.NewDecider(graph)
+	if ok, err := decider.HasPermissions(a.user, policy.BlossomObject, operations.InitBlossom); err != nil {
+		return errors.Wrapf(err, "error checking if user can initialize blossom")
+	} else if !ok {
+		return errors.Errorf("user %s does not have permission to initialize blossom", a.user)
+	}
+
+	if bytes, err = graph.MarshalJSON(); err != nil {
+		return errors.Wrap(err, "error serializing graph")
+	}
+
+	if err = ctx.GetStub().PutState("graph", bytes); err != nil {
+		return errors.Wrap(err, "error updating graph on ledger")
+	}
+
+	return nil
+}
+
+func (a *AdminDecider) GetGraph(ctx contractapi.TransactionContextInterface) (pip.Graph, error) {
+	bytes, err := ledger.GetGraphBytes(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "error getting graph")
+	}
+
+	graph := memory.NewGraph()
+	if err = json.Unmarshal(bytes, graph); err != nil {
+		return nil, errors.Wrap(err, "error unmarshaling graph")
+	}
+
+	return graph, nil
 }
 
 // UpdateGraph updates the NGAC graph with the given graph json. It first identifies the differences between the ledger
 // graph and the provided graph and checks the requesting user has permission to carry out all the actions.
 // If the user can carry out all the actions, the ledger graph is replaced with the graph provided.
-func (c *PDP) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) error {
+func (a *AdminDecider) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) error {
 	// check the client can execute request
 	var (
 		cmds []GraphCmd

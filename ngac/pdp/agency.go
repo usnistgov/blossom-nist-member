@@ -2,6 +2,7 @@ package pdp
 
 import (
 	"github.com/PM-Master/policy-machine-go/pdp"
+	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -9,10 +10,12 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
+	"time"
 )
 
 type AgencyDecider struct {
 	user    string
+	graph   pip.Graph
 	decider pdp.Decider
 }
 
@@ -23,23 +26,19 @@ func NewAgencyDecider() AgencyDecider {
 }
 
 func (a AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	if a.user == "" {
-		user, err := GetUser(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "error getting user from request")
-		}
-
-		a.user = user
+	user, err := GetUser(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "error getting user from request")
 	}
 
-	if a.decider == nil {
-		graph, err := ledger.GetGraph(ctx)
-		if err != nil {
-			return errors.Wrap(err, "error retrieving ngac graph from ledger")
-		}
+	a.user = user
 
-		a.decider = pdp.NewDecider(graph)
+	graph, err := ledger.GetGraph(ctx)
+	if err != nil {
+		return errors.Wrap(err, "error retrieving ngac graph from ledger")
 	}
+
+	a.decider = pdp.NewDecider(graph)
 
 	return nil
 }
@@ -60,7 +59,11 @@ func (a AgencyDecider) filterAgency(agency *model.Agency) error {
 
 	// if the user cannot view agency on the agency info object, return an empty agency
 	if !permissions.Contains(operations.ViewAgency) {
-		agency = &model.Agency{}
+		agency.Licenses = make(map[string]map[string]time.Time)
+		agency.Status = ""
+		agency.ATO = ""
+		agency.Users = model.Users{}
+		agency.MSPID = ""
 		return nil
 	}
 
@@ -81,7 +84,7 @@ func (a AgencyDecider) filterAgency(agency *model.Agency) error {
 	}
 
 	if !permissions.Contains(operations.ViewAgencyLicenses) {
-		agency.Status = ""
+		agency.Licenses = make(map[string]map[string]time.Time)
 	}
 
 	return nil

@@ -11,13 +11,13 @@ type (
 		// Name is the unique name of the agency
 		Name string `json:"name"`
 		// ATO is the Authority To Operate document
-		ATO string `json:"ato,omitempty"` // TODO string is placeholder for actual object
+		ATO string `json:"ato"` // TODO string is placeholder for actual object
 		// MSPID is the Membership Service Provider ID
 		MSPID string `json:"mspid"`
 		// Users contains the users of the organization that will access Blossom
 		Users Users `json:"users"`
 		// Status of an agency within the Blossom system
-		Status Status `json:"status,omitempty"`
+		Status Status `json:"status"`
 		// Licenses stores the licenses that an agency has checked out. The first map key is the licenseID, the second map
 		// key is the license key and the time is the expiration of the key.
 		Licenses map[string]map[string]time.Time `json:"licenses"`

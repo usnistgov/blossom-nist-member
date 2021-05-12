@@ -57,7 +57,7 @@ func LicenseKey(id string) string {
 }
 
 func (b *BlossomSmartContract) licenseExists(ctx contractapi.TransactionContextInterface, licenseID string) (bool, error) {
-	data, err := ctx.GetStub().GetState(model.AgencyKey(licenseID))
+	data, err := ctx.GetStub().GetState(model.LicenseKey(licenseID))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if license %q already exists on the ledger", licenseID)
 	}
@@ -130,7 +130,7 @@ func licenses(ctx contractapi.TransactionContextInterface) ([]*model.License, er
 	}
 	defer resultsIterator.Close()
 
-	var licenses []*model.License
+	licenses := make([]*model.License, 0)
 	for resultsIterator.HasNext() {
 		var queryResponse *queryresult.KV
 		if queryResponse, err = resultsIterator.Next(); err != nil {
@@ -142,12 +142,12 @@ func licenses(ctx contractapi.TransactionContextInterface) ([]*model.License, er
 			continue
 		}
 
-		var asset model.License
-		if err = json.Unmarshal(queryResponse.Value, &asset); err != nil {
+		license := &model.License{}
+		if err = json.Unmarshal(queryResponse.Value, license); err != nil {
 			return nil, err
 		}
 
-		licenses = append(licenses, &asset)
+		licenses = append(licenses, license)
 	}
 
 	return licenses, nil
@@ -161,7 +161,7 @@ func (b *BlossomSmartContract) LicenseInfo(ctx contractapi.TransactionContextInt
 	}
 
 	var (
-		license *model.License
+		license = &model.License{}
 		bytes   []byte
 		err     error
 	)
@@ -184,8 +184,8 @@ func (b *BlossomSmartContract) CheckoutLicense(
 	amount int) (map[string]time.Time, error) {
 
 	var (
-		license *model.License
-		agency  *model.Agency
+		license = &model.License{}
+		agency  = &model.Agency{}
 		err     error
 	)
 
@@ -262,8 +262,8 @@ func (b *BlossomSmartContract) CheckoutLicense(
 
 func (b *BlossomSmartContract) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string, returnedKeys []string, agencyName string) error {
 	var (
-		license *model.License
-		agency  *model.Agency
+		license = &model.License{}
+		agency  = &model.Agency{}
 		err     error
 	)
 

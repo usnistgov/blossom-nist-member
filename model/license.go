@@ -19,15 +19,15 @@ type (
 		// Cost is the cost of obtaining the license
 		Cost float64 `json:"cost"`
 		// OnboardingDate is the date in which the license was added to Blossom
-		OnboardingDate time.Time `json:"onboarding_date,omitempty"`
+		OnboardingDate time.Time `json:"onboarding_date"`
 		// Expiration is the date in which the license will expire from Blossom
-		Expiration time.Time `json:"expiration,omitempty"`
+		Expiration time.Time `json:"expiration"`
 		// AllKeys is the complete set of license keys associated with this license
 		AllKeys []string `json:"all_keys"`
 		// AvailableKeys is the set of keys that are available to be checked out
-		AvailableKeys []string `json:"available_keys,omitempty"`
+		AvailableKeys []string `json:"available_keys"`
 		// CheckedOut stores the agencies that have checked out this license and which license keys they have leased
-		CheckedOut map[string]map[string]time.Time `json:"checked_out,omitempty"`
+		CheckedOut map[string]map[string]time.Time `json:"checked_out"`
 	}
 )
 

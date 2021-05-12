@@ -1,8 +1,8 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/core/shim"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/api/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -54,27 +54,5 @@ func TestRequestAccount(t *testing.T) {
 }
 
 func TestName(t *testing.T) {
-	x := `{
-"id": "ID123",
-"name": "my_license",
-"total_amount": 10,
-"available": 10,
-"cost": 25.99,
-"all_keys": ["1", "2", "3"],
-"available_keys": ["1", "2", "3"] ,
-"expiration":"2021-02-18T21:54:42.123Z",
-"onboarding_date": "2021-02-18T21:54:42.123Z",
-"checked_out": {
-"agency1":{
-  "k1":"e1", 
-  "k2":"e1"
-}
-}
-}`
-	bytes := []byte(x)
-	l := &model.License{}
-	err := json.Unmarshal(bytes, l)
-	fmt.Println(err)
-	require.NoError(t, err)
-	fmt.Println(l)
+	mockStub := shim.N
 }

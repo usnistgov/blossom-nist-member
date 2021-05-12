@@ -191,7 +191,7 @@ func agencies(ctx contractapi.TransactionContextInterface) ([]*model.Agency, err
 	}
 	defer resultsIterator.Close()
 
-	var agencies []*model.Agency
+	agencies := make([]*model.Agency, 0)
 	for resultsIterator.HasNext() {
 		var queryResponse *queryresult.KV
 		if queryResponse, err = resultsIterator.Next(); err != nil {
@@ -203,12 +203,12 @@ func agencies(ctx contractapi.TransactionContextInterface) ([]*model.Agency, err
 			continue
 		}
 
-		var asset model.Agency
-		if err = json.Unmarshal(queryResponse.Value, &asset); err != nil {
+		agency := &model.Agency{}
+		if err = json.Unmarshal(queryResponse.Value, agency); err != nil {
 			return nil, err
 		}
 
-		agencies = append(agencies, &asset)
+		agencies = append(agencies, agency)
 	}
 
 	return agencies, nil
@@ -216,7 +216,7 @@ func agencies(ctx contractapi.TransactionContextInterface) ([]*model.Agency, err
 
 func (b *BlossomSmartContract) Agency(ctx contractapi.TransactionContextInterface, agencyName string) (*model.Agency, error) {
 	var (
-		agency *model.Agency
+		agency = &model.Agency{}
 		bytes  []byte
 		err    error
 	)

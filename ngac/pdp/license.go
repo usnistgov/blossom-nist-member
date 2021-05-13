@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
 )
@@ -96,7 +97,8 @@ func (l LicenseDecider) OnboardLicense(ctx contractapi.TransactionContextInterfa
 		return ErrAccessDenied
 	}
 
-	return nil
+	licenseAdmin := pap.NewLicenseAdmin()
+	return licenseAdmin.OnboardLicense(ctx, license)
 }
 
 func (l LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
@@ -114,44 +116,19 @@ func (l LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterf
 	return nil
 }
 
-func (l LicenseDecider) Licenses(ctx contractapi.TransactionContextInterface) ([]model.License, error) {
+func (l LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	if err := l.setup(ctx); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
-	return nil, nil
-}
-
-func (l LicenseDecider) LicenseInfo(ctx contractapi.TransactionContextInterface, licenseID string) (*model.License, error) {
-	if err := l.setup(ctx); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
+	// check user can checkout license
+	if ok, err := l.decider.HasPermissions(l.user, licenseID, operations.OffboardLicense); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can offboard a license", l.user)
+	} else if !ok {
+		return ErrAccessDenied
 	}
 
-	return nil, nil
-}
-
-func (l LicenseDecider) LicenseKeys(ctx contractapi.TransactionContextInterface, licenseID string) (map[string][]string, error) {
-	if err := l.setup(ctx); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
-	}
-
-	return nil, nil
-}
-
-func (l LicenseDecider) AgencyLicenseKeys(ctx contractapi.TransactionContextInterface, agency string) (map[int][]string, error) {
-	if err := l.setup(ctx); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
-	}
-
-	return nil, nil
-}
-
-func (l LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, licenseID string, agency string, amount int) ([]string, error) {
-	if err := l.setup(ctx); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
-	}
-
-	return nil, nil
+	return nil
 }
 
 func (l LicenseDecider) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {

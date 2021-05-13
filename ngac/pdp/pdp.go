@@ -47,16 +47,26 @@ type AdminDecider struct {
 	user string
 }
 
-func NewAdminDecider(ctx contractapi.TransactionContextInterface) (AdminDecider, error) {
-	user, err := GetUser(ctx)
-	if err != nil {
-		return AdminDecider{}, errors.Wrapf(err, "error getting user from request")
-	}
-
-	return AdminDecider{user: user}, nil
+func NewAdminDecider() *AdminDecider {
+	return &AdminDecider{}
 }
 
-func (a AdminDecider) InitGraph(ctx contractapi.TransactionContextInterface) error {
+func (a *AdminDecider) setup(ctx contractapi.TransactionContextInterface) error {
+	user, err := GetUser(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "error getting user from request")
+	}
+
+	a.user = user
+
+	return nil
+}
+
+func (a *AdminDecider) InitGraph(ctx contractapi.TransactionContextInterface) error {
+	if err := a.setup(ctx); err != nil {
+		return errors.Wrap(err, "error initializing admin decider")
+	}
+
 	graph := memory.NewGraph()
 
 	if err := policy.Configure(graph); err != nil {

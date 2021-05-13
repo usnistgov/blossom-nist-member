@@ -21,11 +21,11 @@ type AgencyDecider struct {
 
 // NewAgencyDecider creates a new AgencyDecider with the user from the ctx and a NGAC Decider using the NGAC graph
 // from the ledger.
-func NewAgencyDecider() AgencyDecider {
-	return AgencyDecider{}
+func NewAgencyDecider() *AgencyDecider {
+	return &AgencyDecider{}
 }
 
-func (a AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error {
+func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error {
 	user, err := GetUser(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
@@ -43,7 +43,21 @@ func (a AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error 
 	return nil
 }
 
-func (a AgencyDecider) FilterAgency(ctx contractapi.TransactionContextInterface, agency *model.Agency) error {
+func (a *AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterface, agencies []*model.Agency) error {
+	if err := a.setup(ctx); err != nil {
+		return errors.Wrapf(err, "error setting up agency decider")
+	}
+
+	for _, agency := range agencies {
+		if err := a.filterAgency(agency); err != nil {
+			return errors.Wrapf(err, "error filtering agency")
+		}
+	}
+
+	return nil
+}
+
+func (a *AgencyDecider) FilterAgency(ctx contractapi.TransactionContextInterface, agency *model.Agency) error {
 	if err := a.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -51,7 +65,7 @@ func (a AgencyDecider) FilterAgency(ctx contractapi.TransactionContextInterface,
 	return a.filterAgency(agency)
 }
 
-func (a AgencyDecider) filterAgency(agency *model.Agency) error {
+func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 	permissions, err := a.decider.ListPermissions(a.user, agencypap.InfoObjectName(agency.Name))
 	if err != nil {
 		return errors.Wrapf(err, "error getting permissions for user %s on agency %s", a.user, agency.Name)
@@ -90,27 +104,13 @@ func (a AgencyDecider) filterAgency(agency *model.Agency) error {
 	return nil
 }
 
-func (a AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterface, agencies []*model.Agency) error {
-	if err := a.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
-	}
-
-	for _, agency := range agencies {
-		if err := a.filterAgency(agency); err != nil {
-			return errors.Wrapf(err, "error filtering agency")
-		}
-	}
-
-	return nil
-}
-
-func (a AgencyDecider) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
+func (a *AgencyDecider) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
 	// any user can create an account
 	agencyAdmin := new(pap.AgencyAdmin)
 	return agencyAdmin.RequestAccount(ctx, agency)
 }
 
-func (a AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, agency string, ato string) error {
+func (a *AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, agency string, ato string) error {
 	if err := a.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -121,10 +121,11 @@ func (a AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, ag
 		return ErrAccessDenied
 	}
 
+	// nothing to update in the agency admin
 	return nil
 }
 
-func (a AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agency string, status model.Status) error {
+func (a *AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agency string, status model.Status) error {
 	if err := a.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -135,6 +136,6 @@ func (a AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInte
 		return ErrAccessDenied
 	}
 
-	agencyAdmin := new(pap.AgencyAdmin)
+	agencyAdmin := pap.NewAgencyAdmin()
 	return agencyAdmin.UpdateAgencyStatus(ctx, agency, status)
 }

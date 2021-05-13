@@ -7,6 +7,7 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
 )
 
 type LicenseDecider struct {
@@ -21,23 +22,19 @@ func NewLicenseDecider() LicenseDecider {
 }
 
 func (l LicenseDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	if l.user == "" {
-		user, err := GetUser(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "error getting user from request")
-		}
-
-		l.user = user
+	user, err := GetUser(ctx)
+	if err != nil {
+		return errors.Wrapf(err, "error getting user from request")
 	}
 
-	if l.decider == nil {
-		graph, err := ledger.GetGraph(ctx)
-		if err != nil {
-			return errors.Wrap(err, "error retrieving ngac graph from ledger")
-		}
+	l.user = user
 
-		l.decider = pdp.NewDecider(graph)
+	graph, err := ledger.GetGraph(ctx)
+	if err != nil {
+		return errors.Wrap(err, "error retrieving ngac graph from ledger")
 	}
+
+	l.decider = pdp.NewDecider(graph)
 
 	return nil
 }
@@ -92,12 +89,26 @@ func (l LicenseDecider) OnboardLicense(ctx contractapi.TransactionContextInterfa
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
+	// check user can onboard license
+	if ok, err := l.decider.HasPermissions(l.user, rbac.LicensesOA, operations.OnboardLicense); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can onboard a license", l.user)
+	} else if !ok {
+		return ErrAccessDenied
+	}
+
 	return nil
 }
 
 func (l LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
+	}
+
+	// check user can onboard license
+	if ok, err := l.decider.HasPermissions(l.user, licenseID, operations.OffboardLicense); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can offboard a license", l.user)
+	} else if !ok {
+		return ErrAccessDenied
 	}
 
 	return nil

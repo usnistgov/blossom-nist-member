@@ -199,44 +199,11 @@ func (b *BlossomSmartContract) CheckoutLicense(
 		return nil, errors.Wrapf(err, "error getting info for license %q", licenseID)
 	}
 
-	// check that the amount requested is less than the amount available
-	if amount > license.Available {
-		return nil, errors.Errorf("requested amount (%v) cannot be greater than the available amount (%v)",
-			amount, license.Available)
+	// checkout the license
+	var checkedOutKeys map[string]time.Time
+	if checkedOutKeys, err = checkoutLicense(agency, license, amount); err != nil {
+		return nil, errors.Wrapf(err, "error checking out %q", license.ID)
 	}
-
-	// update available amount
-	license.Available -= amount
-
-	// get the available keys
-	fromAvailable := license.AvailableKeys[0:amount]
-	// update available keys
-	license.AvailableKeys = license.AvailableKeys[amount:]
-
-	// create the array of keys that are checked out including expiration dates
-	checkedOutKeys := make(map[string]time.Time, 0)
-	expiration := time.Now().AddDate(1, 0, 0)
-	for _, key := range fromAvailable {
-		// set the expiration of the license key to one year from now
-		checkedOutKeys[key] = expiration
-	}
-
-	// update the agency licenses
-	// add to existing keys if they are checking out more of a license
-	checkedOutLicenseKeys := agency.Licenses[licenseID]
-	if checkedOutLicenseKeys == nil {
-		checkedOutLicenseKeys = checkedOutKeys
-	} else {
-		for key, coKey := range checkedOutKeys {
-			checkedOutLicenseKeys[key] = coKey
-		}
-	}
-
-	// update license in the agency
-	agency.Licenses[licenseID] = checkedOutLicenseKeys
-
-	// update the licenses agency tracker
-	license.CheckedOut[agencyName] = checkedOutLicenseKeys
 
 	// update agency
 	var bytes []byte
@@ -260,6 +227,54 @@ func (b *BlossomSmartContract) CheckoutLicense(
 	return checkedOutKeys, nil
 }
 
+func checkoutLicense(agency *model.Agency, license *model.License, amount int) (map[string]time.Time, error) {
+	// check that the amount requested is less than the amount available
+	if amount > license.Available {
+		return nil, errors.Errorf("requested amount (%v) cannot be greater than the available amount (%v)",
+			amount, license.Available)
+	}
+
+	// update available amount
+	license.Available -= amount
+
+	// get the available keys
+	fromAvailable := license.AvailableKeys[0:amount]
+	// update available keys
+	license.AvailableKeys = license.AvailableKeys[amount:]
+
+	// create the array of keys that are checked out including expiration dates
+	retCheckedOutKeys := make(map[string]time.Time, 0)
+	expiration := time.Now().AddDate(1, 0, 0)
+	for _, key := range fromAvailable {
+		// set the expiration of the license key to one year from now
+		retCheckedOutKeys[key] = expiration
+	}
+
+	// update the agency licenses
+	// add to existing keys if they are checking out more of a license
+	allCheckedOutLicenseKeys, ok := agency.Licenses[license.ID]
+	if ok {
+		allCheckedOutLicenseKeys = retCheckedOutKeys
+	} else {
+		allCheckedOutLicenseKeys = make(map[string]time.Time)
+		for key, coKey := range retCheckedOutKeys {
+			allCheckedOutLicenseKeys[key] = coKey
+		}
+	}
+
+	// update license in the agency
+	agency.Licenses[license.ID] = allCheckedOutLicenseKeys
+
+	// update the license agency tracker
+	agencyCheckedOutLicense := make(map[string]time.Time)
+	for k, t := range allCheckedOutLicenseKeys {
+		agencyCheckedOutLicense[k] = t
+	}
+	license.CheckedOut[agency.Name] = agencyCheckedOutLicense
+
+	return retCheckedOutKeys, nil
+}
+
 func (b *BlossomSmartContract) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string, returnedKeys []string, agencyName string) error {
 	var (
 		license = &model.License{}
@@ -277,24 +292,38 @@ func (b *BlossomSmartContract) CheckinLicense(ctx contractapi.TransactionContext
 		return errors.Wrapf(err, "error getting info for license %q", licenseID)
 	}
 
-	// update the agency
-	if err = updateAgencyOnCheckIn(agency, licenseID, returnedKeys); err != nil {
-		return errors.Wrapf(err, "error updating agency")
+	// check in license logic
+	if err = checkinLicense(agency, license, returnedKeys); err != nil {
+		return err
 	}
 
-	// update the license
-	if err = updateLicenseOnCheckIn(license, agencyName, returnedKeys); err != nil {
-		return errors.Wrapf(err, "error updating license")
+	// update agency
+	var bytes []byte
+	if bytes, err = json.Marshal(agency); err != nil {
+		return errors.Wrapf(err, "error marshaling agency %q", agency.Name)
+	}
+
+	if err = ctx.GetStub().PutState(model.AgencyKey(agency.Name), bytes); err != nil {
+		return errors.Wrapf(err, "error updating agency state")
+	}
+
+	// update license
+	if bytes, err = json.Marshal(license); err != nil {
+		return errors.Wrapf(err, "error marshaling license %q", license.ID)
+	}
+
+	if err = ctx.GetStub().PutState(model.LicenseKey(license.Name), bytes); err != nil {
+		return errors.Wrapf(err, "error updating license state")
 	}
 
 	return nil
 }
 
-func updateAgencyOnCheckIn(agency *model.Agency, licenseID string, returnedKeys []string) error {
-	checkedOutLicense := agency.Licenses[licenseID]
+func checkinLicense(agency *model.Agency, license *model.License, returnedKeys []string) error {
+	checkedOutLicense := agency.Licenses[license.ID]
 	for _, returnedKey := range returnedKeys {
 		// check that the returned key is leased to the agency
-		if _, ok := agency.Licenses[licenseID][returnedKey]; !ok {
+		if _, ok := agency.Licenses[license.ID][returnedKey]; !ok {
 			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, agency.Name)
 		}
 
@@ -303,25 +332,21 @@ func updateAgencyOnCheckIn(agency *model.Agency, licenseID string, returnedKeys 
 
 	// if all keys were returned remove license from agency
 	if len(checkedOutLicense) == 0 {
-		delete(agency.Licenses, licenseID)
+		delete(agency.Licenses, license.ID)
+	} else {
+		// update agency keys
+		agency.Licenses[license.ID] = checkedOutLicense
 	}
 
-	// update agency keys
-	agency.Licenses[licenseID] = checkedOutLicense
-
-	return nil
-}
-
-func updateLicenseOnCheckIn(license *model.License, agencyName string, returnedKeys []string) error {
-	agencyCheckedOut, ok := license.CheckedOut[agencyName]
+	agencyCheckedOut, ok := license.CheckedOut[agency.Name]
 	if !ok {
-		return errors.Errorf("agency %s has not checked out any keys for license %s", agencyName, license.ID)
+		return errors.Errorf("agency %s has not checked out any keys for license %s", agency.Name, license.ID)
 	}
 
 	for _, returnedKey := range returnedKeys {
 		// check that the agency has the key checked out
 		if _, ok = agencyCheckedOut[returnedKey]; !ok {
-			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, agencyName)
+			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, agency.Name)
 		}
 
 		// remove the returned key from the checked out keys
@@ -333,7 +358,7 @@ func updateLicenseOnCheckIn(license *model.License, agencyName string, returnedK
 
 	// if all keys are returned, remove the agency from the license
 	if len(agencyCheckedOut) == 0 {
-		delete(license.CheckedOut, agencyName)
+		delete(license.CheckedOut, agency.Name)
 	}
 
 	// update number of available keys

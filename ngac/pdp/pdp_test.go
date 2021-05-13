@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// Org1AdminCert returns the certificate for the user Org1 Admin:Org1MSP
 func Org1AdminCert() *x509.Certificate {
 	str := "-----BEGIN CERTIFICATE-----\n" +
 		"MIIBzjCCAXSgAwIBAgIQSb323vGSInSfGJjW8I1gYTAKBggqhkjOPQQDAjASMRAw\n" +
@@ -33,6 +34,7 @@ func Org1AdminCert() *x509.Certificate {
 	return cert
 }
 
+// A1SystemOwnerCert returns the certificate for the user a1_system_owner:Org2MSP
 func A1SystemOwnerCert() *x509.Certificate {
 	str := "-----BEGIN CERTIFICATE-----\n" +
 		"MIICETCCAbegAwIBAgIUY46/5h6vqcPhxeLZolshAAWIoOgwCgYIKoZIzj0EAwIw\n" +
@@ -60,6 +62,7 @@ func A1SystemOwnerCert() *x509.Certificate {
 	return cert
 }
 
+// A1SystemAdminCert returns the certificate for the user a1_system_admin:Org2MSP
 func A1SystemAdminCert() *x509.Certificate {
 	str := "-----BEGIN CERTIFICATE-----\n" +
 		"MIICEDCCAbegAwIBAgIUXsc8SIL/O5DAs7EmtlqDSNUPiaQwCgYIKoZIzj0EAwIw\n" +
@@ -86,6 +89,7 @@ func A1SystemAdminCert() *x509.Certificate {
 	return cert
 }
 
+// A1AcqSpecCert returns the certificate for the user a1_acq_spec:Org2MSP
 func A1AcqSpecCert() *x509.Certificate {
 	str := "-----BEGIN CERTIFICATE-----\n" +
 		"MIICCDCCAa+gAwIBAgIULRCOBjku2WVRVv5gAeySJU1kNhAwCgYIKoZIzj0EAwIw\n" +

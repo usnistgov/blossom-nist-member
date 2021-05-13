@@ -2,20 +2,22 @@ package pdp
 
 import (
 	"github.com/PM-Master/policy-machine-go/pdp"
-	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
 	"time"
 )
 
+// AgencyDecider is the Policy Decision Point (PDP) for the Agency API
 type AgencyDecider struct {
-	user    string
-	graph   pip.Graph
+	// user is the user that is currently executing a function
+	user string
+	// pap is the policy administration point for agencies
+	pap *pap.AgencyAdmin
+	// decider is the NGAC decider used to make decisions
 	decider pdp.Decider
 }
 
@@ -33,12 +35,13 @@ func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error
 
 	a.user = user
 
-	graph, err := ledger.GetGraph(ctx)
+	// initialize the agency policy administration point
+	a.pap, err = pap.NewAgencyAdmin(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error retrieving ngac graph from ledger")
+		return errors.Wrapf(err, "error initializing agency administraion point")
 	}
 
-	a.decider = pdp.NewDecider(graph)
+	a.decider = pdp.NewDecider(a.pap.Graph())
 
 	return nil
 }
@@ -105,12 +108,15 @@ func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 }
 
 func (a *AgencyDecider) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
+	if err := a.setup(ctx); err != nil {
+		return errors.Wrapf(err, "error setting up agency decider")
+	}
+
 	// any user can create an account
-	agencyAdmin := new(pap.AgencyAdmin)
-	return agencyAdmin.RequestAccount(ctx, agency)
+	return a.pap.RequestAccount(ctx, agency)
 }
 
-func (a *AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, agency string, ato string) error {
+func (a *AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, agency string) error {
 	if err := a.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -136,6 +142,5 @@ func (a *AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInt
 		return ErrAccessDenied
 	}
 
-	agencyAdmin := pap.NewAgencyAdmin()
-	return agencyAdmin.UpdateAgencyStatus(ctx, agency, status)
+	return a.pap.UpdateAgencyStatus(ctx, agency, status)
 }

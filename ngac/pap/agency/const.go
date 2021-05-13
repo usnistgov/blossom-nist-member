@@ -1,8 +1,6 @@
 package agency
 
-import (
-	"fmt"
-)
+import "fmt"
 
 func ObjectAttributeName(agencyName string) string {
 	return fmt.Sprintf("%s_OA", agencyName)

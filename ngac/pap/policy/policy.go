@@ -4,9 +4,9 @@ import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
-	dac "github.com/usnistgov/blossom/chaincode/ngac/pap/dac"
-	rbac "github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
-	status "github.com/usnistgov/blossom/chaincode/ngac/pap/status"
+	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
+	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
+	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
 )
 
 const (
@@ -22,17 +22,17 @@ func Configure(graph pip.Graph) error {
 	}
 
 	// configure RBAC policy class
-	if err := rbac.Configure(graph, BlossomAdminUA); err != nil {
+	if err := rbacpolicy.Configure(graph, BlossomAdminUA); err != nil {
 		return err
 	}
 
 	// configure the DAC policy class
-	if err := dac.Configure(graph, BlossomAdminUA); err != nil {
+	if err := dacpolicy.Configure(graph, BlossomAdminUA); err != nil {
 		return err
 	}
 
 	// configure the status policy class
-	if err := status.Configure(graph, BlossomAdminUA); err != nil {
+	if err := statuspolicy.Configure(graph, BlossomAdminUA); err != nil {
 		return err
 	}
 

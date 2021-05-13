@@ -22,8 +22,8 @@ type (
 		OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error
 
 		// OffboardLicense removes an existing license in Blossom.  This will remove the license from the ledger
-		// and from NGAC.
-		// TODO this should revoke any outstanding license keys
+		// and from NGAC. An error will be returned if there are any agencies that have checked out the license
+		// and the license keys are not returned
 		OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error
 
 		// Licenses returns all licenses in Blossom. This information does not include which agencies have keys for each
@@ -72,9 +72,11 @@ func (b *BlossomSmartContract) OnboardLicense(ctx contractapi.TransactionContext
 		return errors.Errorf("a license with the ID %q already exists", license.ID)
 	}
 
+	// begin NGAC
 	if err := pdp.NewLicenseDecider().OnboardLicense(ctx, license); err != nil {
 		return errors.Wrapf(err, "error onboarding license %q", license.Name)
 	}
+	// end NGAC
 
 	// at the time of onboarding all keys are available
 	license.AvailableKeys = license.AllKeys
@@ -102,12 +104,28 @@ func (b *BlossomSmartContract) OffboardLicense(ctx contractapi.TransactionContex
 		return nil
 	}
 
-	if err := pdp.NewLicenseDecider().OffboardLicense(ctx, licenseID); err != nil {
-		return errors.Wrapf(err, "error onboarding license %q", licenseID)
+	// check that all license keys have been returned
+	var (
+		license *model.License
+		err     error
+	)
+
+	if license, err = b.LicenseInfo(ctx, licenseID); err != nil {
+		return errors.Wrapf(err, "error getting license info")
 	}
 
+	if len(license.CheckedOut) != 0 {
+		return errors.Errorf("license %s still has keys checked out", licenseID)
+	}
+
+	// begin NGAC
+	if err = pdp.NewLicenseDecider().OffboardLicense(ctx, licenseID); err != nil {
+		return errors.Wrapf(err, "error onboarding license %q", licenseID)
+	}
+	// end NGAC
+
 	// remove license from world state
-	if err := ctx.GetStub().DelState(LicenseKey(licenseID)); err != nil {
+	if err = ctx.GetStub().DelState(LicenseKey(licenseID)); err != nil {
 		return errors.Wrapf(err, "error offboarding license from blossom")
 	}
 
@@ -115,10 +133,18 @@ func (b *BlossomSmartContract) OffboardLicense(ctx contractapi.TransactionContex
 }
 
 func (b *BlossomSmartContract) Licenses(ctx contractapi.TransactionContextInterface) ([]*model.License, error) {
+	// retrieve the licenses from the ledger
 	licenses, err := licenses(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting licenses")
 	}
+
+	// begin NGAC
+	// filter any license information the requesting user may not have permission to see
+	if err := pdp.NewLicenseDecider().FilterLicenses(ctx, licenses); err != nil {
+		return nil, errors.Wrapf(err, "error filtering agencies")
+	}
+	// end NGAC
 
 	return licenses, nil
 }
@@ -189,12 +215,12 @@ func (b *BlossomSmartContract) CheckoutLicense(
 		err     error
 	)
 
-	// get agency
+	// get the agency that will be leasing the license keys
 	if agency, err = b.Agency(ctx, agencyName); err != nil {
 		return nil, errors.Wrapf(err, "error getting agency %q", agencyName)
 	}
 
-	// get license
+	// get license being requested
 	if license, err = b.LicenseInfo(ctx, licenseID); err != nil {
 		return nil, errors.Wrapf(err, "error getting info for license %q", licenseID)
 	}
@@ -205,7 +231,7 @@ func (b *BlossomSmartContract) CheckoutLicense(
 		return nil, errors.Wrapf(err, "error checking out %q", license.ID)
 	}
 
-	// update agency
+	// update agency's record of checked out license keys
 	var bytes []byte
 	if bytes, err = json.Marshal(agency); err != nil {
 		return nil, errors.Wrapf(err, "error marshaling agency %q", agency.Name)
@@ -215,7 +241,7 @@ func (b *BlossomSmartContract) CheckoutLicense(
 		return nil, errors.Wrapf(err, "error updating agency state")
 	}
 
-	// update license
+	// update license to reflect the keys being leased to the agency
 	if bytes, err = json.Marshal(license); err != nil {
 		return nil, errors.Wrapf(err, "error marshaling license %q", license.ID)
 	}

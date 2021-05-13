@@ -4,6 +4,7 @@ const (
 	ViewLicense       = "view_license"
 	ViewKey           = "view_key"
 	ViewAvailableKeys = "view_available_keys"
+	ViewCheckedOut    = "view_checked_out"
 	ViewAllKeys       = "view_all_keys"
 	CheckOutLicense   = "checkout_license"
 	CheckInLicense    = "checkin_license"

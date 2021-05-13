@@ -9,10 +9,10 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/dac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/status"
+	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
+	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
+	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
 	"testing"
 )
 
@@ -30,7 +30,8 @@ func TestRequestAccount(t *testing.T) {
 
 	require.NoError(t, err)
 
-	agencyAdmin := NewAgencyAdmin()
+	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
 		ATO:   "",
@@ -68,13 +69,13 @@ func TestRequestAccount(t *testing.T) {
 		require.Contains(t, children, ngac.FormatUsername(agency.Users.AcquisitionSpecialist, agency.MSPID))
 		parents, err := graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, dac.UserAttributeName)
+		require.Contains(t, parents, dacpolicy.UserAttributeName)
 		ok, err = graph.Exists(agencypap.ObjectAttributeName(agency.Name))
 		require.NoError(t, err)
 		require.True(t, ok)
 		parents, err = graph.GetParents(agencypap.ObjectAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, dac.ObjectAttributeName)
+		require.Contains(t, parents, dacpolicy.ObjectAttributeName)
 		ok, err = graph.Exists(agencypap.InfoObjectName(agency.Name))
 		require.NoError(t, err)
 		require.True(t, ok)
@@ -91,26 +92,26 @@ func TestRequestAccount(t *testing.T) {
 	t.Run("test RBAC", func(t *testing.T) {
 		parents, err := graph.GetParents(agencypap.InfoObjectName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, rbac.AgenciesOA)
+		require.Contains(t, parents, rbacpolicy.AgenciesOA)
 		parents, err = graph.GetParents(ngac.FormatUsername(agency.Users.SystemOwner, agency.MSPID))
 		require.NoError(t, err)
-		require.Contains(t, parents, rbac.SystemOwnerUA)
+		require.Contains(t, parents, rbacpolicy.SystemOwnerUA)
 		parents, err = graph.GetParents(ngac.FormatUsername(agency.Users.AcquisitionSpecialist, agency.MSPID))
 		require.NoError(t, err)
-		require.Contains(t, parents, rbac.AcquisitionSpecialistUA)
+		require.Contains(t, parents, rbacpolicy.AcquisitionSpecialistUA)
 		parents, err = graph.GetParents(ngac.FormatUsername(agency.Users.SystemAdministrator, agency.MSPID))
 		require.NoError(t, err)
-		require.Contains(t, parents, rbac.SystemAdministratorUA)
+		require.Contains(t, parents, rbacpolicy.SystemAdministratorUA)
 
 	})
 
 	t.Run("test Status", func(t *testing.T) {
 		parents, err := graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, status.PendingUA)
+		require.Contains(t, parents, statuspolicy.PendingUA)
 		parents, err = graph.GetParents(agencypap.InfoObjectName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, status.AgenciesOA)
+		require.Contains(t, parents, statuspolicy.AgenciesOA)
 	})
 }
 
@@ -128,7 +129,8 @@ func TestUpdateAgencyStatus(t *testing.T) {
 
 	require.NoError(t, err)
 
-	agencyAdmin := NewAgencyAdmin()
+	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
 		ATO:   "",
@@ -155,26 +157,26 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.Contains(t, parents, status.ActiveUA)
-		require.NotContains(t, parents, status.InactiveUA)
-		require.NotContains(t, parents, status.PendingUA)
+		require.Contains(t, parents, statuspolicy.ActiveUA)
+		require.NotContains(t, parents, statuspolicy.InactiveUA)
+		require.NotContains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test pending", func(t *testing.T) {
 		err = agencyAdmin.UpdateAgencyStatus(transactionContext, agency.Name, model.PendingATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.NotContains(t, parents, status.ActiveUA)
-		require.NotContains(t, parents, status.InactiveUA)
-		require.Contains(t, parents, status.PendingUA)
+		require.NotContains(t, parents, statuspolicy.ActiveUA)
+		require.NotContains(t, parents, statuspolicy.InactiveUA)
+		require.Contains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test inactive", func(t *testing.T) {
 		err = agencyAdmin.UpdateAgencyStatus(transactionContext, agency.Name, model.InactiveATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
-		require.NotContains(t, parents, status.ActiveUA)
-		require.Contains(t, parents, status.InactiveUA)
-		require.NotContains(t, parents, status.PendingUA)
+		require.NotContains(t, parents, statuspolicy.ActiveUA)
+		require.Contains(t, parents, statuspolicy.InactiveUA)
+		require.NotContains(t, parents, statuspolicy.PendingUA)
 	})
 }

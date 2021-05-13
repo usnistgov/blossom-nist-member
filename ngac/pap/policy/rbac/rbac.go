@@ -3,6 +3,7 @@ package rbac
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 )
 
 const (
@@ -16,6 +17,33 @@ const (
 	AgenciesUA              = "Agencies_UA"
 	LicensesOA              = "Licenses"
 )
+
+var SystemOwnerPermissions = pip.ToOps(
+	operations.ViewAgency,
+	operations.ViewAgencyLicenses,
+	operations.UploadATO,
+	operations.ViewATO,
+	operations.ViewMSPID,
+	operations.ViewUsers,
+	operations.ViewStatus)
+
+var SystemAdminLicensesPermissions = pip.ToOps(
+	operations.ViewLicense,
+	operations.CheckOutLicense,
+	operations.CheckInLicense)
+
+var SystemAdminAgenciesPermissions = pip.ToOps(
+	operations.ViewAgency,
+	operations.ViewAgencyLicenses,
+)
+
+var AcqSpecLicensesPermissions = pip.ToOps(
+	operations.ViewLicense)
+
+var AcqSpecAgenciesPermissions = pip.ToOps(
+	operations.ViewAgencyLicenses,
+	operations.ViewAgency,
+	operations.ViewStatus)
 
 func Configure(graph pip.Graph, adminUA string) error {
 	// create RBAC policy class node
@@ -109,17 +137,27 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning %q to %q", acqSpecUA.Name, rbacUA.Name)
 	}
 
-	// system owners can view "agencies"
+	// system owners are only associated with agencies
 	if err = graph.Associate(systemOwnersUA.Name, agenciesOA.Name, SystemOwnerPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", systemOwnersUA.Name, agenciesOA.Name)
 	}
-	// system admins can read, assign, deassign (assign and deassign for the license keys) "licenses"
-	if err = graph.Associate(systemAdminsUA.Name, licensesOA.Name, SystemAdminPermissions); err != nil {
+
+	// system admins are associated with licenses and agencies
+	if err = graph.Associate(systemAdminsUA.Name, licensesOA.Name, SystemAdminLicensesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, licensesOA.Name)
 	}
-	// acquisition specialists can audit agency licenses
-	if err = graph.Associate(acqSpecUA.Name, licensesOA.Name, AcqSpecPermissions); err != nil {
+
+	if err = graph.Associate(systemAdminsUA.Name, agenciesOA.Name, SystemAdminAgenciesPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, agenciesOA.Name)
+	}
+
+	// acquisition specialists are associated with licenses and agencies
+	if err = graph.Associate(acqSpecUA.Name, licensesOA.Name, AcqSpecLicensesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, licensesOA.Name)
+	}
+
+	if err = graph.Associate(acqSpecUA.Name, agenciesOA.Name, AcqSpecAgenciesPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, agenciesOA.Name)
 	}
 
 	return nil

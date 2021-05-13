@@ -95,7 +95,7 @@ func (b *BlossomSmartContract) UploadATO(ctx contractapi.TransactionContextInter
 	}
 
 	// begin NGAC
-	if err := pdp.NewAgencyDecider().UploadATO(ctx, agencyName, ato); errors.Is(err, pdp.ErrAccessDenied) {
+	if err := pdp.NewAgencyDecider().UploadATO(ctx, agencyName); errors.Is(err, pdp.ErrAccessDenied) {
 		return err
 	} else if err != nil {
 		return errors.Wrapf(err, "error checking if user can update ATO")

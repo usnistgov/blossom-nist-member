@@ -105,7 +105,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 	}
 
 	if err = graph.Associate(pendingUA.Name, agenciesOA.Name, pip.ToOps(operations.ViewAgency, operations.UploadATO,
-		operations.ViewATO, operations.ViewMSPID, operations.ViewUsers, operations.ViewStatus)); err != nil {
+		operations.ViewATO, operations.ViewMSPID, operations.ViewUsers, operations.ViewStatus, operations.ViewAgencyLicenses)); err != nil {
 		return errors.Wrapf(err, "error associating active user attribute with agencies object attribute")
 	}
 

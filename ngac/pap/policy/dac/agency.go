@@ -3,11 +3,11 @@ package dac
 import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
+	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
 )
 
 type AgencyPolicy struct {
@@ -18,7 +18,7 @@ func NewAgencyPolicy(graph pip.Graph) AgencyPolicy {
 	return AgencyPolicy{graph: graph}
 }
 
-func (a AgencyPolicy) RequestAccount(_ contractapi.TransactionContextInterface, agency model.Agency) error {
+func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
 	// TODO using the PAP to avoid permission check for now as obligations are not yet implemented.  Once obligations are
 	// implemented the admin can create one to create the system owners and when executed will be executed on behalf of
 	// the admin not the system owner requesting an account
@@ -92,8 +92,15 @@ func (a AgencyPolicy) RequestAccount(_ contractapi.TransactionContextInterface, 
 
 	// create an object to represent the agency
 	var agencyInfo pip.Node
-	if agencyInfo, err = a.graph.CreateNode(agencypap.InfoObjectName(agency.Name), pip.Object, map[string]string{"agency": agency.Name, "type": "agency"}); err != nil {
+	if agencyInfo, err = a.graph.CreateNode(agencypap.InfoObjectName(agency.Name), pip.Object,
+		map[string]string{"agency": agency.Name, "type": "agency"}); err != nil {
 		return fmt.Errorf("error creating agency info object attribute in NGAC: %w", err)
+	}
+
+	// create an object attribute for the agency licenses
+	var licensesOA pip.Node
+	if licensesOA, err = a.graph.CreateNode(licensepap.LicensesObjectAttribute(agency.Name), pip.ObjectAttribute, nil); err != nil {
+		return errors.Wrapf(err, "error creating licenses object attribute for agency %s", agency.Name)
 	}
 
 	// assign the agency oa to the dac oa
@@ -101,7 +108,12 @@ func (a AgencyPolicy) RequestAccount(_ contractapi.TransactionContextInterface, 
 		return fmt.Errorf("error assigning the agency info object to the agency object attribute")
 	}
 
-	// associate the agency ua and oa
+	// assign the licenses OA to the agency oa
+	if err = a.graph.Assign(licensesOA.Name, agencyOA.Name); err != nil {
+		return fmt.Errorf("error assigning the agency licenses object attribute to the agency object attribute")
+	}
+
+	// associate the agency ua and oa with all ops because RBAC will enforce permissions for each user's role
 	if err = a.graph.Associate(agencyUA.Name, agencyOA.Name, pip.ToOps(pip.AllOps)); err != nil {
 		return fmt.Errorf("error associating agency user attribute and agency object attribute")
 	}

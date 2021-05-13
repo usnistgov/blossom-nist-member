@@ -2,7 +2,6 @@ package status
 
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
@@ -16,7 +15,7 @@ func NewAgencyPolicy(graph pip.Graph) AgencyPolicy {
 	return AgencyPolicy{graph: graph}
 }
 
-func (a AgencyPolicy) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
+func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
 	// assign users to pending
 	agencyUA := agencypap.UserAttributeName(agency.Name)
 	if err := a.graph.Assign(agencyUA, PendingUA); err != nil {
@@ -32,11 +31,7 @@ func (a AgencyPolicy) RequestAccount(ctx contractapi.TransactionContextInterface
 	return nil
 }
 
-func (a AgencyPolicy) UploadATO(ctx contractapi.TransactionContextInterface, agency string, ato string) error {
-	return nil
-}
-
-func (a AgencyPolicy) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agencyName string, status model.Status) error {
+func (a AgencyPolicy) UpdateAgencyStatus(agencyName string, status model.Status) error {
 	switch status {
 	case model.Approved:
 		return a.approved(agencyName)
@@ -111,12 +106,4 @@ func (a AgencyPolicy) inactive(agencyName string) error {
 	}
 
 	return nil
-}
-
-func (a AgencyPolicy) Agencies(ctx contractapi.TransactionContextInterface) ([]*model.Agency, error) {
-	return nil, nil
-}
-
-func (a AgencyPolicy) Agency(ctx contractapi.TransactionContextInterface, agency string) (*model.Agency, error) {
-	return nil, nil
 }

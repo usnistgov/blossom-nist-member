@@ -5,18 +5,20 @@ import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
-	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/dac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
-	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
-	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/status"
+	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
+	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
+	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
 )
 
 type AgencyAdmin struct {
 	graph pip.Graph
 }
 
-func NewAgencyAdmin() *AgencyAdmin {
-	return &AgencyAdmin{}
+func NewAgencyAdmin(ctx contractapi.TransactionContextInterface) (*AgencyAdmin, error) {
+	aa := &AgencyAdmin{}
+	err := aa.setup(ctx)
+	return aa, err
 }
 
 func (a *AgencyAdmin) setup(ctx contractapi.TransactionContextInterface) error {
@@ -30,23 +32,27 @@ func (a *AgencyAdmin) setup(ctx contractapi.TransactionContextInterface) error {
 	return nil
 }
 
+func (a *AgencyAdmin) Graph() pip.Graph {
+	return a.graph
+}
+
 func (a *AgencyAdmin) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
 	if err := a.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency admin")
 	}
 
 	dacPolicy := dacpolicy.NewAgencyPolicy(a.graph)
-	if err := dacPolicy.RequestAccount(ctx, agency); err != nil {
+	if err := dacPolicy.RequestAccount(agency); err != nil {
 		return errors.Wrap(err, "error configuring account DAC policy")
 	}
 
 	rbacPolicy := rbacpolicy.NewAgencyPolicy(a.graph)
-	if err := rbacPolicy.RequestAccount(ctx, agency); err != nil {
+	if err := rbacPolicy.RequestAccount(agency); err != nil {
 		return errors.Wrap(err, "error configuring account RBAC policy")
 	}
 
 	statusPolicy := statuspolicy.NewAgencyPolicy(a.graph)
-	if err := statusPolicy.RequestAccount(ctx, agency); err != nil {
+	if err := statusPolicy.RequestAccount(agency); err != nil {
 		return errors.Wrap(err, "error configuring account Status policy")
 	}
 
@@ -59,7 +65,7 @@ func (a *AgencyAdmin) UpdateAgencyStatus(ctx contractapi.TransactionContextInter
 	}
 
 	statusPolicy := statuspolicy.NewAgencyPolicy(a.graph)
-	if err := statusPolicy.UpdateAgencyStatus(ctx, agency, status); err != nil {
+	if err := statusPolicy.UpdateAgencyStatus(agency, status); err != nil {
 		return errors.Wrap(err, "error updating agency status")
 	}
 

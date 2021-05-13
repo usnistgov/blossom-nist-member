@@ -7,22 +7,26 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/rbac"
+	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
+	"time"
 )
 
 type LicenseDecider struct {
-	user    string
+	// user is the user that is currently executing a function
+	user string
+	// pap is the policy administration point for licenses
+	pap *pap.LicenseAdmin
+	// decider is the NGAC decider used to make decisions
 	decider pdp.Decider
 }
 
 // NewLicenseDecider creates a new LicenseDecider with the user from the ctx and a NGAC Decider using the NGAC graph
 // from the ledger.
-func NewLicenseDecider() LicenseDecider {
-	return LicenseDecider{}
+func NewLicenseDecider() *LicenseDecider {
+	return &LicenseDecider{}
 }
 
-func (l LicenseDecider) setup(ctx contractapi.TransactionContextInterface) error {
+func (l *LicenseDecider) setup(ctx contractapi.TransactionContextInterface) error {
 	user, err := GetUser(ctx)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
@@ -30,17 +34,18 @@ func (l LicenseDecider) setup(ctx contractapi.TransactionContextInterface) error
 
 	l.user = user
 
-	graph, err := ledger.GetGraph(ctx)
+	// initialize the license policy administration point
+	l.pap, err = pap.NewLicenseAdmin(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error retrieving ngac graph from ledger")
+		return errors.Wrapf(err, "error initializing agency administraion point")
 	}
 
-	l.decider = pdp.NewDecider(graph)
+	l.decider = pdp.NewDecider(l.pap.Graph())
 
 	return nil
 }
 
-func (l LicenseDecider) FilterLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
+func (l *LicenseDecider) FilterLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -48,15 +53,27 @@ func (l LicenseDecider) FilterLicense(ctx contractapi.TransactionContextInterfac
 	return l.filterLicense(license)
 }
 
-func (l LicenseDecider) filterLicense(license *model.License) error {
+func (l *LicenseDecider) filterLicense(license *model.License) error {
 	permissions, err := l.decider.ListPermissions(l.user, license.ID)
 	if err != nil {
 		return errors.Wrapf(err, "error getting permissions for user %s on license %s", l.user, license.Name)
 	}
 
-	// if the user cannot view license on the license object attribute, return an empty license
 	if !permissions.Contains(operations.ViewLicense) {
-		license = &model.License{}
+		// if the user cannot view license on the license object attribute, return an empty license
+		// initialize array and map values to avoid fabric schema errors
+		license = &model.License{
+			ID:             "",
+			Name:           "",
+			TotalAmount:    0,
+			Available:      0,
+			Cost:           0,
+			OnboardingDate: time.Time{},
+			Expiration:     time.Time{},
+			AllKeys:        make([]string, 0),
+			AvailableKeys:  make([]string, 0),
+			CheckedOut:     make(map[string]map[string]time.Time),
+		}
 		return nil
 	}
 
@@ -68,10 +85,14 @@ func (l LicenseDecider) filterLicense(license *model.License) error {
 		license.AvailableKeys = make([]string, 0)
 	}
 
+	if !permissions.Contains(operations.ViewCheckedOut) {
+		license.CheckedOut = make(map[string]map[string]time.Time)
+	}
+
 	return nil
 }
 
-func (l LicenseDecider) FilterLicenses(ctx contractapi.TransactionContextInterface, licenses []*model.License) error {
+func (l *LicenseDecider) FilterLicenses(ctx contractapi.TransactionContextInterface, licenses []*model.License) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -85,23 +106,22 @@ func (l LicenseDecider) FilterLicenses(ctx contractapi.TransactionContextInterfa
 	return nil
 }
 
-func (l LicenseDecider) OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
+func (l *LicenseDecider) OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
 	// check user can onboard license
-	if ok, err := l.decider.HasPermissions(l.user, rbac.LicensesOA, operations.OnboardLicense); err != nil {
+	if ok, err := l.decider.HasPermissions(l.user, rbacpolicy.LicensesOA, operations.OnboardLicense); err != nil {
 		return errors.Wrapf(err, "error checking if user %s can onboard a license", l.user)
 	} else if !ok {
 		return ErrAccessDenied
 	}
 
-	licenseAdmin := pap.NewLicenseAdmin()
-	return licenseAdmin.OnboardLicense(ctx, license)
+	return l.pap.OnboardLicense(ctx, license)
 }
 
-func (l LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
+func (l *LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -113,28 +133,35 @@ func (l LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInterf
 		return ErrAccessDenied
 	}
 
-	return nil
+	return l.pap.OffboardLicense(ctx, licenseID)
 }
 
-func (l LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
+func (l *LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
 	// check user can checkout license
-	if ok, err := l.decider.HasPermissions(l.user, licenseID, operations.OffboardLicense); err != nil {
-		return errors.Wrapf(err, "error checking if user %s can offboard a license", l.user)
+	if ok, err := l.decider.HasPermissions(l.user, licenseID, operations.CheckOutLicense); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can checkout a license", l.user)
 	} else if !ok {
 		return ErrAccessDenied
 	}
 
-	return nil
+	return l.pap.CheckoutLicense(ctx, agencyName, licenseID, keys)
 }
 
-func (l LicenseDecider) CheckinLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
+func (l *LicenseDecider) CheckinLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
-	return nil
+	// check user can checkin license
+	if ok, err := l.decider.HasPermissions(l.user, licenseID, operations.CheckInLicense); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can checkin a license", l.user)
+	} else if !ok {
+		return ErrAccessDenied
+	}
+
+	return l.pap.CheckinLicense(ctx, agencyName, licenseID, keys)
 }

@@ -12,7 +12,7 @@ const (
 	ObjectAttributeName = "Status_OA"
 	AgenciesOA          = "status_agencies_OA"
 	LicensesOA          = "status_licenses_OA"
-	SwidsOA             = "status_swids_OA"
+	SwIDsOA             = "status_swids_OA"
 	ActiveUA            = "active"
 	PendingUA           = "pending"
 	InactiveUA          = "inactive"
@@ -63,7 +63,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error creating licenses object attribute in status policy class")
 	}
 
-	swidsOA, err := graph.CreateNode(SwidsOA, pip.ObjectAttribute, nil)
+	swidsOA, err := graph.CreateNode(SwIDsOA, pip.ObjectAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating swids object attribute in status policy class")
 	}

@@ -48,6 +48,11 @@ func (l *LicenseAdmin) OnboardLicense(ctx contractapi.TransactionContextInterfac
 		return errors.Wrap(err, "error configuring license onboard RBAC policy")
 	}
 
+	dacPolicy := dacpolicy.NewLicensePolicy(l.graph)
+	if err = dacPolicy.OnboardLicense(licenseOA); err != nil {
+		return errors.Wrap(err, "error configuring license onboard RBAC policy")
+	}
+
 	statusPolicy := statuspolicy.NewLicensePolicy(l.graph)
 	if err = statusPolicy.OnboardLicense(licenseOA); err != nil {
 		return errors.Wrap(err, "error configuring license onboard Status policy")

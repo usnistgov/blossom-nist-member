@@ -14,6 +14,6 @@ func NewSwIDPolicy(graph pip.Graph) SwIDPolicy {
 }
 
 func (s SwIDPolicy) ReportSwID(primaryTag string) error {
-	err := s.graph.Assign(primaryTag, SwidsOA)
+	err := s.graph.Assign(primaryTag, SwIDsOA)
 	return errors.Wrap(err, "error assigning swid node to swid container in status policy class")
 }

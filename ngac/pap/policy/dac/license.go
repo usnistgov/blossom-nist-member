@@ -16,6 +16,15 @@ func NewLicensePolicy(graph pip.Graph) LicensePolicy {
 	return LicensePolicy{graph: graph}
 }
 
+func (l LicensePolicy) OnboardLicense(licenseOA pip.Node) error {
+	// assign the license OA to the dac licenses container
+	if err := l.graph.Assign(licenseOA.Name, LicensesOA); err != nil {
+		return errors.Wrapf(err, "error assigning the license to the dac licenses container")
+	}
+
+	return nil
+}
+
 func (l LicensePolicy) CheckoutLicense(agencyName string, licenseID string, keys map[string]time.Time) error {
 	// assign the objects representing the keys to the agency making the request's DAC object attribute
 	for key := range keys {

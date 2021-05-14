@@ -101,5 +101,5 @@ func TestReportSwID(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, parents, "Org2_OA")
 	require.Contains(t, parents, rbac.SwIDsOA)
-	require.Contains(t, parents, status.SwidsOA)
+	require.Contains(t, parents, status.SwIDsOA)
 }

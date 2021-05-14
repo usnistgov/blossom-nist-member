@@ -2,6 +2,7 @@ package pap
 
 import (
 	"encoding/json"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
 	"testing"
 	"time"
 
@@ -56,6 +57,7 @@ func TestOnboardLicense(t *testing.T) {
 	parents, err := graph.GetParents(licensepap.LicenseObjectAttribute(license.ID))
 	require.NoError(t, err)
 	require.Contains(t, parents, rbac.LicensesOA)
+	require.Contains(t, parents, dac.LicensesOA)
 	require.Contains(t, parents, status.LicensesOA)
 
 	children, err := graph.GetChildren(licensepap.LicenseObjectAttribute(license.ID))

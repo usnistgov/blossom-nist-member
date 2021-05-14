@@ -31,7 +31,8 @@ var SystemOwnerPermissions = pip.ToOps(
 var SystemAdminLicensesPermissions = pip.ToOps(
 	operations.ViewLicense,
 	operations.CheckOutLicense,
-	operations.CheckInLicense)
+	operations.CheckInLicense,
+	operations.ReportSwid)
 
 var SystemAdminAgenciesPermissions = pip.ToOps(
 	operations.ViewAgency,

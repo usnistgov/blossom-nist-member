@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-var (
-	license = &model.License{
+func TestCheckoutLicense(t *testing.T) {
+	license := &model.License{
 		ID:             "123",
 		Name:           "my-license",
 		TotalAmount:    3,
@@ -21,7 +21,7 @@ var (
 		CheckedOut:     make(map[string]map[string]time.Time),
 	}
 
-	agency = &model.Agency{
+	agency := &model.Agency{
 		Name:     "Agency1",
 		ATO:      "",
 		MSPID:    "Agency1MSP",
@@ -29,9 +29,7 @@ var (
 		Status:   "",
 		Licenses: make(map[string]map[string]time.Time),
 	}
-)
 
-func TestCheckoutLicense(t *testing.T) {
 	keys, err := checkoutLicense(agency, license, 2)
 	require.NoError(t, err)
 
@@ -50,6 +48,28 @@ func TestCheckoutLicense(t *testing.T) {
 }
 
 func TestCheckInLicense(t *testing.T) {
+	license := &model.License{
+		ID:             "123",
+		Name:           "my-license",
+		TotalAmount:    3,
+		Available:      3,
+		Cost:           20,
+		OnboardingDate: time.Time{},
+		Expiration:     time.Time{},
+		AllKeys:        []string{"1", "2", "3"},
+		AvailableKeys:  []string{"1", "2", "3"},
+		CheckedOut:     make(map[string]map[string]time.Time),
+	}
+
+	agency := &model.Agency{
+		Name:     "Agency1",
+		ATO:      "",
+		MSPID:    "Agency1MSP",
+		Users:    model.Users{},
+		Status:   "",
+		Licenses: make(map[string]map[string]time.Time),
+	}
+
 	t.Run("test return all keys", func(t *testing.T) {
 		_, err := checkoutLicense(agency, license, 2)
 		require.NoError(t, err)

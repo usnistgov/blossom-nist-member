@@ -25,5 +25,5 @@ const SwIDPrefix = "swid:"
 
 // SwIDKey returns the key for a swid tag on the ledger.  SwIDs are stored with the format: "swid:<primary_tag>".
 func SwIDKey(name string) string {
-	return fmt.Sprintf("%s%s", LicensePrefix, name)
+	return fmt.Sprintf("%s%s", SwIDPrefix, name)
 }

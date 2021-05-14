@@ -2,7 +2,9 @@ package pdp
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
+	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/api/mocks"
 	"testing"
@@ -161,4 +163,17 @@ func TestInitGraph(t *testing.T) {
 	err = adminDecider.InitGraph(transactionContext)
 	// an error should occur because a1_system_owner cannot init blossom
 	require.Error(t, err)
+}
+
+func SetUser(ctx *mocks.TransactionContext, certificate *x509.Certificate, mspid string) {
+	clientIdentity := &mocks.ClientIdentity{}
+	clientIdentity.GetMSPIDReturns(mspid, nil)
+	clientIdentity.GetX509CertificateReturns(certificate, nil)
+	ctx.GetClientIdentityReturns(clientIdentity)
+}
+
+func SetGraphState(t *testing.T, stub *mocks.ChaincodeStub, graph pip.Graph) {
+	graphBytes, err := json.Marshal(graph)
+	require.NoError(t, err)
+	stub.GetStateReturns(graphBytes, nil)
 }

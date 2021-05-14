@@ -3,8 +3,10 @@ package api
 import (
 	"encoding/json"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
+	"strings"
 )
 
 type (
@@ -12,13 +14,13 @@ type (
 	SwIDInterface interface {
 		// ReportSwID is used by Agencies to report to Blossom when a software user has installed a piece of software associated
 		// with a license that agency has checked out. This function will invoke NGAc chaincode to add the SwID to the NGAC graph.
-		ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID) error
+		ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
 		GetSwID(ctx contractapi.TransactionContextInterface, primaryTag string) (*model.SwID, error)
 
-		// GetLicenseSwIDs returns the primary tags of the SwIDs that are associated with the given license ID.
-		GetLicenseSwIDs(ctx contractapi.TransactionContextInterface) ([]string, error)
+		// GetSwIDsAssociatedWithLicense returns the SwIDs that are associated with the given license key.
+		GetSwIDsAssociatedWithLicense(ctx contractapi.TransactionContextInterface, licenseKey string) ([]*model.SwID, error)
 	}
 )
 
@@ -35,7 +37,7 @@ func (b *BlossomSmartContract) swidExists(ctx contractapi.TransactionContextInte
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID) error {
+func (b *BlossomSmartContract) ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error {
 	if ok, err := b.swidExists(ctx, swid.PrimaryTag); err != nil {
 		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", swid.PrimaryTag)
 	} else if ok {
@@ -78,6 +80,37 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 	return &model.SwID{}, nil
 }
 
-func (b *BlossomSmartContract) GetLicenseSwIDs(ctx contractapi.TransactionContextInterface) ([]string, error) {
-	return nil, nil
+func (b *BlossomSmartContract) GetSwIDsAssociatedWithLicense(ctx contractapi.TransactionContextInterface, licenseID string) ([]*model.SwID, error) {
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	swids := make([]*model.SwID, 0)
+	for resultsIterator.HasNext() {
+		var queryResponse *queryresult.KV
+		if queryResponse, err = resultsIterator.Next(); err != nil {
+			return nil, err
+		}
+
+		// agencies on the ledger begin with the agency prefix -- ignore other assets
+		if !strings.HasPrefix(queryResponse.Key, model.SwIDPrefix) {
+			continue
+		}
+
+		swid := &model.SwID{}
+		if err = json.Unmarshal(queryResponse.Value, swid); err != nil {
+			return nil, err
+		}
+
+		// continue if the license key associated with this swid tag matches the given key
+		if swid.License != licenseID {
+			continue
+		}
+
+		swids = append(swids, swid)
+	}
+
+	return swids, nil
 }

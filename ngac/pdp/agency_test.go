@@ -1,7 +1,6 @@
 package pdp
 
 import (
-	"encoding/json"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/api/mocks"
@@ -22,13 +21,7 @@ func TestUploadATO(t *testing.T) {
 		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
 		require.NoError(t, err)
 
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemOwnerCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
 
 		err = decider.UploadATO(transactionContext, "Org2")
 		require.NoError(t, err)
@@ -42,13 +35,7 @@ func TestUploadATO(t *testing.T) {
 		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
 		require.NoError(t, err)
 
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemAdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 
 		err = decider.UploadATO(transactionContext, "Org2")
 		require.Error(t, err)
@@ -66,13 +53,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
 		require.NoError(t, err)
 
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemOwnerCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
 
 		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
 		require.Error(t, err)
@@ -86,13 +67,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
 		require.NoError(t, err)
 
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemAdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 
 		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
 		require.Error(t, err)
@@ -106,13 +81,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
 		require.NoError(t, err)
 
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org1MSP", nil)
-		clientIdentity.GetX509CertificateReturns(Org1AdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
 
 		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
 		require.NoError(t, err)
@@ -131,13 +100,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemOwnerCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
 
 		agency := &model.Agency{
 			Name:  "Org2",
@@ -157,6 +120,8 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
+		err = decider.setup(transactionContext)
+		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
 		require.Equal(t, "Org2", agency.Name)
@@ -185,13 +150,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemAdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 
 		agency := &model.Agency{
 			Name:  "Org2",
@@ -211,6 +170,8 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
+		err = decider.setup(transactionContext)
+		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
 		require.Equal(t, "Org2", agency.Name)
@@ -235,13 +196,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org1MSP", nil)
-		clientIdentity.GetX509CertificateReturns(Org1AdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
-
-		err = decider.setup(transactionContext)
-		require.NoError(t, err)
+		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
 
 		agency := &model.Agency{
 			Name:  "Org2",
@@ -261,6 +216,8 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
+		err = decider.setup(transactionContext)
+		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
 		require.Equal(t, "Org2", agency.Name)
@@ -302,23 +259,15 @@ func initAgencyTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mock
 		Licenses: make(map[string]map[string]time.Time),
 	}
 
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
+	SetGraphState(t, stub, graph)
 
 	// add account as the a1 system owner
-	clientIdentity := &mocks.ClientIdentity{}
-	clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-	clientIdentity.GetX509CertificateReturns(A1SystemOwnerCert(), nil)
-	ctx.GetClientIdentityReturns(clientIdentity)
-	stub.GetStateReturns(graphBytes, nil)
-
+	SetUser(ctx, A1SystemOwnerCert(), "Org2MSP")
 	agencyDecider := NewAgencyDecider()
 	err = agencyDecider.RequestAccount(ctx, agency)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(agencyDecider.pap.Graph())
-	require.NoError(t, err)
-	stub.GetStateReturns(graphBytes, nil)
+	SetGraphState(t, stub, agencyDecider.pap.Graph())
 
 	return nil
 }

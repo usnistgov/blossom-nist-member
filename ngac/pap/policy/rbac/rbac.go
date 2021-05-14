@@ -16,6 +16,7 @@ const (
 	AgenciesOA              = "Agencies"
 	AgenciesUA              = "Agencies_UA"
 	LicensesOA              = "Licenses"
+	SwIDsOA                 = "SwIDs"
 )
 
 var SystemOwnerPermissions = pip.ToOps(
@@ -44,6 +45,13 @@ var AcqSpecAgenciesPermissions = pip.ToOps(
 	operations.ViewAgencyLicenses,
 	operations.ViewAgency,
 	operations.ViewStatus)
+
+var SystemAdminSwidPermissions = pip.ToOps(
+	operations.ViewSwid,
+	operations.ReportSwid)
+
+var AcqSpecswidPermissions = pip.ToOps(
+	operations.ViewSwid)
 
 func Configure(graph pip.Graph, adminUA string) error {
 	// create RBAC policy class node
@@ -110,6 +118,15 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning %q to %q", licensesOA.Name, rbacOA.Name)
 	}
 
+	swidsOA, err := graph.CreateNode(SwIDsOA, pip.ObjectAttribute, nil)
+	if err != nil {
+		return errors.Wrapf(err, "error creating swids base object attribute")
+	}
+
+	if err = graph.Assign(swidsOA.Name, rbacOA.Name); err != nil {
+		return errors.Wrapf(err, "error assigning %q to %q", swidsOA.Name, rbacOA.Name)
+	}
+
 	systemOwnersUA, err := graph.CreateNode(SystemOwnerUA, pip.UserAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating SystemOwners user attribute")
@@ -151,6 +168,10 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, agenciesOA.Name)
 	}
 
+	if err = graph.Associate(systemAdminsUA.Name, swidsOA.Name, SystemAdminSwidPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, swidsOA.Name)
+	}
+
 	// acquisition specialists are associated with licenses and agencies
 	if err = graph.Associate(acqSpecUA.Name, licensesOA.Name, AcqSpecLicensesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, licensesOA.Name)
@@ -158,6 +179,10 @@ func Configure(graph pip.Graph, adminUA string) error {
 
 	if err = graph.Associate(acqSpecUA.Name, agenciesOA.Name, AcqSpecAgenciesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, agenciesOA.Name)
+	}
+
+	if err = graph.Associate(acqSpecUA.Name, swidsOA.Name, AcqSpecswidPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, swidsOA.Name)
 	}
 
 	return nil

@@ -12,6 +12,7 @@ const (
 	ObjectAttributeName = "Status_OA"
 	AgenciesOA          = "status_agencies_OA"
 	LicensesOA          = "status_licenses_OA"
+	SwidsOA             = "status_swids_OA"
 	ActiveUA            = "active"
 	PendingUA           = "pending"
 	InactiveUA          = "inactive"
@@ -62,12 +63,21 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error creating licenses object attribute in status policy class")
 	}
 
+	swidsOA, err := graph.CreateNode(SwidsOA, pip.ObjectAttribute, nil)
+	if err != nil {
+		return errors.Wrapf(err, "error creating swids object attribute in status policy class")
+	}
+
 	if err = graph.Assign(agenciesOA.Name, statusOA.Name); err != nil {
 		return errors.Wrapf(err, "error assigning agencies object attribute to status object attribute")
 	}
 
 	if err = graph.Assign(licensesOA.Name, statusOA.Name); err != nil {
 		return errors.Wrapf(err, "error assigning licenses object attribute to status object attribute")
+	}
+
+	if err = graph.Assign(swidsOA.Name, statusOA.Name); err != nil {
+		return errors.Wrapf(err, "error assigning swids object attribute to status object attribute")
 	}
 
 	// create status user attributes: active, pending, inactive
@@ -107,6 +117,13 @@ func Configure(graph pip.Graph, adminUA string) error {
 	if err = graph.Associate(pendingUA.Name, agenciesOA.Name, pip.ToOps(operations.ViewAgency, operations.UploadATO,
 		operations.ViewATO, operations.ViewMSPID, operations.ViewUsers, operations.ViewStatus, operations.ViewAgencyLicenses)); err != nil {
 		return errors.Wrapf(err, "error associating active user attribute with agencies object attribute")
+	}
+
+	if err = graph.Associate(activeUA.Name, licensesOA.Name, pip.ToOps(pip.AllOps)); err != nil {
+		return errors.Wrapf(err, "error associating active user attribute with licenses object attribute")
+	}
+	if err = graph.Associate(activeUA.Name, swidsOA.Name, pip.ToOps(pip.AllOps)); err != nil {
+		return errors.Wrapf(err, "error associating active user attribute with swids object attribute")
 	}
 
 	return nil

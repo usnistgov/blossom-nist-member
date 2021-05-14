@@ -21,5 +21,8 @@ const (
 	UploadATO          = "upload_ato"
 	RemoveAgency       = "remove_agency"
 
+	ViewSwid   = "view_swid"
+	ReportSwid = "report_swid"
+
 	InitBlossom = "init_blossom"
 )

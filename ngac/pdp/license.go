@@ -47,7 +47,7 @@ func (l *LicenseDecider) setup(ctx contractapi.TransactionContextInterface) erro
 
 func (l *LicenseDecider) FilterLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
 	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up license decider")
 	}
 
 	return l.filterLicense(license)

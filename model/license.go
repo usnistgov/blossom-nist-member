@@ -31,9 +31,7 @@ type (
 	}
 )
 
-const (
-	LicensePrefix = "license:"
-)
+const LicensePrefix = "license:"
 
 // LicenseKey returns the key for a license on the ledger.  Licenses are stored with the format: "license:<license_id>".
 func LicenseKey(name string) string {

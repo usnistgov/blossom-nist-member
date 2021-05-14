@@ -1,3 +1,5 @@
+// Package policy contains helper methods for administering the NGAC policy for blossom.  These functions are not meant
+// to be used outside the context of this package.
 package policy
 
 import (

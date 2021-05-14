@@ -9,6 +9,7 @@ import (
 	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
 	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
+	"time"
 )
 
 type LicenseAdmin struct {
@@ -37,17 +38,18 @@ func (l *LicenseAdmin) Graph() pip.Graph {
 }
 
 func (l *LicenseAdmin) OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
-	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
-	}
+	var (
+		licenseOA pip.Node
+		err       error
+	)
 
 	rbacPolicy := rbacpolicy.NewLicensePolicy(l.graph)
-	if err := rbacPolicy.OnboardLicense(license); err != nil {
+	if licenseOA, err = rbacPolicy.OnboardLicense(license); err != nil {
 		return errors.Wrap(err, "error configuring license onboard RBAC policy")
 	}
 
 	statusPolicy := statuspolicy.NewLicensePolicy(l.graph)
-	if err := statusPolicy.OnboardLicense(ctx, license); err != nil {
+	if err = statusPolicy.OnboardLicense(licenseOA); err != nil {
 		return errors.Wrap(err, "error configuring license onboard Status policy")
 	}
 
@@ -55,28 +57,16 @@ func (l *LicenseAdmin) OnboardLicense(ctx contractapi.TransactionContextInterfac
 }
 
 func (l *LicenseAdmin) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
-	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
-	}
-
 	rbacPolicy := rbacpolicy.NewLicensePolicy(l.graph)
 	if err := rbacPolicy.OffboardLicense(licenseID); err != nil {
 		return errors.Wrap(err, "error configuring license offboard RBAC policy")
 	}
 
-	statusPolicy := statuspolicy.NewLicensePolicy(l.graph)
-	if err := statusPolicy.OffboardLicense(ctx, licenseID); err != nil {
-		return errors.Wrap(err, "error configuring license offboard Status policy")
-	}
-
 	return ledger.UpdateGraphState(ctx, l.graph)
 }
 
-func (l *LicenseAdmin) CheckoutLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
-	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
-	}
-
+func (l *LicenseAdmin) CheckoutLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string,
+	keys map[string]time.Time) error {
 	dacPolicy := dacpolicy.NewLicensePolicy(l.graph)
 	if err := dacPolicy.CheckoutLicense(agencyName, licenseID, keys); err != nil {
 		return errors.Wrap(err, "error checking out license under the DAC policy")
@@ -85,11 +75,8 @@ func (l *LicenseAdmin) CheckoutLicense(ctx contractapi.TransactionContextInterfa
 	return ledger.UpdateGraphState(ctx, l.graph)
 }
 
-func (l *LicenseAdmin) CheckinLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
-	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
-	}
-
+func (l *LicenseAdmin) CheckinLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string,
+	keys []string) error {
 	dacPolicy := dacpolicy.NewLicensePolicy(l.graph)
 	if err := dacPolicy.CheckinLicense(agencyName, licenseID, keys); err != nil {
 		return errors.Wrap(err, "error checking in license under the DAC policy")

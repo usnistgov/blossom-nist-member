@@ -2,8 +2,7 @@ package status
 
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/usnistgov/blossom/chaincode/model"
+	"github.com/pkg/errors"
 )
 
 type LicensePolicy struct {
@@ -14,11 +13,11 @@ func NewLicensePolicy(graph pip.Graph) LicensePolicy {
 	return LicensePolicy{graph: graph}
 }
 
-func (l LicensePolicy) OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {
+func (l LicensePolicy) OnboardLicense(licenseNode pip.Node) error {
+	// assign the license object attribute to the status licenses object attribute
+	if err := l.graph.Assign(licenseNode.Name, LicensesOA); err != nil {
+		return errors.Wrap(err, "error assigning the license node to the Status policy's licenses object attribute")
+	}
 
-	return nil
-}
-
-func (l LicensePolicy) OffboardLicense(ctx contractapi.TransactionContextInterface, licenseID string) error {
 	return nil
 }

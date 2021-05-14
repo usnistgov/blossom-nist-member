@@ -15,7 +15,7 @@ func NewLicensePolicy(graph pip.Graph) LicensePolicy {
 	return LicensePolicy{graph: graph}
 }
 
-func (l LicensePolicy) OnboardLicense(license *model.License) error {
+func (l LicensePolicy) OnboardLicense(license *model.License) (pip.Node, error) {
 	// create an object attribute for the license
 	var (
 		licenseOA pip.Node
@@ -23,27 +23,27 @@ func (l LicensePolicy) OnboardLicense(license *model.License) error {
 	)
 
 	if licenseOA, err = l.graph.CreateNode(licensepap.LicenseObjectAttribute(license.ID), pip.ObjectAttribute, nil); err != nil {
-		return errors.Wrapf(err, "error creating object attribute for license %s", license.ID)
+		return pip.Node{}, errors.Wrapf(err, "error creating object attribute for license %s", license.ID)
 	}
 
 	// create objects for the keys and assign to the license
 	for _, key := range license.AllKeys {
 		var keyNode pip.Node
 		if keyNode, err = l.graph.CreateNode(licensepap.LicenseKeyObject(license.ID, key), pip.Object, nil); err != nil {
-			return errors.Wrapf(err, "error creating object for key %s", key)
+			return pip.Node{}, errors.Wrapf(err, "error creating object for key %s", key)
 		}
 
 		if err = l.graph.Assign(keyNode.Name, licenseOA.Name); err != nil {
-			return errors.Wrapf(err, "error assigning key object %s to license %s object attribute", key, license.ID)
+			return pip.Node{}, errors.Wrapf(err, "error assigning key object %s to license %s object attribute", key, license.ID)
 		}
 	}
 
 	// assign the license OA to the RBAC licenses OA
 	if err = l.graph.Assign(licenseOA.Name, LicensesOA); err != nil {
-		return errors.Wrapf(err, "error assigning license %s object attribute to Licenses object attribute", license.ID)
+		return pip.Node{}, errors.Wrapf(err, "error assigning license %s object attribute to Licenses object attribute", license.ID)
 	}
 
-	return nil
+	return licenseOA, nil
 }
 
 func (l LicensePolicy) OffboardLicense(licenseID string) error {
@@ -60,7 +60,7 @@ func (l LicensePolicy) OffboardLicense(licenseID string) error {
 	}
 
 	// delete license oa
-	if err = l.graph.DeleteNode(licensepap.LicensesObjectAttribute(licenseID)); err != nil {
+	if err = l.graph.DeleteNode(licensepap.LicenseObjectAttribute(licenseID)); err != nil {
 		return errors.Wrapf(err, "error deleting license object attribute")
 	}
 

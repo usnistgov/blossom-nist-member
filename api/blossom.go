@@ -3,7 +3,6 @@ package api
 import (
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
-	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 )
 
@@ -12,11 +11,7 @@ type BlossomSmartContract struct {
 }
 
 func (b *BlossomSmartContract) InitBlossom(ctx contractapi.TransactionContextInterface) error {
-	adminPDP, err := pdp.NewAdminDecider(ctx)
-	if err != nil {
-		return errors.Errorf("error initializing administrative decider")
-	}
-
+	adminPDP := pdp.NewAdminDecider()
 	return adminPDP.InitGraph(ctx)
 }
 

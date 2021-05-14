@@ -50,15 +50,32 @@ func TestCheckoutLicense(t *testing.T) {
 }
 
 func TestCheckInLicense(t *testing.T) {
-	_, err := checkoutLicense(agency, license, 2)
-	require.NoError(t, err)
+	t.Run("test return all keys", func(t *testing.T) {
+		_, err := checkoutLicense(agency, license, 2)
+		require.NoError(t, err)
 
-	err = checkinLicense(agency, license, []string{"1", "2"})
-	require.NoError(t, err)
+		err = checkinLicense(agency, license, []string{"1", "2"})
+		require.NoError(t, err)
 
-	require.Equal(t, []string{"3", "1", "2"}, license.AvailableKeys)
-	require.Equal(t, 3, license.Available)
-	require.NotContains(t, license.CheckedOut, "Agency1")
+		require.Equal(t, []string{"3", "1", "2"}, license.AvailableKeys)
+		require.Equal(t, 3, license.Available)
+		require.NotContains(t, license.CheckedOut, "Agency1")
+		require.NotContains(t, agency.Licenses, "123")
+	})
 
-	require.NotContains(t, agency.Licenses, "123")
+	t.Run("test return 2 of 3 keys", func(t *testing.T) {
+		_, err := checkoutLicense(agency, license, 3)
+		require.NoError(t, err)
+
+		err = checkinLicense(agency, license, []string{"1", "2"})
+		require.NoError(t, err)
+
+		require.Equal(t, []string{"1", "2"}, license.AvailableKeys)
+		require.Equal(t, 2, license.Available)
+		require.Contains(t, license.CheckedOut, "Agency1")
+		require.Contains(t, license.CheckedOut["Agency1"], "3")
+		require.Contains(t, agency.Licenses, "123")
+		require.Contains(t, agency.Licenses["123"], "3")
+	})
+
 }

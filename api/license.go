@@ -142,7 +142,7 @@ func (b *BlossomSmartContract) Licenses(ctx contractapi.TransactionContextInterf
 	// begin NGAC
 	// filter any license information the requesting user may not have permission to see
 	if err := pdp.NewLicenseDecider().FilterLicenses(ctx, licenses); err != nil {
-		return nil, errors.Wrapf(err, "error filtering agencies")
+		return nil, errors.Wrapf(err, "error filtering licenses")
 	}
 	// end NGAC
 
@@ -200,6 +200,13 @@ func (b *BlossomSmartContract) LicenseInfo(ctx contractapi.TransactionContextInt
 		return nil, errors.Wrapf(err, "error deserializing license")
 	}
 
+	// begin NGAC
+	// filter any license information the requesting user may not have permission to see
+	if err := pdp.NewLicenseDecider().FilterLicense(ctx, license); err != nil {
+		return nil, errors.Wrapf(err, "error filtering license")
+	}
+	// end NGAC
+
 	return license, nil
 }
 
@@ -246,9 +253,19 @@ func (b *BlossomSmartContract) CheckoutLicense(
 		return nil, errors.Wrapf(err, "error marshaling license %q", license.ID)
 	}
 
-	if err = ctx.GetStub().PutState(model.LicenseKey(license.Name), bytes); err != nil {
+	if err = ctx.GetStub().PutState(model.LicenseKey(license.ID), bytes); err != nil {
 		return nil, errors.Wrapf(err, "error updating license state")
 	}
+
+	// begin NGAC
+	// record the checkout in NGAC
+	// provide NGAC with the keys that were checked out in order to reflect the change in the graph
+	// this change will provide the users of the requesting agency access to the keys, nobody else
+	// will be able to access them
+	if err := pdp.NewLicenseDecider().CheckoutLicense(ctx, agencyName, licenseID, checkedOutKeys); err != nil {
+		return nil, errors.Wrapf(err, "error checking out license in NGAC")
+	}
+	// end NGAC
 
 	return checkedOutKeys, nil
 }
@@ -341,6 +358,16 @@ func (b *BlossomSmartContract) CheckinLicense(ctx contractapi.TransactionContext
 	if err = ctx.GetStub().PutState(model.LicenseKey(license.Name), bytes); err != nil {
 		return errors.Wrapf(err, "error updating license state")
 	}
+
+	// begin NGAC
+	// record the checkin in NGAC
+	// provide NGAC with the keys that were checked in in order to reflect the change in the graph
+	// this will move the keys back into the pool of available keys
+	// the agency users will no longer be able to see the keys
+	if err := pdp.NewLicenseDecider().CheckinLicense(ctx, agencyName, licenseID, returnedKeys); err != nil {
+		return errors.Wrapf(err, "error checking in license in NGAC")
+	}
+	// end NGAC
 
 	return nil
 }

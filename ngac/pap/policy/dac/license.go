@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	"time"
 )
 
 type LicensePolicy struct {
@@ -15,9 +16,9 @@ func NewLicensePolicy(graph pip.Graph) LicensePolicy {
 	return LicensePolicy{graph: graph}
 }
 
-func (l LicensePolicy) CheckoutLicense(agencyName string, licenseID string, keys []string) error {
+func (l LicensePolicy) CheckoutLicense(agencyName string, licenseID string, keys map[string]time.Time) error {
 	// assign the objects representing the keys to the agency making the request's DAC object attribute
-	for _, key := range keys {
+	for key := range keys {
 		if err := l.graph.Assign(license.LicenseKeyObject(licenseID, key), agencypap.ObjectAttributeName(agencyName)); err != nil {
 			return errors.Wrapf(err, "error assigning key %s to agency %s", key, agencyName)
 		}

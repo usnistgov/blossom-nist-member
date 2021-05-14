@@ -136,7 +136,8 @@ func (l *LicenseDecider) OffboardLicense(ctx contractapi.TransactionContextInter
 	return l.pap.OffboardLicense(ctx, licenseID)
 }
 
-func (l *LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
+func (l *LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string,
+	keys map[string]time.Time) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
@@ -151,7 +152,8 @@ func (l *LicenseDecider) CheckoutLicense(ctx contractapi.TransactionContextInter
 	return l.pap.CheckoutLicense(ctx, agencyName, licenseID, keys)
 }
 
-func (l *LicenseDecider) CheckinLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string, keys []string) error {
+func (l *LicenseDecider) CheckinLicense(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string,
+	keys []string) error {
 	if err := l.setup(ctx); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}

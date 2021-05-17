@@ -7,6 +7,7 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
+	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
 	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	"time"
 )
@@ -54,7 +55,7 @@ func (l *LicenseDecider) FilterLicense(ctx contractapi.TransactionContextInterfa
 }
 
 func (l *LicenseDecider) filterLicense(license *model.License) error {
-	permissions, err := l.decider.ListPermissions(l.user, license.ID)
+	permissions, err := l.decider.ListPermissions(l.user, licensepap.LicenseObjectAttribute(license.ID))
 	if err != nil {
 		return errors.Wrapf(err, "error getting permissions for user %s on license %s", l.user, license.Name)
 	}
@@ -92,18 +93,25 @@ func (l *LicenseDecider) filterLicense(license *model.License) error {
 	return nil
 }
 
-func (l *LicenseDecider) FilterLicenses(ctx contractapi.TransactionContextInterface, licenses []*model.License) error {
+func (l *LicenseDecider) FilterLicenses(ctx contractapi.TransactionContextInterface, licenses []*model.License) ([]*model.License, error) {
 	if err := l.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return nil, errors.Wrapf(err, "error setting up agency decider")
 	}
 
+	filteredLicenses := make([]*model.License, 0)
 	for _, license := range licenses {
 		if err := l.filterLicense(license); err != nil {
-			return errors.Wrapf(err, "error filtering license")
+			return nil, errors.Wrapf(err, "error filtering license")
 		}
+
+		if license.ID == "" {
+			continue
+		}
+
+		filteredLicenses = append(filteredLicenses, license)
 	}
 
-	return nil
+	return filteredLicenses, nil
 }
 
 func (l *LicenseDecider) OnboardLicense(ctx contractapi.TransactionContextInterface, license *model.License) error {

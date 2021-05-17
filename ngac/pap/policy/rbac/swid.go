@@ -4,6 +4,7 @@ import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/pkg/errors"
 	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
 )
 
 type SwIDPolicy struct {
@@ -15,7 +16,7 @@ func NewSwIDPolicy(graph pip.Graph) SwIDPolicy {
 }
 
 func (s SwIDPolicy) ReportSwID(primaryTag string, licenseID string, licenseKey string) error {
-	swidNode, err := s.graph.CreateNode(primaryTag, pip.ObjectAttribute, nil)
+	swidNode, err := s.graph.CreateNode(swidpap.ObjectAttributeName(primaryTag), pip.ObjectAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating node for swid %s ", primaryTag)
 	}

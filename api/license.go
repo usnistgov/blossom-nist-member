@@ -141,7 +141,7 @@ func (b *BlossomSmartContract) Licenses(ctx contractapi.TransactionContextInterf
 
 	// begin NGAC
 	// filter any license information the requesting user may not have permission to see
-	if err := pdp.NewLicenseDecider().FilterLicenses(ctx, licenses); err != nil {
+	if licenses, err = pdp.NewLicenseDecider().FilterLicenses(ctx, licenses); err != nil {
 		return nil, errors.Wrapf(err, "error filtering licenses")
 	}
 	// end NGAC

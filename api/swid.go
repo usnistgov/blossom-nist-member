@@ -6,6 +6,7 @@ import (
 	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
+	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	"strings"
 )
 
@@ -44,6 +45,12 @@ func (b *BlossomSmartContract) ReportSwID(ctx contractapi.TransactionContextInte
 		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", swid.PrimaryTag)
 	}
 
+	// begin NGAC
+	if err := pdp.NewSwIDDecider().ReportSwID(ctx, swid, agency); err != nil {
+		return errors.Wrap(err, "error reporting SwID")
+	}
+	// end NGAC
+
 	swidBytes, err := json.Marshal(swid)
 	if err != nil {
 		return errors.Wrapf(err, "error serializing swid tag")
@@ -76,6 +83,12 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 	if err = json.Unmarshal(swidBytes, swid); err != nil {
 		return nil, errors.Wrapf(err, "error deserializing SwID tag %s", primaryTag)
 	}
+
+	// begin NGAC
+	if err = pdp.NewSwIDDecider().FilterSwID(ctx, swid); err != nil {
+		return nil, errors.Wrap(err, "error filtering SwID")
+	}
+	// end NGAC
 
 	return &model.SwID{}, nil
 }
@@ -111,6 +124,13 @@ func (b *BlossomSmartContract) GetSwIDsAssociatedWithLicense(ctx contractapi.Tra
 
 		swids = append(swids, swid)
 	}
+
+	// begin NGAC
+	// filter out any swid tags the user cannot view
+	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(ctx, swids); err != nil {
+		return nil, errors.Wrap(err, "error filtering swids")
+	}
+	// end NGAC
 
 	return swids, nil
 }

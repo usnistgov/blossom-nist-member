@@ -46,18 +46,25 @@ func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error
 	return nil
 }
 
-func (a *AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterface, agencies []*model.Agency) error {
+func (a *AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterface, agencies []*model.Agency) ([]*model.Agency, error) {
 	if err := a.setup(ctx); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return nil, errors.Wrapf(err, "error setting up agency decider")
 	}
 
+	filteredAgencies := make([]*model.Agency, 0)
 	for _, agency := range agencies {
 		if err := a.filterAgency(agency); err != nil {
-			return errors.Wrapf(err, "error filtering agency")
+			return nil, errors.Wrapf(err, "error filtering agency")
 		}
+
+		if agency.Name == "" {
+			continue
+		}
+
+		filteredAgencies = append(filteredAgencies, agency)
 	}
 
-	return nil
+	return filteredAgencies, nil
 }
 
 func (a *AgencyDecider) FilterAgency(ctx contractapi.TransactionContextInterface, agency *model.Agency) error {

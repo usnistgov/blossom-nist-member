@@ -48,11 +48,11 @@ var AcqSpecAgenciesPermissions = pip.ToOps(
 	operations.ViewStatus)
 
 var SystemAdminSwidPermissions = pip.ToOps(
-	operations.ViewSwid,
+	operations.ViewSwID,
 	operations.ReportSwid)
 
 var AcqSpecswidPermissions = pip.ToOps(
-	operations.ViewSwid)
+	operations.ViewSwID)
 
 func Configure(graph pip.Graph, adminUA string) error {
 	// create RBAC policy class node

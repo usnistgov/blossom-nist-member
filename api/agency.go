@@ -176,7 +176,7 @@ func (b *BlossomSmartContract) Agencies(ctx contractapi.TransactionContextInterf
 	}
 
 	// begin NGAC
-	if err := pdp.NewAgencyDecider().FilterAgencies(ctx, agencies); err != nil {
+	if agencies, err = pdp.NewAgencyDecider().FilterAgencies(ctx, agencies); err != nil {
 		return nil, errors.Wrapf(err, "error filtering agencies")
 	}
 	// end NGAC

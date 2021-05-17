@@ -8,6 +8,8 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
+	"time"
 )
 
 // SwIDDecider is the Policy Decision Point (PDP) for the SwID API
@@ -59,4 +61,52 @@ func (s *SwIDDecider) ReportSwID(ctx contractapi.TransactionContextInterface, sw
 
 	err := s.pap.ReportSwID(ctx, swid, agency)
 	return errors.Wrapf(err, "error reporting swid %s", swid.PrimaryTag)
+}
+
+func (s *SwIDDecider) FilterSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID) error {
+	if err := s.setup(ctx); err != nil {
+		return errors.Wrapf(err, "error setting up swid decider")
+	}
+
+	return s.filterSwID(swid)
+}
+
+func (s *SwIDDecider) FilterSwIDs(ctx contractapi.TransactionContextInterface, swids []*model.SwID) ([]*model.SwID, error) {
+	if err := s.setup(ctx); err != nil {
+		return nil, errors.Wrapf(err, "error setting up swid decider")
+	}
+
+	filteredSwids := make([]*model.SwID, 0)
+	for _, swid := range swids {
+		if err := s.filterSwID(swid); err != nil {
+			return nil, errors.Wrapf(err, "error filtering swids")
+		}
+
+		if swid.PrimaryTag == "" {
+			continue
+		}
+
+		filteredSwids = append(filteredSwids, swid)
+	}
+
+	return filteredSwids, nil
+}
+
+func (s *SwIDDecider) filterSwID(swid *model.SwID) error {
+	permissions, err := s.decider.ListPermissions(s.user, swidpap.ObjectAttributeName(swid.PrimaryTag))
+	if err != nil {
+		return errors.Wrapf(err, "error getting permissions for user %s on swid %s", s.user, swid.PrimaryTag)
+	}
+
+	if !permissions.Contains(operations.ViewSwID) {
+		swid = &model.SwID{
+			PrimaryTag:      "",
+			XML:             "",
+			License:         "",
+			LicenseKey:      "",
+			LeaseExpiration: time.Time{},
+		}
+	}
+
+	return nil
 }

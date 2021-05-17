@@ -1,11 +1,14 @@
 package pdp
 
 import (
+	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/api/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
+	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
+	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
 	"testing"
 	"time"
 )
@@ -109,4 +112,54 @@ func initSwidTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.
 	require.NoError(t, err)
 
 	SetGraphState(t, stub, licenseDecider.pap.Graph())
+}
+
+func TestFilterSwID(t *testing.T) {
+	graph := memory.NewGraph()
+	pcNode, err := graph.CreateNode("pc1", pip.PolicyClass, nil)
+	require.NoError(t, err)
+	oa1, err := graph.CreateNode("oa1", pip.ObjectAttribute, nil)
+	require.NoError(t, err)
+	oa2, err := graph.CreateNode("oa2", pip.ObjectAttribute, nil)
+	require.NoError(t, err)
+	swid1, err := graph.CreateNode(swidpap.ObjectAttributeName("swid1"), pip.ObjectAttribute, nil)
+	require.NoError(t, err)
+	swid2, err := graph.CreateNode(swidpap.ObjectAttributeName("swid2"), pip.ObjectAttribute, nil)
+	require.NoError(t, err)
+	err = graph.Assign(oa1.Name, pcNode.Name)
+	require.NoError(t, err)
+	err = graph.Assign(oa2.Name, pcNode.Name)
+	require.NoError(t, err)
+	err = graph.Assign(swid1.Name, oa1.Name)
+	require.NoError(t, err)
+	err = graph.Assign(swid2.Name, oa2.Name)
+	require.NoError(t, err)
+
+	ua1, err := graph.CreateNode("ua1", pip.UserAttribute, nil)
+	require.NoError(t, err)
+	u1, err := graph.CreateNode("Org1 Admin:Org1MSP", pip.User, nil)
+	require.NoError(t, err)
+	err = graph.Assign(u1.Name, ua1.Name)
+	require.NoError(t, err)
+	err = graph.Assign(ua1.Name, pcNode.Name)
+	require.NoError(t, err)
+
+	err = graph.Associate("ua1", "oa1", pip.ToOps(operations.ViewSwID))
+	require.NoError(t, err)
+
+	swids := []*model.SwID{
+		{PrimaryTag: "swid1"},
+		{PrimaryTag: "swid2"},
+	}
+
+	chaincodeStub := &mocks.ChaincodeStub{}
+	transactionContext := &mocks.TransactionContext{}
+	transactionContext.GetStubReturns(chaincodeStub)
+
+	SetGraphState(t, chaincodeStub, graph)
+	SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+
+	swids, err = NewSwIDDecider().FilterSwIDs(transactionContext, swids)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(swids))
 }

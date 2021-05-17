@@ -99,13 +99,11 @@ func (s *SwIDDecider) filterSwID(swid *model.SwID) error {
 	}
 
 	if !permissions.Contains(operations.ViewSwID) {
-		swid = &model.SwID{
-			PrimaryTag:      "",
-			XML:             "",
-			License:         "",
-			LicenseKey:      "",
-			LeaseExpiration: time.Time{},
-		}
+		swid.PrimaryTag = ""
+		swid.XML = ""
+		swid.License = ""
+		swid.LicenseKey = ""
+		swid.LeaseExpiration = time.Time{}
 	}
 
 	return nil

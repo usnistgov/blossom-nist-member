@@ -1,6 +1,8 @@
 package pdp
 
 import (
+	"time"
+
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
@@ -9,7 +11,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
 	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
-	"time"
 )
 
 type LicenseDecider struct {
@@ -61,20 +62,16 @@ func (l *LicenseDecider) filterLicense(license *model.License) error {
 	}
 
 	if !permissions.Contains(operations.ViewLicense) {
-		// if the user cannot view license on the license object attribute, return an empty license
-		// initialize array and map values to avoid fabric schema errors
-		license = &model.License{
-			ID:             "",
-			Name:           "",
-			TotalAmount:    0,
-			Available:      0,
-			Cost:           0,
-			OnboardingDate: time.Time{},
-			Expiration:     time.Time{},
-			AllKeys:        make([]string, 0),
-			AvailableKeys:  make([]string, 0),
-			CheckedOut:     make(map[string]map[string]time.Time),
-		}
+		license.ID = ""
+		license.Name = ""
+		license.TotalAmount = 0
+		license.Available = 0
+		license.Cost = 0
+		license.OnboardingDate = time.Time{}
+		license.Expiration = time.Time{}
+		license.AllKeys = make([]string, 0)
+		license.AvailableKeys = make([]string, 0)
+		license.CheckedOut = make(map[string]map[string]time.Time)
 		return nil
 	}
 

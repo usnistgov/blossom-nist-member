@@ -83,7 +83,7 @@ func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 
 	// if the user cannot view agency on the agency info object, return an empty agency
 	if !permissions.Contains(operations.ViewAgency) {
-		agency.Licenses = make(map[string]map[string]time.Time)
+		agency.Assets = make(map[string]map[string]time.Time)
 		agency.Status = ""
 		agency.ATO = ""
 		agency.Users = model.Users{}
@@ -108,7 +108,7 @@ func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 	}
 
 	if !permissions.Contains(operations.ViewAgencyLicenses) {
-		agency.Licenses = make(map[string]map[string]time.Time)
+		agency.Assets = make(map[string]map[string]time.Time)
 	}
 
 	return nil

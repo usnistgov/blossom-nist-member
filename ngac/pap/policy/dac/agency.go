@@ -7,7 +7,7 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
-	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 )
 
 type AgencyPolicy struct {
@@ -99,7 +99,7 @@ func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
 
 	// create an object attribute for the agency licenses
 	var licensesOA pip.Node
-	if licensesOA, err = a.graph.CreateNode(licensepap.LicensesObjectAttribute(agency.Name), pip.ObjectAttribute, nil); err != nil {
+	if licensesOA, err = a.graph.CreateNode(assetpap.AssetsObjectAttribute(agency.Name), pip.ObjectAttribute, nil); err != nil {
 		return errors.Wrapf(err, "error creating licenses object attribute for agency %s", agency.Name)
 	}
 

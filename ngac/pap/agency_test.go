@@ -41,8 +41,8 @@ func TestRequestAccount(t *testing.T) {
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
-		Status:   "",
-		Licenses: nil,
+		Status: "",
+		Assets: nil,
 	}
 	err = agencyAdmin.RequestAccount(transactionContext, agency)
 	require.NoError(t, err)
@@ -140,8 +140,8 @@ func TestUpdateAgencyStatus(t *testing.T) {
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
-		Status:   "",
-		Licenses: nil,
+		Status: "",
+		Assets: nil,
 	}
 	err = agencyAdmin.RequestAccount(transactionContext, agency)
 	require.NoError(t, err)

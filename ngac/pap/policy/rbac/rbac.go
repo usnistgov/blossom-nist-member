@@ -15,7 +15,7 @@ const (
 	SystemAdministratorUA   = "SystemAdministrator"
 	AgenciesOA              = "Agencies"
 	AgenciesUA              = "Agencies_UA"
-	LicensesOA              = "Licenses"
+	AssetsOA                = "Assets"
 	SwIDsOA                 = "SwIDs"
 )
 
@@ -29,9 +29,9 @@ var SystemOwnerPermissions = pip.ToOps(
 	operations.ViewStatus)
 
 var SystemAdminLicensesPermissions = pip.ToOps(
-	operations.ViewLicense,
-	operations.CheckOutLicense,
-	operations.CheckInLicense,
+	operations.ViewAsset,
+	operations.CheckOut,
+	operations.CheckIn,
 	operations.ReportSwid)
 
 var SystemAdminAgenciesPermissions = pip.ToOps(
@@ -40,7 +40,7 @@ var SystemAdminAgenciesPermissions = pip.ToOps(
 )
 
 var AcqSpecLicensesPermissions = pip.ToOps(
-	operations.ViewLicense)
+	operations.ViewAsset)
 
 var AcqSpecAgenciesPermissions = pip.ToOps(
 	operations.ViewAgencyLicenses,
@@ -110,7 +110,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning %q to %q", agenciesOA.Name, rbacOA.Name)
 	}
 
-	licensesOA, err := graph.CreateNode(LicensesOA, pip.ObjectAttribute, nil)
+	licensesOA, err := graph.CreateNode(AssetsOA, pip.ObjectAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating licenses base object attribute")
 	}

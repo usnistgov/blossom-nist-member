@@ -18,9 +18,9 @@ type (
 		Users Users `json:"users"`
 		// Status of an agency within the Blossom system
 		Status Status `json:"status"`
-		// Licenses stores the licenses that an agency has checked out. The first map key is the licenseID, the second map
-		// key is the license key and the time is the expiration of the key.
-		Licenses map[string]map[string]time.Time `json:"licenses"`
+		// Assets stores the assets that an agency has checked out. The first map key is the asset ID, the second map
+		// key is the license ID and the time is the expiration of the license lease.
+		Assets map[string]map[string]time.Time `json:"assets"`
 	}
 
 	// Status represents the status of an agency within the blossom system

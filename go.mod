@@ -18,16 +18,17 @@ require (
 	github.com/hyperledger/fabric-lib-go v1.0.0 // indirect
 	github.com/hyperledger/fabric-protos-go v0.0.0-20210505131505-0ac7fd605762
 	github.com/miekg/pkcs11 v1.0.3 // indirect
-	github.com/onsi/ginkgo v1.16.2 // indirect
 	github.com/onsi/gomega v1.12.0 // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/sykesm/zap-logfmt v0.0.4 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0 // indirect
-	golang.org/x/exp v0.0.0-20210510180614-2df949a7a267 // indirect
-	golang.org/x/tools v0.1.0 // indirect
+	golang.org/x/mod v0.4.2 // indirect
 	google.golang.org/protobuf v1.26.0
+	honnef.co/go/tools v0.1.3 // indirect
 )

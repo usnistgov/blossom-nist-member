@@ -112,7 +112,7 @@ func TestFilterAgency(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Licenses: map[string]map[string]time.Time{
+			Assets: map[string]map[string]time.Time{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -138,7 +138,7 @@ func TestFilterAgency(t *testing.T) {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Licenses)
+		}, agency.Assets)
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
@@ -162,7 +162,7 @@ func TestFilterAgency(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Licenses: map[string]map[string]time.Time{
+			Assets: map[string]map[string]time.Time{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -184,7 +184,7 @@ func TestFilterAgency(t *testing.T) {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Licenses)
+		}, agency.Assets)
 	})
 
 	t.Run("test Org1 Admin", func(t *testing.T) {
@@ -208,7 +208,7 @@ func TestFilterAgency(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Licenses: map[string]map[string]time.Time{
+			Assets: map[string]map[string]time.Time{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -234,7 +234,7 @@ func TestFilterAgency(t *testing.T) {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Licenses)
+		}, agency.Assets)
 	})
 }
 
@@ -255,8 +255,8 @@ func initAgencyTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mock
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
-		Status:   "status",
-		Licenses: make(map[string]map[string]time.Time),
+		Status: "status",
+		Assets: make(map[string]map[string]time.Time),
 	}
 
 	SetGraphState(t, stub, graph)

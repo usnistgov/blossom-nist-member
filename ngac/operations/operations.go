@@ -1,15 +1,15 @@
 package operations
 
 const (
-	ViewLicense       = "view_license"
-	ViewKey           = "view_key"
-	ViewAvailableKeys = "view_available_keys"
-	ViewCheckedOut    = "view_checked_out"
-	ViewAllKeys       = "view_all_keys"
-	CheckOutLicense   = "checkout_license"
-	CheckInLicense    = "checkin_license"
-	OnboardLicense    = "onboard_license"
-	OffboardLicense   = "onboard_license"
+	ViewAsset             = "view_asset"
+	ViewLicense           = "view_license"
+	ViewAvailableLicenses = "view_available_licenses"
+	ViewCheckedOut        = "view_checked_out"
+	ViewAllLicenses       = "view_all_licenses"
+	CheckOut              = "checkout"
+	CheckIn               = "checkin"
+	OnboardLicense        = "onboard_license"
+	OffboardLicense       = "onboard_license"
 
 	ViewAgency         = "view_agency"
 	ViewATO            = "view_ato"

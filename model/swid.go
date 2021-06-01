@@ -12,10 +12,10 @@ type (
 		PrimaryTag string `json:"primary_tag"`
 		// XML is the contents of the SwID document in xml format
 		XML string `json:"xml"`
+		// Asset is the ID of the associated license
+		Asset string `json:"asset"`
 		// License is the ID of the associated license
 		License string `json:"license"`
-		// LicenseKey is the key of the associated license
-		LicenseKey string `json:"license_key"`
 		// LeaseExpiration is the date when the lease associated with this SwID expires
 		LeaseExpiration time.Time `json:"lease_expiration"`
 	}

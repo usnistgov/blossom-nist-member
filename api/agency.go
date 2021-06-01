@@ -71,7 +71,7 @@ func (b *BlossomSmartContract) RequestAccount(ctx contractapi.TransactionContext
 
 	// add agency to ledger with pending status
 	agency.Status = model.PendingApproval
-	agency.Licenses = make(map[string]map[string]time.Time)
+	agency.Assets = make(map[string]map[string]time.Time)
 
 	// convert agency to bytes
 	bytes, err := json.Marshal(agency)

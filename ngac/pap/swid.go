@@ -42,7 +42,7 @@ func (s *SwIDAdmin) ReportSwID(ctx contractapi.TransactionContextInterface, swid
 	}
 
 	rbacPolicy := rbacpolicy.NewSwIDPolicy(s.graph)
-	if err := rbacPolicy.ReportSwID(swid.PrimaryTag, swid.License, swid.LicenseKey); err != nil {
+	if err := rbacPolicy.ReportSwID(swid.PrimaryTag, swid.Asset, swid.License); err != nil {
 		return errors.Wrap(err, "error configuring swid RBAC policy")
 	}
 

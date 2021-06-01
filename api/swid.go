@@ -20,8 +20,8 @@ type (
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
 		GetSwID(ctx contractapi.TransactionContextInterface, primaryTag string) (*model.SwID, error)
 
-		// GetSwIDsAssociatedWithLicense returns the SwIDs that are associated with the given license key.
-		GetSwIDsAssociatedWithLicense(ctx contractapi.TransactionContextInterface, licenseKey string) ([]*model.SwID, error)
+		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset.
+		GetSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error)
 	}
 )
 
@@ -93,7 +93,23 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 	return &model.SwID{}, nil
 }
 
-func (b *BlossomSmartContract) GetSwIDsAssociatedWithLicense(ctx contractapi.TransactionContextInterface, licenseID string) ([]*model.SwID, error) {
+func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error) {
+	swids, err := b.getSwIDsAssociatedWithAsset(ctx, asset)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error retrieving swids from ledger")
+	}
+
+	// begin NGAC
+	// filter out any swid tags the user cannot view
+	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(ctx, swids); err != nil {
+		return nil, errors.Wrap(err, "error filtering swids")
+	}
+	// end NGAC
+
+	return swids, nil
+}
+
+func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error) {
 	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
 	if err != nil {
 		return nil, err
@@ -117,20 +133,13 @@ func (b *BlossomSmartContract) GetSwIDsAssociatedWithLicense(ctx contractapi.Tra
 			return nil, err
 		}
 
-		// continue if the license key associated with this swid tag matches the given key
-		if swid.License != licenseID {
+		// continue if the asset associated with this swid tag does not match the given asset ID
+		if swid.Asset != asset {
 			continue
 		}
 
 		swids = append(swids, swid)
 	}
-
-	// begin NGAC
-	// filter out any swid tags the user cannot view
-	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(ctx, swids); err != nil {
-		return nil, errors.Wrap(err, "error filtering swids")
-	}
-	// end NGAC
 
 	return swids, nil
 }

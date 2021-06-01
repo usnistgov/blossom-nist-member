@@ -10,7 +10,7 @@ const (
 	PolicyClassName     = "DAC"
 	ObjectAttributeName = "DAC_OA"
 	UserAttributeName   = "DAC_UA"
-	LicensesOA          = "dac_licenses"
+	AssetsOA            = "dac_assets"
 )
 
 func Configure(graph pip.Graph, adminUA string) error {
@@ -47,26 +47,26 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error associating %q with %q", adminUA, dacOA.Name)
 	}
 
-	// create a container for all licenses
-	licensesOA, err := graph.CreateNode(LicensesOA, pip.ObjectAttribute, nil)
+	// create a container for all assets
+	assetsOA, err := graph.CreateNode(AssetsOA, pip.ObjectAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating licenses container in DAC policy")
 	}
 
-	// assign the licenses container to the dac OA
-	if err = graph.Assign(licensesOA.Name, dacOA.Name); err != nil {
-		return errors.Wrapf(err, "error assignign licenses container to DAC object attribute")
+	// assign the assets container to the dac OA
+	if err = graph.Assign(assetsOA.Name, dacOA.Name); err != nil {
+		return errors.Wrapf(err, "error assigning assets container to DAC object attribute")
 	}
 
 	// associate the org1 admin ua with * on licenses container
-	if err = graph.Associate(adminUA, licensesOA.Name, pip.ToOps(pip.AllOps)); err != nil {
-		return errors.Wrapf(err, "error associating admin user attribute with licenses container in DAC policy")
+	if err = graph.Associate(adminUA, assetsOA.Name, pip.ToOps(pip.AllOps)); err != nil {
+		return errors.Wrapf(err, "error associating admin user attribute with assets container in DAC policy")
 	}
 
-	// associate dac UA with container with checkin/checkout permissions
-	if err = graph.Associate(dacUA.Name, licensesOA.Name, pip.ToOps(operations.ViewLicense, operations.CheckOutLicense,
-		operations.CheckInLicense)); err != nil {
-		return errors.Wrapf(err, "error associating dac user attribute with license container in DAC policy")
+	// associate dac UA with assets container with checkin/checkout permissions
+	if err = graph.Associate(dacUA.Name, assetsOA.Name, pip.ToOps(operations.ViewAsset, operations.CheckOut,
+		operations.CheckIn)); err != nil {
+		return errors.Wrapf(err, "error associating dac user attribute with assets container in DAC policy")
 	}
 
 	return nil

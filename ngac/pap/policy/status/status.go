@@ -11,7 +11,7 @@ const (
 	UserAttributeName   = "Status_UA"
 	ObjectAttributeName = "Status_OA"
 	AgenciesOA          = "status_agencies_OA"
-	LicensesOA          = "status_licenses_OA"
+	AssetsOA            = "status_assets_OA"
 	SwIDsOA             = "status_swids_OA"
 	ActiveUA            = "active"
 	PendingUA           = "pending"
@@ -58,7 +58,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error creating agencies objetc attribute in status policy class")
 	}
 
-	licensesOA, err := graph.CreateNode(LicensesOA, pip.ObjectAttribute, nil)
+	assetsOA, err := graph.CreateNode(AssetsOA, pip.ObjectAttribute, nil)
 	if err != nil {
 		return errors.Wrapf(err, "error creating licenses object attribute in status policy class")
 	}
@@ -72,7 +72,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning agencies object attribute to status object attribute")
 	}
 
-	if err = graph.Assign(licensesOA.Name, statusOA.Name); err != nil {
+	if err = graph.Assign(assetsOA.Name, statusOA.Name); err != nil {
 		return errors.Wrapf(err, "error assigning licenses object attribute to status object attribute")
 	}
 
@@ -119,7 +119,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error associating active user attribute with agencies object attribute")
 	}
 
-	if err = graph.Associate(activeUA.Name, licensesOA.Name, pip.ToOps(pip.AllOps)); err != nil {
+	if err = graph.Associate(activeUA.Name, assetsOA.Name, pip.ToOps(pip.AllOps)); err != nil {
 		return errors.Wrapf(err, "error associating active user attribute with licenses object attribute")
 	}
 	if err = graph.Associate(activeUA.Name, swidsOA.Name, pip.ToOps(pip.AllOps)); err != nil {

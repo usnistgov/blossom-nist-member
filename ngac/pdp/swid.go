@@ -7,7 +7,7 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
-	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
 	"time"
 )
@@ -53,7 +53,7 @@ func (s *SwIDDecider) ReportSwID(ctx contractapi.TransactionContextInterface, sw
 	}
 
 	// check user can assign report swid on the license key object
-	if ok, err := s.decider.HasPermissions(s.user, licensepap.LicenseKeyObject(swid.License, swid.LicenseKey), operations.ReportSwid); err != nil {
+	if ok, err := s.decider.HasPermissions(s.user, assetpap.LicenseObject(swid.Asset, swid.License), operations.ReportSwid); err != nil {
 		return errors.Wrapf(err, "error checking if user has permission to report swid")
 	} else if !ok {
 		return ErrAccessDenied
@@ -101,8 +101,8 @@ func (s *SwIDDecider) filterSwID(swid *model.SwID) error {
 	if !permissions.Contains(operations.ViewSwID) {
 		swid.PrimaryTag = ""
 		swid.XML = ""
+		swid.Asset = ""
 		swid.License = ""
-		swid.LicenseKey = ""
 		swid.LeaseExpiration = time.Time{}
 	}
 

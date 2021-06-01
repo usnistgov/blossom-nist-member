@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/api/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
-	licensepap "github.com/usnistgov/blossom/chaincode/ngac/pap/license"
+	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
@@ -27,23 +27,23 @@ func TestReportSwID(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err := NewLicenseAdmin(transactionContext)
+	licenseAdmin, err := NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
 
-	license := &model.License{
-		ID:             "test-license-id",
-		Name:           "test-license",
-		TotalAmount:    5,
-		Available:      5,
-		Cost:           20,
-		OnboardingDate: time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:     time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
-		AllKeys:        []string{"1", "2", "3", "4", "5"},
-		AvailableKeys:  []string{"1", "2", "3", "4", "5"},
-		CheckedOut:     make(map[string]map[string]time.Time),
+	license := &model.Asset{
+		ID:                "test-license-id",
+		Name:              "test-license",
+		TotalAmount:       5,
+		Available:         5,
+		Cost:              20,
+		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
+		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		Licenses:          []string{"1", "2", "3", "4", "5"},
+		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
+		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = licenseAdmin.OnboardLicense(transactionContext, license)
+	err = licenseAdmin.OnboardAsset(transactionContext, license)
 	require.NoError(t, err)
 
 	graphBytes, err = json.Marshal(licenseAdmin.graph)
@@ -63,8 +63,8 @@ func TestReportSwID(t *testing.T) {
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
-		Status:   "",
-		Licenses: nil,
+		Status: "",
+		Assets: nil,
 	}
 
 	err = agencyAdmin.RequestAccount(transactionContext, agency)
@@ -80,8 +80,8 @@ func TestReportSwID(t *testing.T) {
 	swid := &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		License:         "test-license-id",
-		LicenseKey:      "1",
+		Asset:           "test-license-id",
+		License:         "1",
 		LeaseExpiration: time.Time{},
 	}
 
@@ -95,7 +95,7 @@ func TestReportSwID(t *testing.T) {
 
 	children, err := graph.GetChildren("pt1")
 	require.NoError(t, err)
-	require.Contains(t, children, licensepap.LicenseKeyObject("test-license-id", "1"))
+	require.Contains(t, children, assetpap.LicenseObject("test-license-id", "1"))
 
 	parents, err := graph.GetParents("pt1")
 	require.NoError(t, err)

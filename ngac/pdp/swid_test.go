@@ -28,8 +28,8 @@ func TestReportSwID(t *testing.T) {
 	SetGraphState(t, chaincodeStub, agencyDecider.pap.Graph())
 
 	SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
-	licenseDecider := NewLicenseDecider()
-	err = licenseDecider.CheckoutLicense(transactionContext, "Org2", "test-license-id",
+	licenseDecider := NewAssetDecider()
+	err = licenseDecider.Checkout(transactionContext, "Org2", "test-license-id",
 		map[string]time.Time{"1": time.Now()})
 	require.NoError(t, err)
 
@@ -40,8 +40,8 @@ func TestReportSwID(t *testing.T) {
 	swid := &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		License:         "test-license-id",
-		LicenseKey:      "1",
+		Asset:           "test-license-id",
+		License:         "1",
 		LeaseExpiration: time.Time{},
 	}
 	err = swidDecider.ReportSwID(transactionContext, swid, "Org2")
@@ -51,8 +51,8 @@ func TestReportSwID(t *testing.T) {
 	swid = &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		License:         "test-license-id",
-		LicenseKey:      "2",
+		Asset:           "test-license-id",
+		License:         "2",
 		LeaseExpiration: time.Time{},
 	}
 	err = swidDecider.ReportSwID(transactionContext, swid, "Org2")
@@ -76,8 +76,8 @@ func initSwidTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
-		Status:   "status",
-		Licenses: make(map[string]map[string]time.Time),
+		Status: "status",
+		Assets: make(map[string]map[string]time.Time),
 	}
 
 	SetGraphState(t, stub, graph)
@@ -94,21 +94,21 @@ func initSwidTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.
 	SetUser(ctx, Org1AdminCert(), "Org1MSP")
 
 	// create a test license
-	license := &model.License{
-		ID:             "test-license-id",
-		Name:           "test-license",
-		TotalAmount:    5,
-		Available:      5,
-		Cost:           20,
-		OnboardingDate: time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:     time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
-		AllKeys:        []string{"1", "2", "3", "4", "5"},
-		AvailableKeys:  []string{"1", "2", "3", "4", "5"},
-		CheckedOut:     make(map[string]map[string]time.Time),
+	license := &model.Asset{
+		ID:                "test-license-id",
+		Name:              "test-license",
+		TotalAmount:       5,
+		Available:         5,
+		Cost:              20,
+		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
+		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		Licenses:          []string{"1", "2", "3", "4", "5"},
+		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
+		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	licenseDecider := NewLicenseDecider()
-	err = licenseDecider.OnboardLicense(ctx, license)
+	licenseDecider := NewAssetDecider()
+	err = licenseDecider.OnboardAsset(ctx, license)
 	require.NoError(t, err)
 
 	SetGraphState(t, stub, licenseDecider.pap.Graph())

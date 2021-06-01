@@ -71,14 +71,14 @@ func TestOffboardLicense(t *testing.T) {
 	t.Run("test org1 admin", func(t *testing.T) {
 		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
 
-		err = decider.OffboardAsset(transactionContext, "test-license-id")
+		err = decider.OffboardAsset(transactionContext, "test-asset-id")
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system owner", func(t *testing.T) {
 		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
 
-		err = decider.OffboardAsset(transactionContext, "test-license-id")
+		err = decider.OffboardAsset(transactionContext, "test-asset-id")
 		require.Error(t, err)
 	})
 }
@@ -125,7 +125,7 @@ func TestCheckoutLicense(t *testing.T) {
 
 		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(transactionContext, "Org2", "test-license-id",
+		err = licenseDecider.Checkout(transactionContext, "Org2", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.NoError(t, err)
 	})
@@ -162,7 +162,7 @@ func TestCheckoutLicense(t *testing.T) {
 		// checkout license as pending
 		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(transactionContext, "Org2", "test-license-id",
+		err = licenseDecider.Checkout(transactionContext, "Org2", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.Error(t, err)
 	})
@@ -185,8 +185,8 @@ func initLicenseTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *moc
 
 	// create a test license
 	asset := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -217,9 +217,9 @@ func TestFilterLicense(t *testing.T) {
 	require.NoError(t, err)
 	oa2, err := graph.CreateNode("oa2", pip.ObjectAttribute, nil)
 	require.NoError(t, err)
-	l1, err := graph.CreateNode(assetpap.ObjectAttribute("test-license-1"), pip.ObjectAttribute, nil)
+	l1, err := graph.CreateNode(assetpap.ObjectAttribute("test-asset-1"), pip.ObjectAttribute, nil)
 	require.NoError(t, err)
-	l2, err := graph.CreateNode(assetpap.ObjectAttribute("test-license-2"), pip.ObjectAttribute, nil)
+	l2, err := graph.CreateNode(assetpap.ObjectAttribute("test-asset-2"), pip.ObjectAttribute, nil)
 	require.NoError(t, err)
 	err = graph.Assign(oa1.Name, pcNode.Name)
 	require.NoError(t, err)
@@ -248,8 +248,8 @@ func TestFilterLicense(t *testing.T) {
 	testTime := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
 	assets := []*model.Asset{
 		{
-			ID:                "test-license-1",
-			Name:              "test-license-1",
+			ID:                "test-asset-1",
+			Name:              "test-asset-1",
 			TotalAmount:       5,
 			Available:         4,
 			Cost:              99,
@@ -258,12 +258,12 @@ func TestFilterLicense(t *testing.T) {
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
 			CheckedOut: map[string]map[string]time.Time{
-				"agency1": {"test-license-1": testTime},
+				"agency1": {"test-asset-1": testTime},
 			},
 		},
 		{
-			ID:                "test-license-2",
-			Name:              "test-license-2",
+			ID:                "test-asset-2",
+			Name:              "test-asset-2",
 			TotalAmount:       5,
 			Available:         4,
 			Cost:              99,
@@ -272,7 +272,7 @@ func TestFilterLicense(t *testing.T) {
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
 			CheckedOut: map[string]map[string]time.Time{
-				"agency1": {"test-license-2": testTime},
+				"agency1": {"test-asset-2": testTime},
 			},
 		},
 	}
@@ -289,8 +289,8 @@ func TestFilterLicense(t *testing.T) {
 	require.Equal(t, 2, len(assets))
 
 	license := assets[0]
-	require.Equal(t, "test-license-1", license.ID)
-	require.Equal(t, "test-license-1", license.Name)
+	require.Equal(t, "test-asset-1", license.ID)
+	require.Equal(t, "test-asset-1", license.Name)
 	require.Equal(t, 5, license.TotalAmount)
 	require.Equal(t, 4, license.Available)
 	require.Equal(t, float64(99), license.Cost)
@@ -299,14 +299,14 @@ func TestFilterLicense(t *testing.T) {
 	require.Equal(t, map[string]map[string]time.Time{}, license.CheckedOut)
 
 	license = assets[1]
-	require.Equal(t, "test-license-2", license.ID)
-	require.Equal(t, "test-license-2", license.Name)
+	require.Equal(t, "test-asset-2", license.ID)
+	require.Equal(t, "test-asset-2", license.Name)
 	require.Equal(t, 5, license.TotalAmount)
 	require.Equal(t, 4, license.Available)
 	require.Equal(t, float64(99), license.Cost)
 	require.Equal(t, []string{"1", "2", "3", "4", "5"}, license.Licenses)
 	require.Equal(t, []string{"2", "3", "4", "5"}, license.AvailableLicenses)
 	require.Equal(t, map[string]map[string]time.Time{
-		"agency1": {"test-license-2": testTime},
+		"agency1": {"test-asset-2": testTime},
 	}, license.CheckedOut)
 }

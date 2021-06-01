@@ -19,8 +19,8 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	swid := model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		Asset:           "test-license",
-		License:         "test-license:1",
+		Asset:           "test-asset",
+		License:         "test-asset:1",
 		LeaseExpiration: time.Time{},
 	}
 	b, err := json.Marshal(swid)
@@ -30,8 +30,8 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	swid = model.SwID{
 		PrimaryTag:      "pt2",
 		XML:             "xml",
-		Asset:           "test-license",
-		License:         "test-license:2",
+		Asset:           "test-asset",
+		License:         "test-asset:2",
 		LeaseExpiration: time.Time{},
 	}
 	b, err = json.Marshal(swid)
@@ -41,8 +41,8 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	swid = model.SwID{
 		PrimaryTag:      "pt3",
 		XML:             "xml",
-		Asset:           "other-license",
-		License:         "other-license:1",
+		Asset:           "other-asset",
+		License:         "other-asset:1",
 		LeaseExpiration: time.Time{},
 	}
 	b, err = json.Marshal(swid)
@@ -61,7 +61,7 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	chaincodeStub.GetStateByRangeReturns(iterator, nil)
 
 	cc := BlossomSmartContract{}
-	swids, err := cc.getSwIDsAssociatedWithAsset(transactionContext, "test-license")
+	swids, err := cc.getSwIDsAssociatedWithAsset(transactionContext, "test-asset")
 	require.NoError(t, err)
 	require.Equal(t, 2, len(swids))
 }

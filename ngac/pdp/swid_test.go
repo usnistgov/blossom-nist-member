@@ -29,7 +29,7 @@ func TestReportSwID(t *testing.T) {
 
 	SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.Checkout(transactionContext, "Org2", "test-license-id",
+	err = licenseDecider.Checkout(transactionContext, "Org2", "test-asset-id",
 		map[string]time.Time{"1": time.Now()})
 	require.NoError(t, err)
 
@@ -40,7 +40,7 @@ func TestReportSwID(t *testing.T) {
 	swid := &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		Asset:           "test-license-id",
+		Asset:           "test-asset-id",
 		License:         "1",
 		LeaseExpiration: time.Time{},
 	}
@@ -51,7 +51,7 @@ func TestReportSwID(t *testing.T) {
 	swid = &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		Asset:           "test-license-id",
+		Asset:           "test-asset-id",
 		License:         "2",
 		LeaseExpiration: time.Time{},
 	}

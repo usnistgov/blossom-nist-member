@@ -93,10 +93,10 @@ func initSwidTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.
 	// set up the mock identity as the org1 admin
 	SetUser(ctx, Org1AdminCert(), "Org1MSP")
 
-	// create a test license
-	license := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+	// create a test asset
+	asset := &model.Asset{
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -108,7 +108,7 @@ func initSwidTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.
 	}
 
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.OnboardAsset(ctx, license)
+	err = licenseDecider.OnboardAsset(ctx, asset)
 	require.NoError(t, err)
 
 	SetGraphState(t, stub, licenseDecider.pap.Graph())

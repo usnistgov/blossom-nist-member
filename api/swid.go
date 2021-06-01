@@ -14,7 +14,7 @@ type (
 	// SwIDInterface provides the functions to interact with SwID tags in fabric.
 	SwIDInterface interface {
 		// ReportSwID is used by Agencies to report to Blossom when a software user has installed a piece of software associated
-		// with a license that agency has checked out. This function will invoke NGAc chaincode to add the SwID to the NGAC graph.
+		// with an asset that agency has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
 		ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.

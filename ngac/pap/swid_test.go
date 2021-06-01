@@ -27,12 +27,12 @@ func TestReportSwID(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
 
-	license := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+	asset := &model.Asset{
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -43,10 +43,10 @@ func TestReportSwID(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = licenseAdmin.OnboardAsset(transactionContext, license)
+	err = assetAdmin.OnboardAsset(transactionContext, asset)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(licenseAdmin.graph)
+	graphBytes, err = json.Marshal(assetAdmin.graph)
 	require.NoError(t, err)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
@@ -80,7 +80,7 @@ func TestReportSwID(t *testing.T) {
 	swid := &model.SwID{
 		PrimaryTag:      "pt1",
 		XML:             "xml",
-		Asset:           "test-license-id",
+		Asset:           "test-asset-id",
 		License:         "1",
 		LeaseExpiration: time.Time{},
 	}
@@ -95,7 +95,7 @@ func TestReportSwID(t *testing.T) {
 
 	children, err := graph.GetChildren("pt1")
 	require.NoError(t, err)
-	require.Contains(t, children, assetpap.LicenseObject("test-license-id", "1"))
+	require.Contains(t, children, assetpap.LicenseObject("test-asset-id", "1"))
 
 	parents, err := graph.GetParents("pt1")
 	require.NoError(t, err)

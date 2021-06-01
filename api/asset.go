@@ -66,7 +66,7 @@ func (b *BlossomSmartContract) OnboardAsset(ctx contractapi.TransactionContextIn
 
 	// begin NGAC
 	if err := pdp.NewAssetDecider().OnboardAsset(ctx, asset); err != nil {
-		return errors.Wrapf(err, "error onboarding license %q", asset.Name)
+		return errors.Wrapf(err, "error onboarding asset %q", asset.Name)
 	}
 	// end NGAC
 
@@ -78,47 +78,47 @@ func (b *BlossomSmartContract) OnboardAsset(ctx contractapi.TransactionContextIn
 	// convert license to bytes
 	bytes, err := json.Marshal(asset)
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling license %q", asset.Name)
+		return errors.Wrapf(err, "error marshaling asset %q", asset.Name)
 	}
 
 	// add license to world state
 	if err = ctx.GetStub().PutState(model.AssetKey(asset.ID), bytes); err != nil {
-		return errors.Wrapf(err, "error adding license to ledger")
+		return errors.Wrapf(err, "error adding asset to ledger")
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextInterface, licenseID string) error {
-	if ok, err := b.assetExists(ctx, licenseID); err != nil {
-		return errors.Wrapf(err, "error checking if license exists")
+func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextInterface, assetID string) error {
+	if ok, err := b.assetExists(ctx, assetID); err != nil {
+		return errors.Wrapf(err, "error checking if asset exists")
 	} else if !ok {
 		return nil
 	}
 
 	var (
-		license *model.Asset
-		err     error
+		asset *model.Asset
+		err   error
 	)
 
-	if license, err = b.AssetInfo(ctx, licenseID); err != nil {
-		return errors.Wrapf(err, "error getting license info")
+	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
+		return errors.Wrapf(err, "error getting asset info")
 	}
 
 	// check that all licenses have been returned
-	if len(license.CheckedOut) != 0 {
-		return errors.Errorf("license %s still has licenses checked out", licenseID)
+	if len(asset.CheckedOut) != 0 {
+		return errors.Errorf("asset %s still has licenses checked out", assetID)
 	}
 
 	// begin NGAC
-	if err = pdp.NewAssetDecider().OffboardAsset(ctx, licenseID); err != nil {
-		return errors.Wrapf(err, "error onboarding license %q", licenseID)
+	if err = pdp.NewAssetDecider().OffboardAsset(ctx, assetID); err != nil {
+		return errors.Wrapf(err, "error offboarding asset %q in NGAC", assetID)
 	}
 	// end NGAC
 
 	// remove license from world state
-	if err = ctx.GetStub().DelState(model.AssetKey(licenseID)); err != nil {
-		return errors.Wrapf(err, "error offboarding license from blossom")
+	if err = ctx.GetStub().DelState(model.AssetKey(assetID)); err != nil {
+		return errors.Wrapf(err, "error offboarding asset from ledger")
 	}
 
 	return nil
@@ -126,19 +126,19 @@ func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextI
 
 func (b *BlossomSmartContract) Assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error) {
 	// retrieve the assets from the ledger
-	licenses, err := assets(ctx)
+	assets, err := assets(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting licenses")
 	}
 
 	// begin NGAC
 	// filter any asset information the requesting user may not have permission to see
-	if licenses, err = pdp.NewAssetDecider().FilterAssets(ctx, licenses); err != nil {
-		return nil, errors.Wrapf(err, "error filtering licenses")
+	if assets, err = pdp.NewAssetDecider().FilterAssets(ctx, assets); err != nil {
+		return nil, errors.Wrapf(err, "error filtering assets")
 	}
 	// end NGAC
 
-	return licenses, nil
+	return assets, nil
 }
 
 func assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error) {
@@ -179,27 +179,27 @@ func (b *BlossomSmartContract) AssetInfo(ctx contractapi.TransactionContextInter
 	}
 
 	var (
-		license = &model.Asset{}
-		bytes   []byte
-		err     error
+		asset = &model.Asset{}
+		bytes []byte
+		err   error
 	)
 
 	if bytes, err = ctx.GetStub().GetState(model.AssetKey(id)); err != nil {
 		return nil, errors.Wrapf(err, "error getting asset from ledger")
 	}
 
-	if err = json.Unmarshal(bytes, license); err != nil {
+	if err = json.Unmarshal(bytes, asset); err != nil {
 		return nil, errors.Wrapf(err, "error deserializing license")
 	}
 
 	// begin NGAC
 	// filter any asset information the requesting user may not have permission to see
-	if err := pdp.NewAssetDecider().FilterAsset(ctx, license); err != nil {
+	if err := pdp.NewAssetDecider().FilterAsset(ctx, asset); err != nil {
 		return nil, errors.Wrapf(err, "error filtering asset")
 	}
 	// end NGAC
 
-	return license, nil
+	return asset, nil
 }
 
 func (b *BlossomSmartContract) Checkout(
@@ -209,9 +209,9 @@ func (b *BlossomSmartContract) Checkout(
 	amount int) (map[string]time.Time, error) {
 
 	var (
-		license = &model.Asset{}
-		agency  = &model.Agency{}
-		err     error
+		asset  = &model.Asset{}
+		agency = &model.Agency{}
+		err    error
 	)
 
 	// get the agency that will be leasing the licenses
@@ -220,14 +220,14 @@ func (b *BlossomSmartContract) Checkout(
 	}
 
 	// get asset being requested
-	if license, err = b.AssetInfo(ctx, assetID); err != nil {
+	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
 		return nil, errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 
-	// checkout the license
+	// checkout the asset
 	var checkedOutLicenses map[string]time.Time
-	if checkedOutLicenses, err = checkout(agency, license, amount); err != nil {
-		return nil, errors.Wrapf(err, "error checking out %q", license.ID)
+	if checkedOutLicenses, err = checkout(agency, asset, amount); err != nil {
+		return nil, errors.Wrapf(err, "error checking out %q", asset.ID)
 	}
 
 	// update agency's record of checked out licenses
@@ -241,12 +241,12 @@ func (b *BlossomSmartContract) Checkout(
 	}
 
 	// update asset to reflect the licenses being leased to the agency
-	if bytes, err = json.Marshal(license); err != nil {
-		return nil, errors.Wrapf(err, "error marshaling license %q", license.ID)
+	if bytes, err = json.Marshal(asset); err != nil {
+		return nil, errors.Wrapf(err, "error marshaling asset %q", asset.ID)
 	}
 
-	if err = ctx.GetStub().PutState(model.AssetKey(license.ID), bytes); err != nil {
-		return nil, errors.Wrapf(err, "error updating license state")
+	if err = ctx.GetStub().PutState(model.AssetKey(asset.ID), bytes); err != nil {
+		return nil, errors.Wrapf(err, "error updating asset state")
 	}
 
 	// begin NGAC
@@ -255,7 +255,7 @@ func (b *BlossomSmartContract) Checkout(
 	// this change will provide the users of the requesting agency access to the licenses, nobody else
 	// will be able to access them
 	if err := pdp.NewAssetDecider().Checkout(ctx, agencyName, assetID, checkedOutLicenses); err != nil {
-		return nil, errors.Wrapf(err, "error checking out license in NGAC")
+		return nil, errors.Wrapf(err, "error checking out asset in NGAC")
 	}
 	// end NGAC
 
@@ -312,9 +312,9 @@ func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]
 
 func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterface, assetID string, licenses []string, agencyName string) error {
 	var (
-		license = &model.Asset{}
-		agency  = &model.Agency{}
-		err     error
+		asset  = &model.Asset{}
+		agency = &model.Agency{}
+		err    error
 	)
 
 	// get agency
@@ -322,13 +322,13 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 		return errors.Wrapf(err, "error getting agency %q", agencyName)
 	}
 
-	// get license
-	if license, err = b.AssetInfo(ctx, assetID); err != nil {
+	// get asset
+	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
 		return errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 
-	// check in license logic
-	if err = checkin(agency, license, licenses); err != nil {
+	// check in asset logic
+	if err = checkin(agency, asset, licenses); err != nil {
 		return err
 	}
 
@@ -342,13 +342,13 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 		return errors.Wrapf(err, "error updating agency state")
 	}
 
-	// update license
-	if bytes, err = json.Marshal(license); err != nil {
-		return errors.Wrapf(err, "error marshaling license %q", license.ID)
+	// update asset
+	if bytes, err = json.Marshal(asset); err != nil {
+		return errors.Wrapf(err, "error marshaling asset %q", asset.ID)
 	}
 
-	if err = ctx.GetStub().PutState(model.AssetKey(license.Name), bytes); err != nil {
-		return errors.Wrapf(err, "error updating license state")
+	if err = ctx.GetStub().PutState(model.AssetKey(asset.Name), bytes); err != nil {
+		return errors.Wrapf(err, "error updating asset state")
 	}
 
 	// begin NGAC

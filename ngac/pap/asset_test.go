@@ -30,12 +30,12 @@ func TestOnboardLicense(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
 
-	license := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+	asset := &model.Asset{
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -46,27 +46,27 @@ func TestOnboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = licenseAdmin.OnboardAsset(transactionContext, license)
+	err = assetAdmin.OnboardAsset(transactionContext, asset)
 	require.NoError(t, err)
 
-	graph = licenseAdmin.Graph()
-	ok, err := graph.Exists(assetpap.ObjectAttribute(license.ID))
+	graph = assetAdmin.Graph()
+	ok, err := graph.Exists(assetpap.ObjectAttribute(asset.ID))
 	require.NoError(t, err)
 	require.True(t, ok)
 
-	parents, err := graph.GetParents(assetpap.ObjectAttribute(license.ID))
+	parents, err := graph.GetParents(assetpap.ObjectAttribute(asset.ID))
 	require.NoError(t, err)
 	require.Contains(t, parents, rbac.AssetsOA)
 	require.Contains(t, parents, dac.AssetsOA)
 	require.Contains(t, parents, status.AssetsOA)
 
-	children, err := graph.GetChildren(assetpap.ObjectAttribute(license.ID))
+	children, err := graph.GetChildren(assetpap.ObjectAttribute(asset.ID))
 	require.NoError(t, err)
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "1"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "2"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "3"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "4"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "5"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "1"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "4"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "5"))
 }
 
 func TestOffboardLicense(t *testing.T) {
@@ -82,12 +82,12 @@ func TestOffboardLicense(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
 
-	license := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+	asset := &model.Asset{
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -98,29 +98,29 @@ func TestOffboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = licenseAdmin.OnboardAsset(transactionContext, license)
+	err = assetAdmin.OnboardAsset(transactionContext, asset)
 	require.NoError(t, err)
 
-	err = licenseAdmin.OffboardAsset(transactionContext, license.ID)
+	err = assetAdmin.OffboardAsset(transactionContext, asset.ID)
 	require.NoError(t, err)
 
-	graph = licenseAdmin.Graph()
-	ok, err := graph.Exists(assetpap.ObjectAttribute(license.ID))
+	graph = assetAdmin.Graph()
+	ok, err := graph.Exists(assetpap.ObjectAttribute(asset.ID))
 	require.NoError(t, err)
 	require.False(t, ok)
-	ok, err = graph.Exists(assetpap.LicenseObject(license.ID, "1"))
+	ok, err = graph.Exists(assetpap.LicenseObject(asset.ID, "1"))
 	require.NoError(t, err)
 	require.False(t, ok)
-	ok, err = graph.Exists(assetpap.LicenseObject(license.ID, "2"))
+	ok, err = graph.Exists(assetpap.LicenseObject(asset.ID, "2"))
 	require.NoError(t, err)
 	require.False(t, ok)
-	ok, err = graph.Exists(assetpap.LicenseObject(license.ID, "3"))
+	ok, err = graph.Exists(assetpap.LicenseObject(asset.ID, "3"))
 	require.NoError(t, err)
 	require.False(t, ok)
-	ok, err = graph.Exists(assetpap.LicenseObject(license.ID, "4"))
+	ok, err = graph.Exists(assetpap.LicenseObject(asset.ID, "4"))
 	require.NoError(t, err)
 	require.False(t, ok)
-	ok, err = graph.Exists(assetpap.LicenseObject(license.ID, "5"))
+	ok, err = graph.Exists(assetpap.LicenseObject(asset.ID, "5"))
 	require.NoError(t, err)
 	require.False(t, ok)
 }
@@ -138,12 +138,12 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
 
-	license := &model.Asset{
-		ID:                "test-license-id",
-		Name:              "test-license",
+	asset := &model.Asset{
+		ID:                "test-asset-id",
+		Name:              "test-asset",
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
@@ -154,10 +154,10 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = licenseAdmin.OnboardAsset(transactionContext, license)
+	err = assetAdmin.OnboardAsset(transactionContext, asset)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(licenseAdmin.graph)
+	graphBytes, err = json.Marshal(assetAdmin.graph)
 	require.NoError(t, err)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
@@ -185,64 +185,64 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	require.NoError(t, err)
 	chaincodeStub.GetStateReturns(restartBytes, nil)
 
-	licenseAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
-	err = licenseAdmin.Checkout(transactionContext, agency.Name, license.ID,
+	err = assetAdmin.Checkout(transactionContext, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
-	graph = licenseAdmin.graph
+	graph = assetAdmin.graph
 	children, err := graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "1"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "2"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "3"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "1"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
-	graphBytes, err = json.Marshal(licenseAdmin.graph)
+	graphBytes, err = json.Marshal(assetAdmin.graph)
 	require.NoError(t, err)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
-	err = licenseAdmin.Checkin(transactionContext, agency.Name, license.ID, []string{"1", "2", "3"})
+	err = assetAdmin.Checkin(transactionContext, agency.Name, asset.ID, []string{"1", "2", "3"})
 	require.NoError(t, err)
 
-	graph = licenseAdmin.graph
+	graph = assetAdmin.graph
 	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
-	require.NotContains(t, children, assetpap.LicenseObject(license.ID, "1"))
-	require.NotContains(t, children, assetpap.LicenseObject(license.ID, "2"))
-	require.NotContains(t, children, assetpap.LicenseObject(license.ID, "3"))
+	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "1"))
+	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "2"))
+	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
 	// test only returning 2 of 3 keys
 	chaincodeStub.GetStateReturns(restartBytes, nil)
 
-	licenseAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
-	err = licenseAdmin.Checkout(transactionContext, agency.Name, license.ID,
+	err = assetAdmin.Checkout(transactionContext, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
-	graph = licenseAdmin.graph
+	graph = assetAdmin.graph
 	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "1"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "2"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "3"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "1"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
-	graphBytes, err = json.Marshal(licenseAdmin.graph)
+	graphBytes, err = json.Marshal(assetAdmin.graph)
 	require.NoError(t, err)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 
-	licenseAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(transactionContext)
 	require.NoError(t, err)
-	err = licenseAdmin.Checkin(transactionContext, agency.Name, license.ID, []string{"1", "2"})
+	err = assetAdmin.Checkin(transactionContext, agency.Name, asset.ID, []string{"1", "2"})
 	require.NoError(t, err)
 
-	graph = licenseAdmin.graph
+	graph = assetAdmin.graph
 	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
-	require.NotContains(t, children, assetpap.LicenseObject(license.ID, "1"))
-	require.NotContains(t, children, assetpap.LicenseObject(license.ID, "2"))
-	require.Contains(t, children, assetpap.LicenseObject(license.ID, "3"))
+	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "1"))
+	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "2"))
+	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 }

@@ -58,7 +58,7 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning assets container to DAC object attribute")
 	}
 
-	// associate the org1 admin ua with * on licenses container
+	// associate the super ua with * on licenses container
 	if err = graph.Associate(adminUA, assetsOA.Name, pip.ToOps(pip.AllOps)); err != nil {
 		return errors.Wrapf(err, "error associating admin user attribute with assets container in DAC policy")
 	}

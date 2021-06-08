@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
+	mocks2 "github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
@@ -22,8 +22,8 @@ func TestReportSwID(t *testing.T) {
 	graphBytes, err := json.Marshal(graph)
 	require.NoError(t, err)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
+	chaincodeStub := &mocks2.ChaincodeStub{}
+	transactionContext := &mocks2.TransactionContext{}
 	transactionContext.GetStubReturns(chaincodeStub)
 	chaincodeStub.GetStateReturns(graphBytes, nil)
 

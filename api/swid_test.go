@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
 	"time"
 )
 
 func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
+	mock := mocks.New()
 
 	swidBytes := make([][]byte, 0)
 	swid := model.SwID{
@@ -58,10 +56,10 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	iterator.NextReturnsOnCall(1, &queryresult.KV{Key: model.SwIDKey("pt2"), Value: swidBytes[1]}, nil)
 	iterator.NextReturnsOnCall(2, &queryresult.KV{Key: model.SwIDKey("pt3"), Value: swidBytes[2]}, nil)
 
-	chaincodeStub.GetStateByRangeReturns(iterator, nil)
+	mock.Stub.GetStateByRangeReturns(iterator, nil)
 
 	cc := BlossomSmartContract{}
-	swids, err := cc.getSwIDsAssociatedWithAsset(transactionContext, "test-asset")
+	swids, err := cc.getSwIDsAssociatedWithAsset(mock.Ctx, "test-asset")
 	require.NoError(t, err)
 	require.Equal(t, 2, len(swids))
 }

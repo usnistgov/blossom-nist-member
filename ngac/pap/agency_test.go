@@ -1,11 +1,10 @@
 package pap
 
 import (
-	"encoding/json"
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
@@ -20,17 +19,13 @@ func TestRequestAccount(t *testing.T) {
 	graph := memory.NewGraph()
 	err := policy.Configure(graph)
 	require.NoError(t, err)
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
 	require.NoError(t, err)
 
-	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
 	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
@@ -44,7 +39,7 @@ func TestRequestAccount(t *testing.T) {
 		Status: "",
 		Assets: nil,
 	}
-	err = agencyAdmin.RequestAccount(transactionContext, agency)
+	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
 	require.NoError(t, err)
 
 	graph = agencyAdmin.graph
@@ -119,17 +114,13 @@ func TestUpdateAgencyStatus(t *testing.T) {
 	graph := memory.NewGraph()
 	err := policy.Configure(graph)
 	require.NoError(t, err)
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
 	require.NoError(t, err)
 
-	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
 	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
@@ -143,17 +134,15 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		Status: "",
 		Assets: nil,
 	}
-	err = agencyAdmin.RequestAccount(transactionContext, agency)
+	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
 	require.NoError(t, err)
 
 	// update mock graph
 	graph = agencyAdmin.graph
-	graphBytes, err = json.Marshal(graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(graph)
 
 	t.Run("test approved", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(transactionContext, agency.Name, model.Approved)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.Approved)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
@@ -162,7 +151,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		require.NotContains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test pending", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(transactionContext, agency.Name, model.PendingATO)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.PendingATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
@@ -171,7 +160,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		require.Contains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test inactive", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(transactionContext, agency.Name, model.InactiveATO)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.InactiveATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)

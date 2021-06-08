@@ -12,7 +12,7 @@ type (
 	GraphCmd interface {
 		// CanExecute checks that the user can execute the GraphCmd on the graph
 		CanExecute(user string, graph pip.Graph) (bool, error)
-		// execute the GraphCmd on the graph
+		// Execute the GraphCmd on the graph
 		Execute(graph pip.Graph) error
 
 		fmt.Stringer

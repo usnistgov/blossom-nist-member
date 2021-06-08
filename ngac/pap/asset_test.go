@@ -1,14 +1,13 @@
 package pap
 
 import (
-	"encoding/json"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
 	"testing"
 	"time"
 
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
@@ -22,15 +21,10 @@ func TestOnboardLicense(t *testing.T) {
 	err := policy.Configure(graph)
 	require.NoError(t, err)
 
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
-
-	assetAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -46,7 +40,7 @@ func TestOnboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(transactionContext, asset)
+	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
 	require.NoError(t, err)
 
 	graph = assetAdmin.Graph()
@@ -74,15 +68,10 @@ func TestOffboardLicense(t *testing.T) {
 	err := policy.Configure(graph)
 	require.NoError(t, err)
 
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
-
-	assetAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -98,10 +87,10 @@ func TestOffboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(transactionContext, asset)
+	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
 	require.NoError(t, err)
 
-	err = assetAdmin.OffboardAsset(transactionContext, asset.ID)
+	err = assetAdmin.OffboardAsset(mock.Ctx, asset.ID)
 	require.NoError(t, err)
 
 	graph = assetAdmin.Graph()
@@ -130,15 +119,10 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	err := policy.Configure(graph)
 	require.NoError(t, err)
 
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
-
-	assetAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -154,15 +138,13 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(transactionContext, asset)
+	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(assetAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(assetAdmin.graph)
 
 	// create a new test agency
-	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
 	require.NoError(t, err)
 
 	agency := model.Agency{
@@ -178,16 +160,15 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		Assets: nil,
 	}
 
-	err = agencyAdmin.RequestAccount(transactionContext, agency)
+	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
 	require.NoError(t, err)
 
-	restartBytes, err := json.Marshal(agencyAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(restartBytes, nil)
+	restartGraph := agencyAdmin.graph
+	mock.SetGraphState(agencyAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(transactionContext, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Ctx, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
@@ -198,13 +179,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
-	graphBytes, err = json.Marshal(assetAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(assetAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(transactionContext, agency.Name, asset.ID, []string{"1", "2", "3"})
+	err = assetAdmin.Checkin(mock.Ctx, agency.Name, asset.ID, []string{"1", "2", "3"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
@@ -215,11 +194,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
 	// test only returning 2 of 3 keys
-	chaincodeStub.GetStateReturns(restartBytes, nil)
+	mock.SetGraphState(restartGraph)
 
-	assetAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(transactionContext, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Ctx, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
@@ -230,13 +209,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "3"))
 
-	graphBytes, err = json.Marshal(assetAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(assetAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(transactionContext)
+	assetAdmin, err = NewAssetAdmin(mock.Ctx)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(transactionContext, agency.Name, asset.ID, []string{"1", "2"})
+	err = assetAdmin.Checkin(mock.Ctx, agency.Name, asset.ID, []string{"1", "2"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph

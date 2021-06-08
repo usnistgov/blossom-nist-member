@@ -4,7 +4,7 @@ import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
@@ -14,11 +14,9 @@ import (
 )
 
 func TestOnboardLicense(t *testing.T) {
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
+	mock := mocks.New()
 
-	err := initLicenseTestGraph(t, transactionContext, chaincodeStub)
+	err := initLicenseTestGraph(t, mock)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -36,68 +34,58 @@ func TestOnboardLicense(t *testing.T) {
 
 	decider := NewAssetDecider()
 
-	t.Run("test org1 admin", func(t *testing.T) {
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org1MSP", nil)
-		clientIdentity.GetX509CertificateReturns(Org1AdminCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
+	t.Run("test super", func(t *testing.T) {
+		mock.SetUser(mocks.Super())
 
-		err = decider.OnboardAsset(transactionContext, asset)
+		err = decider.OnboardAsset(mock.Ctx, asset)
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		clientIdentity := &mocks.ClientIdentity{}
-		clientIdentity.GetMSPIDReturns("Org2MSP", nil)
-		clientIdentity.GetX509CertificateReturns(A1SystemOwnerCert(), nil)
-		transactionContext.GetClientIdentityReturns(clientIdentity)
+		mock.SetUser(mocks.A1SystemOwner())
 
-		err = decider.OnboardAsset(transactionContext, asset)
+		err = decider.OnboardAsset(mock.Ctx, asset)
 		require.Error(t, err)
 	})
 }
 
 func TestOffboardLicense(t *testing.T) {
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
+	mock := mocks.New()
 
-	err := initLicenseTestGraph(t, transactionContext, chaincodeStub)
+	err := initLicenseTestGraph(t, mock)
 	require.NoError(t, err)
 
 	decider := NewAssetDecider()
 	require.NoError(t, err)
 
-	t.Run("test org1 admin", func(t *testing.T) {
-		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+	t.Run("test super", func(t *testing.T) {
+		mock.SetUser(mocks.Super())
 
-		err = decider.OffboardAsset(transactionContext, "test-asset-id")
+		err = decider.OffboardAsset(mock.Ctx, "test-asset-id")
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
-		err = decider.OffboardAsset(transactionContext, "test-asset-id")
+		err = decider.OffboardAsset(mock.Ctx, "test-asset-id")
 		require.Error(t, err)
 	})
 }
 
 func TestCheckoutLicense(t *testing.T) {
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
+	mock := mocks.New()
 
 	t.Run("test checkout active", func(t *testing.T) {
 		// initialize the test graph with an onboarded license
-		err := initLicenseTestGraph(t, transactionContext, chaincodeStub)
+		err := initLicenseTestGraph(t, mock)
 		require.NoError(t, err)
 
 		// request account
 		agency := model.Agency{
-			Name:  "Org2",
+			Name:  "A1",
 			ATO:   "ato",
-			MSPID: "Org2MSP",
+			MSPID: "A1MSP",
 			Users: model.Users{
 				SystemOwner:           "a1_system_owner",
 				SystemAdministrator:   "a1_system_admin",
@@ -107,39 +95,39 @@ func TestCheckoutLicense(t *testing.T) {
 			Assets: make(map[string]map[string]time.Time),
 		}
 
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
 		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(transactionContext, agency)
+		err = agencyDecider.RequestAccount(mock.Ctx, agency)
 		require.NoError(t, err)
 
-		SetGraphState(t, chaincodeStub, agencyDecider.pap.Graph())
+		mock.SetGraphState(agencyDecider.pap.Graph())
 
 		// approve agency
-		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+		mock.SetUser(mocks.Super())
 		agencyDecider = NewAgencyDecider()
-		err = agencyDecider.UpdateAgencyStatus(transactionContext, agency.Name, model.Approved)
+		err = agencyDecider.UpdateAgencyStatus(mock.Ctx, agency.Name, model.Approved)
 		require.NoError(t, err)
 
-		SetGraphState(t, chaincodeStub, agencyDecider.pap.Graph())
+		mock.SetGraphState(agencyDecider.pap.Graph())
 
-		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemAdmin())
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(transactionContext, "Org2", "test-asset-id",
+		err = licenseDecider.Checkout(mock.Ctx, "A1", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.NoError(t, err)
 	})
 
 	t.Run("test checkout inactive", func(t *testing.T) {
 		// initialize the test graph with an onboarded license
-		err := initLicenseTestGraph(t, transactionContext, chaincodeStub)
+		err := initLicenseTestGraph(t, mock)
 		require.NoError(t, err)
 
 		// request account
 		agency := model.Agency{
-			Name:  "Org2",
+			Name:  "A1",
 			ATO:   "ato",
-			MSPID: "Org2MSP",
+			MSPID: "A1MSP",
 			Users: model.Users{
 				SystemOwner:           "a1_system_owner",
 				SystemAdministrator:   "a1_system_admin",
@@ -149,27 +137,27 @@ func TestCheckoutLicense(t *testing.T) {
 			Assets: make(map[string]map[string]time.Time),
 		}
 
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
 		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(transactionContext, agency)
+		err = agencyDecider.RequestAccount(mock.Ctx, agency)
 		require.NoError(t, err)
 
-		SetGraphState(t, chaincodeStub, agencyDecider.pap.Graph())
+		mock.SetGraphState(agencyDecider.pap.Graph())
 
 		// do not approve agency
 
 		// checkout license as pending
-		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemAdmin())
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(transactionContext, "Org2", "test-asset-id",
+		err = licenseDecider.Checkout(mock.Ctx, "A1", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.Error(t, err)
 	})
 }
 
 // initialize a test graph to be used by test methods
-func initLicenseTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.ChaincodeStub) error {
+func initLicenseTestGraph(t *testing.T, mock mocks.Mock) error {
 	// create a new ngac graph and configure it using the blossom policy
 	graph := memory.NewGraph()
 	err := policy.Configure(graph)
@@ -177,11 +165,11 @@ func initLicenseTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *moc
 
 	// set the ngac graph as the result of get state
 	// later when OnboardAsset is called, this graph will be used to determine if
-	// the org1 admin has permission to onboard a license
-	SetGraphState(t, stub, graph)
+	// the super has permission to onboard a license
+	mock.SetGraphState(graph)
 
-	// set up the mock identity as the org1 admin
-	SetUser(ctx, Org1AdminCert(), "Org1MSP")
+	// set up the mock identity as the super
+	mock.SetUser(mocks.Super())
 
 	// create a test license
 	asset := &model.Asset{
@@ -197,15 +185,15 @@ func initLicenseTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *moc
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	// onboard the license as the org1 admin
+	// onboard the license as the super
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.OnboardAsset(ctx, asset)
+	err = licenseDecider.OnboardAsset(mock.Ctx, asset)
 	require.NoError(t, err)
 
 	// re marshal the graph bytes using the PAP's graph
 	// this will have the graph that includes the onboarded license
 	// this is the graph the tests will operate on
-	SetGraphState(t, stub, licenseDecider.pap.Graph())
+	mock.SetGraphState(licenseDecider.pap.Graph())
 	return nil
 }
 
@@ -232,7 +220,7 @@ func TestFilterLicense(t *testing.T) {
 
 	ua1, err := graph.CreateNode("ua1", pip.UserAttribute, nil)
 	require.NoError(t, err)
-	u1, err := graph.CreateNode("Org1 Admin:Org1MSP", pip.User, nil)
+	u1, err := graph.CreateNode("super:BlossomMSP", pip.User, nil)
 	require.NoError(t, err)
 	err = graph.Assign(u1.Name, ua1.Name)
 	require.NoError(t, err)
@@ -277,14 +265,12 @@ func TestFilterLicense(t *testing.T) {
 		},
 	}
 
-	chaincodeStub := &mocks.ChaincodeStub{}
-	transactionContext := &mocks.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
+	mock := mocks.New()
 
-	SetGraphState(t, chaincodeStub, graph)
-	SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+	mock.SetGraphState(graph)
+	mock.SetUser(mocks.Super())
 
-	assets, err = NewAssetDecider().FilterAssets(transactionContext, assets)
+	assets, err = NewAssetDecider().FilterAssets(mock.Ctx, assets)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(assets))
 

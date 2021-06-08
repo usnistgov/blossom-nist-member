@@ -14,8 +14,8 @@ import (
 const (
 	BlossomObject  = "blossom"
 	BlossomOA      = "blossom_OA"
-	BlossomAdmin   = "Org1 Admin:Org1MSP"
-	BlossomAdminUA = "Org1 Admin:Org1MSP_UA"
+	BlossomAdmin   = "super:BlossomMSP"
+	BlossomAdminUA = "super:BlossomMSP_UA"
 )
 
 func Configure(graph pip.Graph) error {

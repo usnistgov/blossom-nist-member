@@ -3,7 +3,7 @@ package pdp
 import (
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	"github.com/usnistgov/blossom/chaincode/api/mocks"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	"testing"
@@ -14,30 +14,26 @@ func TestUploadATO(t *testing.T) {
 	decider := NewAgencyDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
-		err = decider.UploadATO(transactionContext, "Org2")
+		err = decider.UploadATO(mock.Ctx, "A1")
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemAdmin())
 
-		err = decider.UploadATO(transactionContext, "Org2")
+		err = decider.UploadATO(mock.Ctx, "A1")
 		require.Error(t, err)
 	})
 }
@@ -46,44 +42,38 @@ func TestUpdateAgencyStatus(t *testing.T) {
 	decider := NewAgencyDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
-		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
+		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
 		require.Error(t, err)
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemAdmin())
 
-		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
+		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
 		require.Error(t, err)
 	})
 
-	t.Run("test Org1 Admin", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+	t.Run("test super", func(t *testing.T) {
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+		mock.SetUser(mocks.Super())
 
-		err = decider.UpdateAgencyStatus(transactionContext, "Org2", "test")
+		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
 		require.NoError(t, err)
 	})
 }
@@ -92,20 +82,18 @@ func TestFilterAgency(t *testing.T) {
 	decider := NewAgencyDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		SetUser(transactionContext, A1SystemOwnerCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemOwner())
 
 		agency := &model.Agency{
-			Name:  "Org2",
+			Name:  "A1",
 			ATO:   "ato",
-			MSPID: "Org2MSP",
+			MSPID: "A1MSP",
 			Users: model.Users{
 				SystemOwner:           "a1_system_owner",
 				SystemAdministrator:   "a1_system_admin",
@@ -120,13 +108,13 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(transactionContext)
+		err = decider.setup(mock.Ctx)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
-		require.Equal(t, "Org2", agency.Name)
+		require.Equal(t, "A1", agency.Name)
 		require.Equal(t, "ato", agency.ATO)
-		require.Equal(t, "Org2MSP", agency.MSPID)
+		require.Equal(t, "A1MSP", agency.MSPID)
 		require.Equal(t, model.Status("status"), agency.Status)
 		require.Equal(t, model.Users{
 			SystemOwner:           "a1_system_owner",
@@ -142,20 +130,18 @@ func TestFilterAgency(t *testing.T) {
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		SetUser(transactionContext, A1SystemAdminCert(), "Org2MSP")
+		mock.SetUser(mocks.A1SystemAdmin())
 
 		agency := &model.Agency{
-			Name:  "Org2",
+			Name:  "A1",
 			ATO:   "ato",
-			MSPID: "Org2MSP",
+			MSPID: "A1MSP",
 			Users: model.Users{
 				SystemOwner:           "a1_system_owner",
 				SystemAdministrator:   "a1_system_admin",
@@ -170,11 +156,11 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(transactionContext)
+		err = decider.setup(mock.Ctx)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
-		require.Equal(t, "Org2", agency.Name)
+		require.Equal(t, "A1", agency.Name)
 		require.Equal(t, "", agency.ATO)
 		require.Equal(t, "", agency.MSPID)
 		require.Equal(t, model.Status(""), agency.Status)
@@ -187,21 +173,19 @@ func TestFilterAgency(t *testing.T) {
 		}, agency.Assets)
 	})
 
-	t.Run("test Org1 Admin", func(t *testing.T) {
-		chaincodeStub := &mocks.ChaincodeStub{}
-		transactionContext := &mocks.TransactionContext{}
-		transactionContext.GetStubReturns(chaincodeStub)
+	t.Run("test super", func(t *testing.T) {
+		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, transactionContext, chaincodeStub)
+		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		SetUser(transactionContext, Org1AdminCert(), "Org1MSP")
+		mock.SetUser(mocks.Super())
 
 		agency := &model.Agency{
-			Name:  "Org2",
+			Name:  "A1",
 			ATO:   "ato",
-			MSPID: "Org2MSP",
+			MSPID: "A1MSP",
 			Users: model.Users{
 				SystemOwner:           "a1_system_owner",
 				SystemAdministrator:   "a1_system_admin",
@@ -216,13 +200,13 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(transactionContext)
+		err = decider.setup(mock.Ctx)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
-		require.Equal(t, "Org2", agency.Name)
+		require.Equal(t, "A1", agency.Name)
 		require.Equal(t, "ato", agency.ATO)
-		require.Equal(t, "Org2MSP", agency.MSPID)
+		require.Equal(t, "A1MSP", agency.MSPID)
 		require.Equal(t, model.Status("status"), agency.Status)
 		require.Equal(t, model.Users{
 			SystemOwner:           "a1_system_owner",
@@ -238,7 +222,7 @@ func TestFilterAgency(t *testing.T) {
 	})
 }
 
-func initAgencyTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mocks.ChaincodeStub) error {
+func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	graph := memory.NewGraph()
 
 	// configure the policy
@@ -247,9 +231,9 @@ func initAgencyTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mock
 
 	// add an account
 	agency := model.Agency{
-		Name:  "Org2",
+		Name:  "A1",
 		ATO:   "ato",
-		MSPID: "Org2MSP",
+		MSPID: "A1MSP",
 		Users: model.Users{
 			SystemOwner:           "a1_system_owner",
 			SystemAdministrator:   "a1_system_admin",
@@ -259,15 +243,15 @@ func initAgencyTestGraph(t *testing.T, ctx *mocks.TransactionContext, stub *mock
 		Assets: make(map[string]map[string]time.Time),
 	}
 
-	SetGraphState(t, stub, graph)
+	mock.SetGraphState(graph)
 
 	// add account as the a1 system owner
-	SetUser(ctx, A1SystemOwnerCert(), "Org2MSP")
+	mock.SetUser(mocks.A1SystemOwner())
 	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.RequestAccount(ctx, agency)
+	err = agencyDecider.RequestAccount(mock.Ctx, agency)
 	require.NoError(t, err)
 
-	SetGraphState(t, stub, agencyDecider.pap.Graph())
+	mock.SetGraphState(agencyDecider.pap.Graph())
 
 	return nil
 }

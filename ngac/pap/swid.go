@@ -2,7 +2,7 @@ package pap
 
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
@@ -15,14 +15,14 @@ type SwIDAdmin struct {
 	graph pip.Graph
 }
 
-func NewSwIDAdmin(ctx contractapi.TransactionContextInterface) (*SwIDAdmin, error) {
+func NewSwIDAdmin(stub shim.ChaincodeStubInterface) (*SwIDAdmin, error) {
 	sa := &SwIDAdmin{}
-	err := sa.setup(ctx)
+	err := sa.setup(stub)
 	return sa, err
 }
 
-func (s *SwIDAdmin) setup(ctx contractapi.TransactionContextInterface) error {
-	graph, err := ledger.GetGraph(ctx)
+func (s *SwIDAdmin) setup(stub shim.ChaincodeStubInterface) error {
+	graph, err := ledger.GetGraph(stub)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving ngac graph from ledger")
 	}
@@ -36,8 +36,8 @@ func (s *SwIDAdmin) Graph() pip.Graph {
 	return s.graph
 }
 
-func (s *SwIDAdmin) ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error {
-	if err := s.setup(ctx); err != nil {
+func (s *SwIDAdmin) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+	if err := s.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency admin")
 	}
 
@@ -56,5 +56,5 @@ func (s *SwIDAdmin) ReportSwID(ctx contractapi.TransactionContextInterface, swid
 		return errors.Wrap(err, "error configuring swid Status policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, s.graph)
+	return ledger.UpdateGraphState(stub, s.graph)
 }

@@ -1,8 +1,8 @@
-package api
+package main
 
 import (
 	"encoding/json"
-	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -59,7 +59,7 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 	mock.Stub.GetStateByRangeReturns(iterator, nil)
 
 	cc := BlossomSmartContract{}
-	swids, err := cc.getSwIDsAssociatedWithAsset(mock.Ctx, "test-asset")
+	swids, err := cc.getSwIDsAssociatedWithAsset(mock.Stub, "test-asset")
 	require.NoError(t, err)
 	require.Equal(t, 2, len(swids))
 }

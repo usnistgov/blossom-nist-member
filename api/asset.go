@@ -1,9 +1,9 @@
-package api
+package main
 
 import (
 	"encoding/json"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
@@ -18,29 +18,29 @@ type (
 		// NGAC graph. Assets are identified by the ID field. The user performing the request will need to
 		// have permission to add an asset to the ledger. The asset will be an object attribute in NGAC and the
 		// asset licenses will be objects that are assigned to the asset.
-		OnboardAsset(ctx contractapi.TransactionContextInterface, asset *model.Asset) error
+		OnboardAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error
 
 		// OffboardAsset removes an existing asset in Blossom.  This will remove the license from the ledger
 		// and from NGAC. An error will be returned if there are any agencies that have checked out the asset
 		// and the licenses are not returned
-		OffboardAsset(ctx contractapi.TransactionContextInterface, id string) error
+		OffboardAsset(stub shim.ChaincodeStubInterface, id string) error
 
 		// Assets returns all software assets in Blossom. This information includes which agencies have licenses for each
 		// asset.
-		Assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error)
+		Assets(stub shim.ChaincodeStubInterface) ([]*model.Asset, error)
 
 		// AssetInfo returns the info for the asset with the given asset ID.
-		AssetInfo(ctx contractapi.TransactionContextInterface, id string) (*model.Asset, error)
+		AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error)
 
 		// Checkout requests software licenses for an agency.  The requesting user must have permission to request
 		// (i.e. System Administrator). The amount parameter is the amount of software licenses the agency is requesting.
 		// This number is subtracted from the total available for the asset. Returns the set of licenses that are now assigned to
 		// the agency.
-		Checkout(ctx contractapi.TransactionContextInterface, assetID string, agency string, amount int) (map[string]time.Time, error)
+		Checkout(stub shim.ChaincodeStubInterface, assetID string, agency string, amount int) (map[string]time.Time, error)
 
 		// Checkin returns the licenses to Blossom.  The return of these licenses is reflected in the amount available for
 		// the asset, and the licenses assigned to the agency on the ledger.
-		Checkin(ctx contractapi.TransactionContextInterface, assetID string, licenses []string, agencyName string) error
+		Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, agencyName string) error
 	}
 )
 
@@ -48,8 +48,8 @@ func NewLicenseContract() AssetsInterface {
 	return &BlossomSmartContract{}
 }
 
-func (b *BlossomSmartContract) assetExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
-	data, err := ctx.GetStub().GetState(model.AssetKey(id))
+func (b *BlossomSmartContract) assetExists(stub shim.ChaincodeStubInterface, id string) (bool, error) {
+	data, err := stub.GetState(model.AssetKey(id))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if asset id %q already exists on the ledger", id)
 	}
@@ -57,15 +57,15 @@ func (b *BlossomSmartContract) assetExists(ctx contractapi.TransactionContextInt
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) OnboardAsset(ctx contractapi.TransactionContextInterface, asset *model.Asset) error {
-	if ok, err := b.assetExists(ctx, asset.ID); err != nil {
+func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error {
+	if ok, err := b.assetExists(stub, asset.ID); err != nil {
 		return errors.Wrapf(err, "error checking if asset already exists")
 	} else if ok {
 		return errors.Errorf("an asset with the ID %q already exists", asset.ID)
 	}
 
 	// begin NGAC
-	if err := pdp.NewAssetDecider().OnboardAsset(ctx, asset); err != nil {
+	if err := pdp.NewAssetDecider().OnboardAsset(stub, asset); err != nil {
 		return errors.Wrapf(err, "error onboarding asset %q", asset.Name)
 	}
 	// end NGAC
@@ -82,15 +82,15 @@ func (b *BlossomSmartContract) OnboardAsset(ctx contractapi.TransactionContextIn
 	}
 
 	// add license to world state
-	if err = ctx.GetStub().PutState(model.AssetKey(asset.ID), bytes); err != nil {
+	if err = stub.PutState(model.AssetKey(asset.ID), bytes); err != nil {
 		return errors.Wrapf(err, "error adding asset to ledger")
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextInterface, assetID string) error {
-	if ok, err := b.assetExists(ctx, assetID); err != nil {
+func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, assetID string) error {
+	if ok, err := b.assetExists(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error checking if asset exists")
 	} else if !ok {
 		return nil
@@ -101,7 +101,7 @@ func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextI
 		err   error
 	)
 
-	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
+	if asset, err = b.AssetInfo(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error getting asset info")
 	}
 
@@ -111,29 +111,29 @@ func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextI
 	}
 
 	// begin NGAC
-	if err = pdp.NewAssetDecider().OffboardAsset(ctx, assetID); err != nil {
+	if err = pdp.NewAssetDecider().OffboardAsset(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error offboarding asset %q in NGAC", assetID)
 	}
 	// end NGAC
 
 	// remove license from world state
-	if err = ctx.GetStub().DelState(model.AssetKey(assetID)); err != nil {
+	if err = stub.DelState(model.AssetKey(assetID)); err != nil {
 		return errors.Wrapf(err, "error offboarding asset from ledger")
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) Assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error) {
+func (b *BlossomSmartContract) Assets(stub shim.ChaincodeStubInterface) ([]*model.Asset, error) {
 	// retrieve the assets from the ledger
-	assets, err := assets(ctx)
+	assets, err := assets(stub)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting licenses")
 	}
 
 	// begin NGAC
 	// filter any asset information the requesting user may not have permission to see
-	if assets, err = pdp.NewAssetDecider().FilterAssets(ctx, assets); err != nil {
+	if assets, err = pdp.NewAssetDecider().FilterAssets(stub, assets); err != nil {
 		return nil, errors.Wrapf(err, "error filtering assets")
 	}
 	// end NGAC
@@ -141,8 +141,8 @@ func (b *BlossomSmartContract) Assets(ctx contractapi.TransactionContextInterfac
 	return assets, nil
 }
 
-func assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error) {
-	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+func assets(stub shim.ChaincodeStubInterface) ([]*model.Asset, error) {
+	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
 	}
@@ -171,8 +171,8 @@ func assets(ctx contractapi.TransactionContextInterface) ([]*model.Asset, error)
 	return assets, nil
 }
 
-func (b *BlossomSmartContract) AssetInfo(ctx contractapi.TransactionContextInterface, id string) (*model.Asset, error) {
-	if ok, err := b.assetExists(ctx, id); err != nil {
+func (b *BlossomSmartContract) AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
+	if ok, err := b.assetExists(stub, id); err != nil {
 		return nil, errors.Wrapf(err, "error checking if asset exists")
 	} else if !ok {
 		return nil, errors.Errorf("an asset with the ID %q does not exist", id)
@@ -184,7 +184,7 @@ func (b *BlossomSmartContract) AssetInfo(ctx contractapi.TransactionContextInter
 		err   error
 	)
 
-	if bytes, err = ctx.GetStub().GetState(model.AssetKey(id)); err != nil {
+	if bytes, err = stub.GetState(model.AssetKey(id)); err != nil {
 		return nil, errors.Wrapf(err, "error getting asset from ledger")
 	}
 
@@ -194,7 +194,7 @@ func (b *BlossomSmartContract) AssetInfo(ctx contractapi.TransactionContextInter
 
 	// begin NGAC
 	// filter any asset information the requesting user may not have permission to see
-	if err := pdp.NewAssetDecider().FilterAsset(ctx, asset); err != nil {
+	if err := pdp.NewAssetDecider().FilterAsset(stub, asset); err != nil {
 		return nil, errors.Wrapf(err, "error filtering asset")
 	}
 	// end NGAC
@@ -203,7 +203,7 @@ func (b *BlossomSmartContract) AssetInfo(ctx contractapi.TransactionContextInter
 }
 
 func (b *BlossomSmartContract) Checkout(
-	ctx contractapi.TransactionContextInterface,
+	stub shim.ChaincodeStubInterface,
 	assetID string,
 	agencyName string,
 	amount int) (map[string]time.Time, error) {
@@ -215,12 +215,12 @@ func (b *BlossomSmartContract) Checkout(
 	)
 
 	// get the agency that will be leasing the licenses
-	if agency, err = b.Agency(ctx, agencyName); err != nil {
+	if agency, err = b.Agency(stub, agencyName); err != nil {
 		return nil, errors.Wrapf(err, "error getting agency %q", agencyName)
 	}
 
 	// get asset being requested
-	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
+	if asset, err = b.AssetInfo(stub, assetID); err != nil {
 		return nil, errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 
@@ -236,7 +236,7 @@ func (b *BlossomSmartContract) Checkout(
 		return nil, errors.Wrapf(err, "error marshaling agency %q", agency.Name)
 	}
 
-	if err = ctx.GetStub().PutState(model.AgencyKey(agency.Name), bytes); err != nil {
+	if err = stub.PutState(model.AgencyKey(agency.Name), bytes); err != nil {
 		return nil, errors.Wrapf(err, "error updating agency state")
 	}
 
@@ -245,7 +245,7 @@ func (b *BlossomSmartContract) Checkout(
 		return nil, errors.Wrapf(err, "error marshaling asset %q", asset.ID)
 	}
 
-	if err = ctx.GetStub().PutState(model.AssetKey(asset.ID), bytes); err != nil {
+	if err = stub.PutState(model.AssetKey(asset.ID), bytes); err != nil {
 		return nil, errors.Wrapf(err, "error updating asset state")
 	}
 
@@ -254,7 +254,7 @@ func (b *BlossomSmartContract) Checkout(
 	// provide NGAC with the licenses that were checked out in order to reflect the change in the graph
 	// this change will provide the users of the requesting agency access to the licenses, nobody else
 	// will be able to access them
-	if err := pdp.NewAssetDecider().Checkout(ctx, agencyName, assetID, checkedOutLicenses); err != nil {
+	if err := pdp.NewAssetDecider().Checkout(stub, agencyName, assetID, checkedOutLicenses); err != nil {
 		return nil, errors.Wrapf(err, "error checking out asset in NGAC")
 	}
 	// end NGAC
@@ -310,7 +310,7 @@ func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]
 	return retCheckedOutLicenses, nil
 }
 
-func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterface, assetID string, licenses []string, agencyName string) error {
+func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, agencyName string) error {
 	var (
 		asset  = &model.Asset{}
 		agency = &model.Agency{}
@@ -318,12 +318,12 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 	)
 
 	// get agency
-	if agency, err = b.Agency(ctx, agencyName); err != nil {
+	if agency, err = b.Agency(stub, agencyName); err != nil {
 		return errors.Wrapf(err, "error getting agency %q", agencyName)
 	}
 
 	// get asset
-	if asset, err = b.AssetInfo(ctx, assetID); err != nil {
+	if asset, err = b.AssetInfo(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 
@@ -338,7 +338,7 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 		return errors.Wrapf(err, "error marshaling agency %q", agency.Name)
 	}
 
-	if err = ctx.GetStub().PutState(model.AgencyKey(agency.Name), bytes); err != nil {
+	if err = stub.PutState(model.AgencyKey(agency.Name), bytes); err != nil {
 		return errors.Wrapf(err, "error updating agency state")
 	}
 
@@ -347,7 +347,7 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 		return errors.Wrapf(err, "error marshaling asset %q", asset.ID)
 	}
 
-	if err = ctx.GetStub().PutState(model.AssetKey(asset.Name), bytes); err != nil {
+	if err = stub.PutState(model.AssetKey(asset.Name), bytes); err != nil {
 		return errors.Wrapf(err, "error updating asset state")
 	}
 
@@ -356,7 +356,7 @@ func (b *BlossomSmartContract) Checkin(ctx contractapi.TransactionContextInterfa
 	// provide NGAC with the licenses that were checked in in order to reflect the change in the graph
 	// this will move the licenses back into the pool of available licenses
 	// the agency users will no longer be able to see the licenses
-	if err := pdp.NewAssetDecider().Checkin(ctx, agencyName, assetID, licenses); err != nil {
+	if err := pdp.NewAssetDecider().Checkin(stub, agencyName, assetID, licenses); err != nil {
 		return errors.Wrapf(err, "error checking in licenses in NGAC")
 	}
 	// end NGAC

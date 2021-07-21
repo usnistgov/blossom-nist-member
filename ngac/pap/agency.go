@@ -2,7 +2,7 @@ package pap
 
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
@@ -15,14 +15,14 @@ type AgencyAdmin struct {
 	graph pip.Graph
 }
 
-func NewAgencyAdmin(ctx contractapi.TransactionContextInterface) (*AgencyAdmin, error) {
+func NewAgencyAdmin(stub shim.ChaincodeStubInterface) (*AgencyAdmin, error) {
 	aa := &AgencyAdmin{}
-	err := aa.setup(ctx)
+	err := aa.setup(stub)
 	return aa, err
 }
 
-func (a *AgencyAdmin) setup(ctx contractapi.TransactionContextInterface) error {
-	graph, err := ledger.GetGraph(ctx)
+func (a *AgencyAdmin) setup(stub shim.ChaincodeStubInterface) error {
+	graph, err := ledger.GetGraph(stub)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving ngac graph from ledger")
 	}
@@ -36,8 +36,8 @@ func (a *AgencyAdmin) Graph() pip.Graph {
 	return a.graph
 }
 
-func (a *AgencyAdmin) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyAdmin) RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency admin")
 	}
 
@@ -56,11 +56,11 @@ func (a *AgencyAdmin) RequestAccount(ctx contractapi.TransactionContextInterface
 		return errors.Wrap(err, "error configuring account Status policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, a.graph)
+	return ledger.UpdateGraphState(stub, a.graph)
 }
 
-func (a *AgencyAdmin) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agency string, status model.Status) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyAdmin) UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agency string, status model.Status) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency admin")
 	}
 
@@ -69,5 +69,5 @@ func (a *AgencyAdmin) UpdateAgencyStatus(ctx contractapi.TransactionContextInter
 		return errors.Wrap(err, "error updating agency status")
 	}
 
-	return ledger.UpdateGraphState(ctx, a.graph)
+	return ledger.UpdateGraphState(stub, a.graph)
 }

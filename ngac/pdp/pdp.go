@@ -1,13 +1,13 @@
 package pdp
 
 import (
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
@@ -20,21 +20,15 @@ func FormatUsername(user string, mspid string) string {
 	return fmt.Sprintf("%s:%s", user, mspid)
 }
 
-func GetUser(ctx contractapi.TransactionContextInterface) (string, error) {
-	cID := ctx.GetClientIdentity()
-
-	var (
-		cert  *x509.Certificate
-		mspid string
-		err   error
-	)
-
-	if cert, err = cID.GetX509Certificate(); err != nil {
-		return "", errors.Wrap(err, "error getting client X509 certificate")
+func GetUser(stub shim.ChaincodeStubInterface) (string, error) {
+	cert, err := cid.GetX509Certificate(stub)
+	if err != nil {
+		return "", err
 	}
 
-	if mspid, err = cID.GetMSPID(); err != nil {
-		return "", errors.Wrap(err, "error getting client MSPID")
+	mspid, err := cid.GetMSPID(stub)
+	if err != nil {
+		return "", err
 	}
 
 	return FormatUsername(cert.Subject.CommonName, mspid), nil
@@ -51,8 +45,8 @@ func NewAdminDecider() *AdminDecider {
 	return &AdminDecider{}
 }
 
-func (a *AdminDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	user, err := GetUser(ctx)
+func (a *AdminDecider) setup(stub shim.ChaincodeStubInterface) error {
+	user, err := GetUser(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
 	}
@@ -62,8 +56,8 @@ func (a *AdminDecider) setup(ctx contractapi.TransactionContextInterface) error 
 	return nil
 }
 
-func (a *AdminDecider) InitGraph(ctx contractapi.TransactionContextInterface) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AdminDecider) InitGraph(stub shim.ChaincodeStubInterface) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrap(err, "error initializing admin decider")
 	}
 
@@ -89,15 +83,15 @@ func (a *AdminDecider) InitGraph(ctx contractapi.TransactionContextInterface) er
 		return errors.Wrap(err, "error serializing graph")
 	}
 
-	if err = ctx.GetStub().PutState("graph", bytes); err != nil {
+	if err = stub.PutState("graph", bytes); err != nil {
 		return errors.Wrap(err, "error updating graph on ledger")
 	}
 
 	return nil
 }
 
-func (a *AdminDecider) GetGraph(ctx contractapi.TransactionContextInterface) (pip.Graph, error) {
-	bytes, err := ledger.GetGraphBytes(ctx)
+func (a *AdminDecider) GetGraph(stub shim.ChaincodeStubInterface) (pip.Graph, error) {
+	bytes, err := ledger.GetGraphBytes(stub)
 	if err != nil {
 		return nil, errors.Wrap(err, "error getting graph")
 	}
@@ -113,7 +107,7 @@ func (a *AdminDecider) GetGraph(ctx contractapi.TransactionContextInterface) (pi
 // UpdateGraph updates the NGAC graph with the given graph json. It first identifies the differences between the ledger
 // graph and the provided graph and checks the requesting user has permission to carry out all the actions.
 // If the user can carry out all the actions, the ledger graph is replaced with the graph provided.
-func (a *AdminDecider) UpdateGraph(ctx contractapi.TransactionContextInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) error {
+func (a *AdminDecider) UpdateGraph(stub shim.ChaincodeStubInterface, ledgerGraph pip.Graph, jsonGraph pip.Graph) error {
 	// check the client can execute request
 	var (
 		cmds []GraphCmd
@@ -121,7 +115,7 @@ func (a *AdminDecider) UpdateGraph(ctx contractapi.TransactionContextInterface, 
 		user string
 	)
 
-	if user, err = getUser(ctx); err != nil {
+	if user, err = GetUser(stub); err != nil {
 		return fmt.Errorf("error getting user from request: %w", err)
 	}
 
@@ -136,32 +130,6 @@ func (a *AdminDecider) UpdateGraph(ctx contractapi.TransactionContextInterface, 
 	}
 
 	return nil
-}
-
-func getUser(ctx contractapi.TransactionContextInterface) (string, error) {
-	var (
-		user  string
-		mspID string
-		err   error
-	)
-
-	cert, err := ctx.GetClientIdentity().GetX509Certificate()
-	if err != nil {
-		return "", fmt.Errorf("error reading client X509 certificate: %w", err)
-	}
-
-	user = cert.Subject.CommonName
-
-	// get the client and msp ids from the request to formulate user id
-	/*if cID, err = ctx.GetClientIdentity().GetID(); err != nil {
-		return "", fmt.Errorf("error retrieving client ID from request: %w", err)
-	}*/
-
-	if mspID, err = ctx.GetClientIdentity().GetMSPID(); err != nil {
-		return "", fmt.Errorf("error retrieving MSP ID from request: %w", err)
-	}
-
-	return fmt.Sprintf("%s:%s", user, mspID), nil
 }
 
 func checkPermissions(user string, ledgerGraph pip.Graph, jsonGraph pip.Graph) ([]GraphCmd, error) {

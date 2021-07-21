@@ -18,16 +18,16 @@ func TestReportSwID(t *testing.T) {
 
 	initSwidTestGraph(t, mock)
 
-	mock.SetUser(mocks.Super())
+	mock.SetUser(mocks.Super)
 	agencyDecider := NewAgencyDecider()
-	err := agencyDecider.UpdateAgencyStatus(mock.Ctx, "A1", model.Approved)
+	err := agencyDecider.UpdateAgencyStatus(mock.Stub, "A1", model.Approved)
 	require.NoError(t, err)
 
 	mock.SetGraphState(agencyDecider.pap.Graph())
 
-	mock.SetUser(mocks.A1SystemAdmin())
+	mock.SetUser(mocks.A1SystemAdmin)
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.Checkout(mock.Ctx, "A1", "test-asset-id",
+	err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
 		map[string]time.Time{"1": time.Now()})
 	require.NoError(t, err)
 
@@ -42,7 +42,7 @@ func TestReportSwID(t *testing.T) {
 		License:         "1",
 		LeaseExpiration: time.Time{},
 	}
-	err = swidDecider.ReportSwID(mock.Ctx, swid, "A1")
+	err = swidDecider.ReportSwID(mock.Stub, swid, "A1")
 	require.NoError(t, err)
 
 	// report swid on license key that the user does not have access to
@@ -53,7 +53,7 @@ func TestReportSwID(t *testing.T) {
 		License:         "2",
 		LeaseExpiration: time.Time{},
 	}
-	err = swidDecider.ReportSwID(mock.Ctx, swid, "A1")
+	err = swidDecider.ReportSwID(mock.Stub, swid, "A1")
 	require.Error(t, err)
 }
 
@@ -81,15 +81,15 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	mock.SetGraphState(graph)
 
 	// add account as the a1 system owner
-	mock.SetUser(mocks.A1SystemOwner())
+	mock.SetUser(mocks.A1SystemOwner)
 	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.RequestAccount(mock.Ctx, agency)
+	err = agencyDecider.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
 	mock.SetGraphState(agencyDecider.pap.Graph())
 
 	// set up the mock identity as the org1 admin
-	mock.SetUser(mocks.Super())
+	mock.SetUser(mocks.Super)
 
 	// create a test asset
 	asset := &model.Asset{
@@ -106,7 +106,7 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	}
 
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.OnboardAsset(mock.Ctx, asset)
+	err = licenseDecider.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
 	mock.SetGraphState(licenseDecider.pap.Graph())
@@ -153,9 +153,10 @@ func TestFilterSwID(t *testing.T) {
 	mock := mocks.New()
 
 	mock.SetGraphState(graph)
-	mock.SetUser(mocks.Super())
+	err = mock.SetUser(mocks.Super)
+	require.NoError(t, err)
 
-	swids, err = NewSwIDDecider().FilterSwIDs(mock.Ctx, swids)
+	swids, err = NewSwIDDecider().FilterSwIDs(mock.Stub, swids)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(swids))
 }

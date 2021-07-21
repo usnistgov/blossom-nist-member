@@ -24,7 +24,7 @@ func TestOnboardLicense(t *testing.T) {
 	mock := mocks.New()
 	mock.SetGraphState(graph)
 
-	assetAdmin, err := NewAssetAdmin(mock.Ctx)
+	assetAdmin, err := NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -40,7 +40,7 @@ func TestOnboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
+	err = assetAdmin.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
 	graph = assetAdmin.Graph()
@@ -71,7 +71,7 @@ func TestOffboardLicense(t *testing.T) {
 	mock := mocks.New()
 	mock.SetGraphState(graph)
 
-	assetAdmin, err := NewAssetAdmin(mock.Ctx)
+	assetAdmin, err := NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -87,10 +87,10 @@ func TestOffboardLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
+	err = assetAdmin.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
-	err = assetAdmin.OffboardAsset(mock.Ctx, asset.ID)
+	err = assetAdmin.OffboardAsset(mock.Stub, asset.ID)
 	require.NoError(t, err)
 
 	graph = assetAdmin.Graph()
@@ -122,7 +122,7 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	mock := mocks.New()
 	mock.SetGraphState(graph)
 
-	assetAdmin, err := NewAssetAdmin(mock.Ctx)
+	assetAdmin, err := NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -138,13 +138,13 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(mock.Ctx, asset)
+	err = assetAdmin.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
 	mock.SetGraphState(assetAdmin.graph)
 
 	// create a new test agency
-	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
+	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	agency := model.Agency{
@@ -160,15 +160,15 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		Assets: nil,
 	}
 
-	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
+	err = agencyAdmin.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
 	restartGraph := agencyAdmin.graph
 	mock.SetGraphState(agencyAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(mock.Ctx)
+	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(mock.Ctx, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Stub, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
@@ -181,9 +181,9 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	mock.SetGraphState(assetAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(mock.Ctx)
+	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(mock.Ctx, agency.Name, asset.ID, []string{"1", "2", "3"})
+	err = assetAdmin.Checkin(mock.Stub, agency.Name, asset.ID, []string{"1", "2", "3"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
@@ -196,9 +196,9 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	// test only returning 2 of 3 keys
 	mock.SetGraphState(restartGraph)
 
-	assetAdmin, err = NewAssetAdmin(mock.Ctx)
+	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(mock.Ctx, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Stub, agency.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
@@ -211,9 +211,9 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	mock.SetGraphState(assetAdmin.graph)
 
-	assetAdmin, err = NewAssetAdmin(mock.Ctx)
+	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(mock.Ctx, agency.Name, asset.ID, []string{"1", "2"})
+	err = assetAdmin.Checkin(mock.Stub, agency.Name, asset.ID, []string{"1", "2"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph

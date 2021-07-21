@@ -1,9 +1,9 @@
-package api
+package main
 
 import (
 	"encoding/json"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
@@ -15,13 +15,13 @@ type (
 	SwIDInterface interface {
 		// ReportSwID is used by Agencies to report to Blossom when a software user has installed a piece of software associated
 		// with an asset that agency has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
-		ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error
+		ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
-		GetSwID(ctx contractapi.TransactionContextInterface, primaryTag string) (*model.SwID, error)
+		GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error)
 
 		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset.
-		GetSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error)
+		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error)
 	}
 )
 
@@ -29,8 +29,8 @@ func NewSwIDContract() SwIDInterface {
 	return &BlossomSmartContract{}
 }
 
-func (b *BlossomSmartContract) swidExists(ctx contractapi.TransactionContextInterface, primaryTag string) (bool, error) {
-	data, err := ctx.GetStub().GetState(model.SwIDKey(primaryTag))
+func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, primaryTag string) (bool, error) {
+	data, err := stub.GetState(model.SwIDKey(primaryTag))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if SwID with primary tag %q already exists on the ledger", primaryTag)
 	}
@@ -38,15 +38,15 @@ func (b *BlossomSmartContract) swidExists(ctx contractapi.TransactionContextInte
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error {
-	if ok, err := b.swidExists(ctx, swid.PrimaryTag); err != nil {
+func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+	if ok, err := b.swidExists(stub, swid.PrimaryTag); err != nil {
 		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", swid.PrimaryTag)
 	} else if ok {
 		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", swid.PrimaryTag)
 	}
 
 	// begin NGAC
-	if err := pdp.NewSwIDDecider().ReportSwID(ctx, swid, agency); err != nil {
+	if err := pdp.NewSwIDDecider().ReportSwID(stub, swid, agency); err != nil {
 		return errors.Wrap(err, "error reporting SwID")
 	}
 	// end NGAC
@@ -56,15 +56,15 @@ func (b *BlossomSmartContract) ReportSwID(ctx contractapi.TransactionContextInte
 		return errors.Wrapf(err, "error serializing swid tag")
 	}
 
-	if err = ctx.GetStub().PutState(model.SwIDKey(swid.PrimaryTag), swidBytes); err != nil {
+	if err = stub.PutState(model.SwIDKey(swid.PrimaryTag), swidBytes); err != nil {
 		return errors.Wrapf(err, "error updating SwID %s", swid.PrimaryTag)
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterface, primaryTag string) (*model.SwID, error) {
-	if ok, err := b.swidExists(ctx, primaryTag); err != nil {
+func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error) {
+	if ok, err := b.swidExists(stub, primaryTag); err != nil {
 		return nil, errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", primaryTag)
 	} else if ok {
 		return nil, errors.Errorf("a SwID tag with the primary tag %s has already been reported", primaryTag)
@@ -75,7 +75,7 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 		err       error
 	)
 
-	if swidBytes, err = ctx.GetStub().GetState(model.SwIDKey(primaryTag)); err != nil {
+	if swidBytes, err = stub.GetState(model.SwIDKey(primaryTag)); err != nil {
 		return nil, errors.Wrapf(err, "error getting SwID %s", primaryTag)
 	}
 
@@ -85,7 +85,7 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 	}
 
 	// begin NGAC
-	if err = pdp.NewSwIDDecider().FilterSwID(ctx, swid); err != nil {
+	if err = pdp.NewSwIDDecider().FilterSwID(stub, swid); err != nil {
 		return nil, errors.Wrap(err, "error filtering SwID")
 	}
 	// end NGAC
@@ -93,15 +93,15 @@ func (b *BlossomSmartContract) GetSwID(ctx contractapi.TransactionContextInterfa
 	return &model.SwID{}, nil
 }
 
-func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error) {
-	swids, err := b.getSwIDsAssociatedWithAsset(ctx, asset)
+func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error) {
+	swids, err := b.getSwIDsAssociatedWithAsset(stub, asset)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error retrieving swids from ledger")
 	}
 
 	// begin NGAC
 	// filter out any swid tags the user cannot view
-	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(ctx, swids); err != nil {
+	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(stub, swids); err != nil {
 		return nil, errors.Wrap(err, "error filtering swids")
 	}
 	// end NGAC
@@ -109,8 +109,8 @@ func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(ctx contractapi.Trans
 	return swids, nil
 }
 
-func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(ctx contractapi.TransactionContextInterface, asset string) ([]*model.SwID, error) {
-	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error) {
+	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
 	}

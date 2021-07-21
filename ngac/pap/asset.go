@@ -2,7 +2,7 @@ package pap
 
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
@@ -16,14 +16,14 @@ type AssetAdmin struct {
 	graph pip.Graph
 }
 
-func NewAssetAdmin(ctx contractapi.TransactionContextInterface) (*AssetAdmin, error) {
+func NewAssetAdmin(stub shim.ChaincodeStubInterface) (*AssetAdmin, error) {
 	la := &AssetAdmin{}
-	err := la.setup(ctx)
+	err := la.setup(stub)
 	return la, err
 }
 
-func (l *AssetAdmin) setup(ctx contractapi.TransactionContextInterface) error {
-	graph, err := ledger.GetGraph(ctx)
+func (l *AssetAdmin) setup(stub shim.ChaincodeStubInterface) error {
+	graph, err := ledger.GetGraph(stub)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving ngac graph from ledger")
 	}
@@ -37,7 +37,7 @@ func (l *AssetAdmin) Graph() pip.Graph {
 	return l.graph
 }
 
-func (l *AssetAdmin) OnboardAsset(ctx contractapi.TransactionContextInterface, asset *model.Asset) error {
+func (l *AssetAdmin) OnboardAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error {
 	var (
 		assetOA pip.Node
 		err     error
@@ -58,34 +58,34 @@ func (l *AssetAdmin) OnboardAsset(ctx contractapi.TransactionContextInterface, a
 		return errors.Wrap(err, "error configuring asset onboard Status policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, l.graph)
+	return ledger.UpdateGraphState(stub, l.graph)
 }
 
-func (l *AssetAdmin) OffboardAsset(ctx contractapi.TransactionContextInterface, assetID string) error {
+func (l *AssetAdmin) OffboardAsset(stub shim.ChaincodeStubInterface, assetID string) error {
 	rbacPolicy := rbacpolicy.NewAssetPolicy(l.graph)
 	if err := rbacPolicy.OffboardAsset(assetID); err != nil {
 		return errors.Wrap(err, "error configuring asset offboard RBAC policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, l.graph)
+	return ledger.UpdateGraphState(stub, l.graph)
 }
 
-func (l *AssetAdmin) Checkout(ctx contractapi.TransactionContextInterface, agencyName string, assetID string,
+func (l *AssetAdmin) Checkout(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
 	licenses map[string]time.Time) error {
 	dacPolicy := dacpolicy.NewAssetPolicy(l.graph)
 	if err := dacPolicy.Checkout(agencyName, assetID, licenses); err != nil {
 		return errors.Wrap(err, "error checking out asset under the DAC policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, l.graph)
+	return ledger.UpdateGraphState(stub, l.graph)
 }
 
-func (l *AssetAdmin) Checkin(ctx contractapi.TransactionContextInterface, agencyName string, assetID string,
+func (l *AssetAdmin) Checkin(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
 	licenses []string) error {
 	dacPolicy := dacpolicy.NewAssetPolicy(l.graph)
 	if err := dacPolicy.Checkin(agencyName, assetID, licenses); err != nil {
 		return errors.Wrap(err, "error checking in asset under the DAC policy")
 	}
 
-	return ledger.UpdateGraphState(ctx, l.graph)
+	return ledger.UpdateGraphState(stub, l.graph)
 }

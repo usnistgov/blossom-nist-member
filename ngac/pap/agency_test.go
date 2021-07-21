@@ -25,7 +25,7 @@ func TestRequestAccount(t *testing.T) {
 
 	require.NoError(t, err)
 
-	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
+	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
 	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
@@ -39,7 +39,7 @@ func TestRequestAccount(t *testing.T) {
 		Status: "",
 		Assets: nil,
 	}
-	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
+	err = agencyAdmin.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
 	graph = agencyAdmin.graph
@@ -120,7 +120,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 
 	require.NoError(t, err)
 
-	agencyAdmin, err := NewAgencyAdmin(mock.Ctx)
+	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
 	require.NoError(t, err)
 	agency := model.Agency{
 		Name:  "Org2",
@@ -134,7 +134,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		Status: "",
 		Assets: nil,
 	}
-	err = agencyAdmin.RequestAccount(mock.Ctx, agency)
+	err = agencyAdmin.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
 	// update mock graph
@@ -142,7 +142,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 	mock.SetGraphState(graph)
 
 	t.Run("test approved", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.Approved)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Stub, agency.Name, model.Approved)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
@@ -151,7 +151,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		require.NotContains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test pending", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.PendingATO)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Stub, agency.Name, model.PendingATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		require.Contains(t, parents, statuspolicy.PendingUA)
 	})
 	t.Run("test inactive", func(t *testing.T) {
-		err = agencyAdmin.UpdateAgencyStatus(mock.Ctx, agency.Name, model.InactiveATO)
+		err = agencyAdmin.UpdateAgencyStatus(mock.Stub, agency.Name, model.InactiveATO)
 		require.NoError(t, err)
 		parents, err := agencyAdmin.graph.GetParents(agencypap.UserAttributeName(agency.Name))
 		require.NoError(t, err)

@@ -1,10 +1,10 @@
 package pdp
 
 import (
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"time"
 
 	"github.com/PM-Master/policy-machine-go/pdp"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
@@ -22,14 +22,14 @@ type AssetDecider struct {
 	decider pdp.Decider
 }
 
-// NewAssetDecider creates a new AssetDecider with the user from the ctx and a NGAC Decider using the NGAC graph
+// NewAssetDecider creates a new AssetDecider with the user from the stub and a NGAC Decider using the NGAC graph
 // from the ledger.
 func NewAssetDecider() *AssetDecider {
 	return &AssetDecider{}
 }
 
-func (l *AssetDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	user, err := GetUser(ctx)
+func (l *AssetDecider) setup(stub shim.ChaincodeStubInterface) error {
+	user, err := GetUser(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
 	}
@@ -37,7 +37,7 @@ func (l *AssetDecider) setup(ctx contractapi.TransactionContextInterface) error 
 	l.user = user
 
 	// initialize the license policy administration point
-	l.pap, err = pap.NewAssetAdmin(ctx)
+	l.pap, err = pap.NewAssetAdmin(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error initializing agency administraion point")
 	}
@@ -47,8 +47,8 @@ func (l *AssetDecider) setup(ctx contractapi.TransactionContextInterface) error 
 	return nil
 }
 
-func (l *AssetDecider) FilterAsset(ctx contractapi.TransactionContextInterface, asset *model.Asset) error {
-	if err := l.setup(ctx); err != nil {
+func (l *AssetDecider) FilterAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error {
+	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
 	}
 
@@ -90,8 +90,8 @@ func (l *AssetDecider) filterAsset(asset *model.Asset) error {
 	return nil
 }
 
-func (l *AssetDecider) FilterAssets(ctx contractapi.TransactionContextInterface, assets []*model.Asset) ([]*model.Asset, error) {
-	if err := l.setup(ctx); err != nil {
+func (l *AssetDecider) FilterAssets(stub shim.ChaincodeStubInterface, assets []*model.Asset) ([]*model.Asset, error) {
+	if err := l.setup(stub); err != nil {
 		return nil, errors.Wrapf(err, "error setting up asset decider")
 	}
 
@@ -111,8 +111,8 @@ func (l *AssetDecider) FilterAssets(ctx contractapi.TransactionContextInterface,
 	return filteredAssets, nil
 }
 
-func (l *AssetDecider) OnboardAsset(ctx contractapi.TransactionContextInterface, asset *model.Asset) error {
-	if err := l.setup(ctx); err != nil {
+func (l *AssetDecider) OnboardAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error {
+	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
 	}
 
@@ -123,11 +123,11 @@ func (l *AssetDecider) OnboardAsset(ctx contractapi.TransactionContextInterface,
 		return ErrAccessDenied
 	}
 
-	return l.pap.OnboardAsset(ctx, asset)
+	return l.pap.OnboardAsset(stub, asset)
 }
 
-func (l *AssetDecider) OffboardAsset(ctx contractapi.TransactionContextInterface, licenseID string) error {
-	if err := l.setup(ctx); err != nil {
+func (l *AssetDecider) OffboardAsset(stub shim.ChaincodeStubInterface, licenseID string) error {
+	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
@@ -138,12 +138,12 @@ func (l *AssetDecider) OffboardAsset(ctx contractapi.TransactionContextInterface
 		return ErrAccessDenied
 	}
 
-	return l.pap.OffboardAsset(ctx, licenseID)
+	return l.pap.OffboardAsset(stub, licenseID)
 }
 
-func (l *AssetDecider) Checkout(ctx contractapi.TransactionContextInterface, agencyName string, assetID string,
+func (l *AssetDecider) Checkout(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
 	licenses map[string]time.Time) error {
-	if err := l.setup(ctx); err != nil {
+	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
 	}
 
@@ -154,12 +154,12 @@ func (l *AssetDecider) Checkout(ctx contractapi.TransactionContextInterface, age
 		return ErrAccessDenied
 	}
 
-	return l.pap.Checkout(ctx, agencyName, assetID, licenses)
+	return l.pap.Checkout(stub, agencyName, assetID, licenses)
 }
 
-func (l *AssetDecider) Checkin(ctx contractapi.TransactionContextInterface, agencyName string, licenseID string,
+func (l *AssetDecider) Checkin(stub shim.ChaincodeStubInterface, agencyName string, licenseID string,
 	keys []string) error {
-	if err := l.setup(ctx); err != nil {
+	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
 	}
 
@@ -170,5 +170,5 @@ func (l *AssetDecider) Checkin(ctx contractapi.TransactionContextInterface, agen
 		return ErrAccessDenied
 	}
 
-	return l.pap.Checkin(ctx, agencyName, licenseID, keys)
+	return l.pap.Checkin(stub, agencyName, licenseID, keys)
 }

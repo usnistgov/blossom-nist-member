@@ -2,7 +2,7 @@ package pdp
 
 import (
 	"github.com/PM-Master/policy-machine-go/pdp"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
@@ -22,14 +22,14 @@ type SwIDDecider struct {
 	decider pdp.Decider
 }
 
-// NewSwIDDecider creates a new SwIDDecider with the user from the ctx and a NGAC Decider using the NGAC graph
+// NewSwIDDecider creates a new SwIDDecider with the user from the stub and a NGAC Decider using the NGAC graph
 // from the ledger.
 func NewSwIDDecider() *SwIDDecider {
 	return &SwIDDecider{}
 }
 
-func (s *SwIDDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	user, err := GetUser(ctx)
+func (s *SwIDDecider) setup(stub shim.ChaincodeStubInterface) error {
+	user, err := GetUser(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
 	}
@@ -37,7 +37,7 @@ func (s *SwIDDecider) setup(ctx contractapi.TransactionContextInterface) error {
 	s.user = user
 
 	// initialize the agency policy administration point
-	s.pap, err = pap.NewSwIDAdmin(ctx)
+	s.pap, err = pap.NewSwIDAdmin(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error initializing agency administraion point")
 	}
@@ -47,8 +47,8 @@ func (s *SwIDDecider) setup(ctx contractapi.TransactionContextInterface) error {
 	return nil
 }
 
-func (s *SwIDDecider) ReportSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID, agency string) error {
-	if err := s.setup(ctx); err != nil {
+func (s *SwIDDecider) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+	if err := s.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up swid decider")
 	}
 
@@ -59,20 +59,20 @@ func (s *SwIDDecider) ReportSwID(ctx contractapi.TransactionContextInterface, sw
 		return ErrAccessDenied
 	}
 
-	err := s.pap.ReportSwID(ctx, swid, agency)
+	err := s.pap.ReportSwID(stub, swid, agency)
 	return errors.Wrapf(err, "error reporting swid %s", swid.PrimaryTag)
 }
 
-func (s *SwIDDecider) FilterSwID(ctx contractapi.TransactionContextInterface, swid *model.SwID) error {
-	if err := s.setup(ctx); err != nil {
+func (s *SwIDDecider) FilterSwID(stub shim.ChaincodeStubInterface, swid *model.SwID) error {
+	if err := s.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up swid decider")
 	}
 
 	return s.filterSwID(swid)
 }
 
-func (s *SwIDDecider) FilterSwIDs(ctx contractapi.TransactionContextInterface, swids []*model.SwID) ([]*model.SwID, error) {
-	if err := s.setup(ctx); err != nil {
+func (s *SwIDDecider) FilterSwIDs(stub shim.ChaincodeStubInterface, swids []*model.SwID) ([]*model.SwID, error) {
+	if err := s.setup(stub); err != nil {
 		return nil, errors.Wrapf(err, "error setting up swid decider")
 	}
 

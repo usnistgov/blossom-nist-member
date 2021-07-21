@@ -1,10 +1,9 @@
 package pap
 
 import (
-	"encoding/json"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
-	mocks2 "github.com/usnistgov/blossom/chaincode/mocks"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
@@ -19,15 +18,10 @@ func TestReportSwID(t *testing.T) {
 	err := policy.Configure(graph)
 	require.NoError(t, err)
 
-	graphBytes, err := json.Marshal(graph)
-	require.NoError(t, err)
+	mock := mocks.New()
+	mock.SetGraphState(graph)
 
-	chaincodeStub := &mocks2.ChaincodeStub{}
-	transactionContext := &mocks2.TransactionContext{}
-	transactionContext.GetStubReturns(chaincodeStub)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
-
-	assetAdmin, err := NewAssetAdmin(transactionContext)
+	assetAdmin, err := NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	asset := &model.Asset{
@@ -43,15 +37,13 @@ func TestReportSwID(t *testing.T) {
 		CheckedOut:        make(map[string]map[string]time.Time),
 	}
 
-	err = assetAdmin.OnboardAsset(transactionContext, asset)
+	err = assetAdmin.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(assetAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(assetAdmin.graph)
 
 	// create a new test agency
-	agencyAdmin, err := NewAgencyAdmin(transactionContext)
+	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	agency := model.Agency{
@@ -67,14 +59,12 @@ func TestReportSwID(t *testing.T) {
 		Assets: nil,
 	}
 
-	err = agencyAdmin.RequestAccount(transactionContext, agency)
+	err = agencyAdmin.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
-	graphBytes, err = json.Marshal(agencyAdmin.graph)
-	require.NoError(t, err)
-	chaincodeStub.GetStateReturns(graphBytes, nil)
+	mock.SetGraphState(agencyAdmin.graph)
 
-	swidAdmin, err := NewSwIDAdmin(transactionContext)
+	swidAdmin, err := NewSwIDAdmin(mock.Stub)
 	require.NoError(t, err)
 
 	swid := &model.SwID{
@@ -85,7 +75,7 @@ func TestReportSwID(t *testing.T) {
 		LeaseExpiration: time.Time{},
 	}
 
-	err = swidAdmin.ReportSwID(transactionContext, swid, "Org2")
+	err = swidAdmin.ReportSwID(mock.Stub, swid, "Org2")
 	require.NoError(t, err)
 
 	graph = swidAdmin.Graph()

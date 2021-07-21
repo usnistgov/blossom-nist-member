@@ -35,16 +35,16 @@ func TestOnboardLicense(t *testing.T) {
 	decider := NewAssetDecider()
 
 	t.Run("test super", func(t *testing.T) {
-		mock.SetUser(mocks.Super())
+		mock.SetUser(mocks.Super)
 
-		err = decider.OnboardAsset(mock.Ctx, asset)
+		err = decider.OnboardAsset(mock.Stub, asset)
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
-		err = decider.OnboardAsset(mock.Ctx, asset)
+		err = decider.OnboardAsset(mock.Stub, asset)
 		require.Error(t, err)
 	})
 }
@@ -59,16 +59,16 @@ func TestOffboardLicense(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("test super", func(t *testing.T) {
-		mock.SetUser(mocks.Super())
+		mock.SetUser(mocks.Super)
 
-		err = decider.OffboardAsset(mock.Ctx, "test-asset-id")
+		err = decider.OffboardAsset(mock.Stub, "test-asset-id")
 		require.NoError(t, err)
 	})
 
 	t.Run("test a1 system owner", func(t *testing.T) {
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
-		err = decider.OffboardAsset(mock.Ctx, "test-asset-id")
+		err = decider.OffboardAsset(mock.Stub, "test-asset-id")
 		require.Error(t, err)
 	})
 }
@@ -95,25 +95,25 @@ func TestCheckoutLicense(t *testing.T) {
 			Assets: make(map[string]map[string]time.Time),
 		}
 
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
 		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(mock.Ctx, agency)
+		err = agencyDecider.RequestAccount(mock.Stub, agency)
 		require.NoError(t, err)
 
 		mock.SetGraphState(agencyDecider.pap.Graph())
 
 		// approve agency
-		mock.SetUser(mocks.Super())
+		mock.SetUser(mocks.Super)
 		agencyDecider = NewAgencyDecider()
-		err = agencyDecider.UpdateAgencyStatus(mock.Ctx, agency.Name, model.Approved)
+		err = agencyDecider.UpdateAgencyStatus(mock.Stub, agency.Name, model.Approved)
 		require.NoError(t, err)
 
 		mock.SetGraphState(agencyDecider.pap.Graph())
 
-		mock.SetUser(mocks.A1SystemAdmin())
+		mock.SetUser(mocks.A1SystemAdmin)
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(mock.Ctx, "A1", "test-asset-id",
+		err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.NoError(t, err)
 	})
@@ -137,10 +137,10 @@ func TestCheckoutLicense(t *testing.T) {
 			Assets: make(map[string]map[string]time.Time),
 		}
 
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
 		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(mock.Ctx, agency)
+		err = agencyDecider.RequestAccount(mock.Stub, agency)
 		require.NoError(t, err)
 
 		mock.SetGraphState(agencyDecider.pap.Graph())
@@ -148,9 +148,9 @@ func TestCheckoutLicense(t *testing.T) {
 		// do not approve agency
 
 		// checkout license as pending
-		mock.SetUser(mocks.A1SystemAdmin())
+		mock.SetUser(mocks.A1SystemAdmin)
 		licenseDecider := NewAssetDecider()
-		err = licenseDecider.Checkout(mock.Ctx, "A1", "test-asset-id",
+		err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
 			map[string]time.Time{"1": time.Now()})
 		require.Error(t, err)
 	})
@@ -169,7 +169,7 @@ func initLicenseTestGraph(t *testing.T, mock mocks.Mock) error {
 	mock.SetGraphState(graph)
 
 	// set up the mock identity as the super
-	mock.SetUser(mocks.Super())
+	mock.SetUser(mocks.Super)
 
 	// create a test license
 	asset := &model.Asset{
@@ -187,7 +187,7 @@ func initLicenseTestGraph(t *testing.T, mock mocks.Mock) error {
 
 	// onboard the license as the super
 	licenseDecider := NewAssetDecider()
-	err = licenseDecider.OnboardAsset(mock.Ctx, asset)
+	err = licenseDecider.OnboardAsset(mock.Stub, asset)
 	require.NoError(t, err)
 
 	// re marshal the graph bytes using the PAP's graph
@@ -268,9 +268,9 @@ func TestFilterLicense(t *testing.T) {
 	mock := mocks.New()
 
 	mock.SetGraphState(graph)
-	mock.SetUser(mocks.Super())
+	mock.SetUser(mocks.Super)
 
-	assets, err = NewAssetDecider().FilterAssets(mock.Ctx, assets)
+	assets, err = NewAssetDecider().FilterAssets(mock.Stub, assets)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(assets))
 

@@ -19,9 +19,9 @@ func TestUploadATO(t *testing.T) {
 		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
-		err = decider.UploadATO(mock.Ctx, "A1")
+		err = decider.UploadATO(mock.Stub, "A1")
 		require.NoError(t, err)
 	})
 
@@ -31,9 +31,9 @@ func TestUploadATO(t *testing.T) {
 		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		mock.SetUser(mocks.A1SystemAdmin())
+		mock.SetUser(mocks.A1SystemAdmin)
 
-		err = decider.UploadATO(mock.Ctx, "A1")
+		err = decider.UploadATO(mock.Stub, "A1")
 		require.Error(t, err)
 	})
 }
@@ -47,9 +47,9 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
-		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
+		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
 		require.Error(t, err)
 	})
 
@@ -59,9 +59,9 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		mock.SetUser(mocks.A1SystemAdmin())
+		mock.SetUser(mocks.A1SystemAdmin)
 
-		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
+		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
 		require.Error(t, err)
 	})
 
@@ -71,9 +71,9 @@ func TestUpdateAgencyStatus(t *testing.T) {
 		err := initAgencyTestGraph(t, mock)
 		require.NoError(t, err)
 
-		mock.SetUser(mocks.Super())
+		mock.SetUser(mocks.Super)
 
-		err = decider.UpdateAgencyStatus(mock.Ctx, "A1", "test")
+		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
 		require.NoError(t, err)
 	})
 }
@@ -88,7 +88,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		mock.SetUser(mocks.A1SystemOwner())
+		mock.SetUser(mocks.A1SystemOwner)
 
 		agency := &model.Agency{
 			Name:  "A1",
@@ -108,7 +108,7 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(mock.Ctx)
+		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
@@ -136,7 +136,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		mock.SetUser(mocks.A1SystemAdmin())
+		mock.SetUser(mocks.A1SystemAdmin)
 
 		agency := &model.Agency{
 			Name:  "A1",
@@ -156,7 +156,7 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(mock.Ctx)
+		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
@@ -180,7 +180,7 @@ func TestFilterAgency(t *testing.T) {
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
-		mock.SetUser(mocks.Super())
+		mock.SetUser(mocks.Super)
 
 		agency := &model.Agency{
 			Name:  "A1",
@@ -200,7 +200,7 @@ func TestFilterAgency(t *testing.T) {
 			},
 		}
 
-		err = decider.setup(mock.Ctx)
+		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
 		err = decider.filterAgency(agency)
 		require.NoError(t, err)
@@ -246,9 +246,9 @@ func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	mock.SetGraphState(graph)
 
 	// add account as the a1 system owner
-	mock.SetUser(mocks.A1SystemOwner())
+	mock.SetUser(mocks.A1SystemOwner)
 	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.RequestAccount(mock.Ctx, agency)
+	err = agencyDecider.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
 
 	mock.SetGraphState(agencyDecider.pap.Graph())

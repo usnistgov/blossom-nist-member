@@ -2,7 +2,7 @@ package pdp
 
 import (
 	"github.com/PM-Master/policy-machine-go/pdp"
-	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
@@ -21,14 +21,14 @@ type AgencyDecider struct {
 	decider pdp.Decider
 }
 
-// NewAgencyDecider creates a new AgencyDecider with the user from the ctx and a NGAC Decider using the NGAC graph
+// NewAgencyDecider creates a new AgencyDecider with the user from the stub and a NGAC Decider using the NGAC graph
 // from the ledger.
 func NewAgencyDecider() *AgencyDecider {
 	return &AgencyDecider{}
 }
 
-func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error {
-	user, err := GetUser(ctx)
+func (a *AgencyDecider) setup(stub shim.ChaincodeStubInterface) error {
+	user, err := GetUser(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
 	}
@@ -36,7 +36,7 @@ func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error
 	a.user = user
 
 	// initialize the agency policy administration point
-	a.pap, err = pap.NewAgencyAdmin(ctx)
+	a.pap, err = pap.NewAgencyAdmin(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error initializing agency administraion point")
 	}
@@ -46,8 +46,8 @@ func (a *AgencyDecider) setup(ctx contractapi.TransactionContextInterface) error
 	return nil
 }
 
-func (a *AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterface, agencies []*model.Agency) ([]*model.Agency, error) {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyDecider) FilterAgencies(stub shim.ChaincodeStubInterface, agencies []*model.Agency) ([]*model.Agency, error) {
+	if err := a.setup(stub); err != nil {
 		return nil, errors.Wrapf(err, "error setting up agency decider")
 	}
 
@@ -67,8 +67,8 @@ func (a *AgencyDecider) FilterAgencies(ctx contractapi.TransactionContextInterfa
 	return filteredAgencies, nil
 }
 
-func (a *AgencyDecider) FilterAgency(ctx contractapi.TransactionContextInterface, agency *model.Agency) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyDecider) FilterAgency(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
@@ -114,17 +114,17 @@ func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 	return nil
 }
 
-func (a *AgencyDecider) RequestAccount(ctx contractapi.TransactionContextInterface, agency model.Agency) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyDecider) RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
 	// any user can create an account
-	return a.pap.RequestAccount(ctx, agency)
+	return a.pap.RequestAccount(stub, agency)
 }
 
-func (a *AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, agency string) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyDecider) UploadATO(stub shim.ChaincodeStubInterface, agency string) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
@@ -138,8 +138,8 @@ func (a *AgencyDecider) UploadATO(ctx contractapi.TransactionContextInterface, a
 	return nil
 }
 
-func (a *AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInterface, agency string, status model.Status) error {
-	if err := a.setup(ctx); err != nil {
+func (a *AgencyDecider) UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agency string, status model.Status) error {
+	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}
 
@@ -149,5 +149,5 @@ func (a *AgencyDecider) UpdateAgencyStatus(ctx contractapi.TransactionContextInt
 		return ErrAccessDenied
 	}
 
-	return a.pap.UpdateAgencyStatus(ctx, agency, status)
+	return a.pap.UpdateAgencyStatus(stub, agency, status)
 }

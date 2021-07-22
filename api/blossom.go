@@ -23,7 +23,6 @@ func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Respo
 }
 
 func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
-	// Extract the function and args from the transaction proposal
 	fn, _ := stub.GetFunctionAndParameters()
 	args := stub.GetArgs()
 
@@ -60,7 +59,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	case "GetSwID":
 		result, err = b.handleGetSwID(stub, args)
 	case "GetSwIDsAssociatedWithAsset":
-		result, err = b.handlegetSwIDsAssociatedWithAsset(stub, args)
+		result, err = b.handleGetSwIDsAssociatedWithAsset(stub, args)
 	}
 
 	if err != nil {
@@ -194,7 +193,7 @@ func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, a
 	return json.Marshal(swid)
 }
 
-func (b *BlossomSmartContract) handlegetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
 	asset := string(args[0])
 	swids, err := b.GetSwIDsAssociatedWithAsset(stub, asset)
 	if err != nil {

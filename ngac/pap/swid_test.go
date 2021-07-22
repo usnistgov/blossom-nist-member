@@ -46,7 +46,7 @@ func TestReportSwID(t *testing.T) {
 	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
 	require.NoError(t, err)
 
-	agency := model.Agency{
+	agency := &model.Agency{
 		Name:  "Org2",
 		ATO:   "",
 		MSPID: "Org2MSP",

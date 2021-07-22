@@ -82,7 +82,7 @@ func TestCheckoutLicense(t *testing.T) {
 		require.NoError(t, err)
 
 		// request account
-		agency := model.Agency{
+		agency := &model.Agency{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -124,7 +124,7 @@ func TestCheckoutLicense(t *testing.T) {
 		require.NoError(t, err)
 
 		// request account
-		agency := model.Agency{
+		agency := &model.Agency{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -137,7 +137,8 @@ func TestCheckoutLicense(t *testing.T) {
 			Assets: make(map[string]map[string]time.Time),
 		}
 
-		mock.SetUser(mocks.A1SystemOwner)
+		err = mock.SetUser(mocks.A1SystemOwner)
+		require.NoError(t, err)
 
 		agencyDecider := NewAgencyDecider()
 		err = agencyDecider.RequestAccount(mock.Stub, agency)

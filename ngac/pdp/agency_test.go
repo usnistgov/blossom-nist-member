@@ -230,7 +230,7 @@ func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	require.NoError(t, err)
 
 	// add an account
-	agency := model.Agency{
+	agency := &model.Agency{
 		Name:  "A1",
 		ATO:   "ato",
 		MSPID: "A1MSP",
@@ -246,7 +246,9 @@ func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	mock.SetGraphState(graph)
 
 	// add account as the a1 system owner
-	mock.SetUser(mocks.A1SystemOwner)
+	err = mock.SetUser(mocks.A1SystemOwner)
+	require.NoError(t, err)
+
 	agencyDecider := NewAgencyDecider()
 	err = agencyDecider.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)

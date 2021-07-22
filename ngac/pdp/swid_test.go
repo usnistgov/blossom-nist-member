@@ -18,14 +18,22 @@ func TestReportSwID(t *testing.T) {
 
 	initSwidTestGraph(t, mock)
 
-	mock.SetUser(mocks.Super)
-	agencyDecider := NewAgencyDecider()
-	err := agencyDecider.UpdateAgencyStatus(mock.Stub, "A1", model.Approved)
+	// set user as super
+	err := mock.SetUser(mocks.Super)
 	require.NoError(t, err)
 
+	// update agency status
+	agencyDecider := NewAgencyDecider()
+	err = agencyDecider.UpdateAgencyStatus(mock.Stub, "A1", model.Approved)
+	require.NoError(t, err)
+
+	// update graph state
 	mock.SetGraphState(agencyDecider.pap.Graph())
 
-	mock.SetUser(mocks.A1SystemAdmin)
+	// change user to a1 sys sdmin
+	err = mock.SetUser(mocks.A1SystemAdmin)
+	require.NoError(t, err)
+
 	licenseDecider := NewAssetDecider()
 	err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
 		map[string]time.Time{"1": time.Now()})
@@ -65,7 +73,7 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	require.NoError(t, err)
 
 	// add an account
-	agency := model.Agency{
+	agency := &model.Agency{
 		Name:  "A1",
 		ATO:   "ato",
 		MSPID: "A1MSP",
@@ -81,7 +89,8 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	mock.SetGraphState(graph)
 
 	// add account as the a1 system owner
-	mock.SetUser(mocks.A1SystemOwner)
+	err = mock.SetUser(mocks.A1SystemOwner)
+
 	agencyDecider := NewAgencyDecider()
 	err = agencyDecider.RequestAccount(mock.Stub, agency)
 	require.NoError(t, err)
@@ -89,7 +98,8 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	mock.SetGraphState(agencyDecider.pap.Graph())
 
 	// set up the mock identity as the org1 admin
-	mock.SetUser(mocks.Super)
+	err = mock.SetUser(mocks.Super)
+	require.NoError(t, err)
 
 	// create a test asset
 	asset := &model.Asset{

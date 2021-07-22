@@ -90,6 +90,7 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 
 	// add account as the a1 system owner
 	err = mock.SetUser(mocks.A1SystemOwner)
+	require.NoError(t, err)
 
 	agencyDecider := NewAgencyDecider()
 	err = agencyDecider.RequestAccount(mock.Stub, agency)

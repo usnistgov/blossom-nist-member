@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -11,6 +12,13 @@ import (
 )
 
 type BlossomSmartContract struct {
+}
+
+// main function starts up the chaincode in the container during instantiate
+func main() {
+	if err := shim.Start(new(BlossomSmartContract)); err != nil {
+		fmt.Printf("Error starting Blossom chaincode: %s", err)
+	}
 }
 
 func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Response {

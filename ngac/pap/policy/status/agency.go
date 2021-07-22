@@ -15,7 +15,7 @@ func NewAgencyPolicy(graph pip.Graph) AgencyPolicy {
 	return AgencyPolicy{graph: graph}
 }
 
-func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
+func (a AgencyPolicy) RequestAccount(agency *model.Agency) error {
 	// assign users to pending
 	agencyUA := agencypap.UserAttributeName(agency.Name)
 	if err := a.graph.Assign(agencyUA, PendingUA); err != nil {

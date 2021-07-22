@@ -18,7 +18,7 @@ func NewAgencyPolicy(graph pip.Graph) AgencyPolicy {
 	return AgencyPolicy{graph: graph}
 }
 
-func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
+func (a AgencyPolicy) RequestAccount(agency *model.Agency) error {
 	// TODO using the PAP to avoid permission check for now as obligations are not yet implemented.  Once obligations are
 	// implemented the admin can create one to create the system owners and when executed will be executed on behalf of
 	// the admin not the system owner requesting an account

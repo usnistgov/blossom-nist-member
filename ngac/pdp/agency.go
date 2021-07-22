@@ -114,7 +114,7 @@ func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
 	return nil
 }
 
-func (a *AgencyDecider) RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error {
+func (a *AgencyDecider) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
 	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency decider")
 	}

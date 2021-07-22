@@ -16,7 +16,7 @@ func NewAgencyPolicy(graph pip.Graph) AgencyPolicy {
 	return AgencyPolicy{graph: graph}
 }
 
-func (a AgencyPolicy) RequestAccount(agency model.Agency) error {
+func (a AgencyPolicy) RequestAccount(agency *model.Agency) error {
 	// assign the agency object to the agencies attribute
 	if err := a.graph.Assign(agencypap.InfoObjectName(agency.Name), AgenciesOA); err != nil {
 		return errors.Wrapf(err, "error assigning agency %q to agencies attribute", agency.Name)

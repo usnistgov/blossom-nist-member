@@ -36,7 +36,7 @@ func (a *AgencyAdmin) Graph() pip.Graph {
 	return a.graph
 }
 
-func (a *AgencyAdmin) RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error {
+func (a *AgencyAdmin) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
 	if err := a.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up agency admin")
 	}

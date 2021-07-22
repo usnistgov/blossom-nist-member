@@ -18,7 +18,7 @@ type (
 		// provided in the Agency parameter in a separate structure until the request is accepted or denied.  The agency will
 		// be identified by the name provided in the request. The MSPID of the agency is needed to distinguish users, who may have
 		// the same username in a differing MSPs, in the NGAC system.
-		RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error
+		RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error
 
 		// UploadATO updates the ATO field of the Agency with the given name.
 		// TODO placeholder function until ATO model is finalized
@@ -54,7 +54,7 @@ func (b *BlossomSmartContract) agencyExists(stub shim.ChaincodeStubInterface, ag
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface, agency model.Agency) error {
+func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
 	// check that an agency doesn't already exist with the same name
 	if ok, err := b.agencyExists(stub, agency.Name); err != nil {
 		return errors.Wrapf(err, "error requesting account")

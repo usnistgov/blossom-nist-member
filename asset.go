@@ -2,13 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
-	"strings"
-	"time"
 )
 
 type (
@@ -278,7 +279,7 @@ func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]
 	asset.AvailableLicenses = asset.AvailableLicenses[amount:]
 
 	// create the array of licenses that are checked out including expiration dates
-	retCheckedOutLicenses := make(map[string]time.Time, 0)
+	retCheckedOutLicenses := make(map[string]time.Time)
 	expiration := time.Now().AddDate(1, 0, 0)
 	for _, license := range fromAvailable {
 		// set the expiration of the license to one year from now

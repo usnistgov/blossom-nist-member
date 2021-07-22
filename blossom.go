@@ -68,6 +68,8 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		result, err = b.handleGetSwID(stub, args)
 	case "GetSwIDsAssociatedWithAsset":
 		result, err = b.handleGetSwIDsAssociatedWithAsset(stub, args)
+	case "test":
+		result = []byte("awesome blossom")
 	}
 
 	if err != nil {

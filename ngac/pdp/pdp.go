@@ -3,13 +3,12 @@ package pdp
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/pdp"
+
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
-	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/ledger"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 )
@@ -72,12 +71,12 @@ func (a *AdminDecider) InitGraph(stub shim.ChaincodeStubInterface) error {
 		err   error
 	)
 
-	decider := pdp.NewDecider(graph)
+	/*decider := pdp.NewDecider(graph)
 	if ok, err := decider.HasPermissions(a.user, policy.BlossomObject, operations.InitBlossom); err != nil {
 		return errors.Wrapf(err, "error checking if user can initialize blossom")
 	} else if !ok {
 		return errors.Errorf("user %s does not have permission to initialize blossom", a.user)
-	}
+	}*/
 
 	if bytes, err = graph.MarshalJSON(); err != nil {
 		return errors.Wrap(err, "error serializing graph")

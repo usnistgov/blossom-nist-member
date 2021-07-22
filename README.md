@@ -2,7 +2,7 @@
 This package contains the code for the Blossom Smart Contracts.
 
 ## Building
-From the root directory run `go mod vendor` then `go build`.
+From the chaincode root directory run `go build`.
 
 ## APIs
 

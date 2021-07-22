@@ -1,6 +1,9 @@
 # Blossom Smart Contracts
 This package contains the code for the Blossom Smart Contracts.
 
+## Building
+From the root directory run `go mod vendor` then `go build`.
+
 ## APIs
 
   - Agency: Request a Blossom account and modify account information.

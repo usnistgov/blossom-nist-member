@@ -1,13 +1,12 @@
 module github.com/usnistgov/blossom/chaincode
 
-go 1.13
+go 1.14
 
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/Microsoft/hcsshim v0.8.20 // indirect
 	github.com/PM-Master/policy-machine-go v0.0.0-20210511011441-4e48d7cbbb63
 	github.com/Shopify/sarama v1.29.1 // indirect
-	github.com/VictoriaMetrics/fastcache v1.6.0 // indirect
 	github.com/containerd/containerd v1.5.4 // indirect
 	github.com/fsouza/go-dockerclient v1.7.3 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -23,8 +22,6 @@ require (
 	github.com/spf13/viper v1.8.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/sykesm/zap-logfmt v0.0.4 // indirect
-	github.com/syndtr/goleveldb v1.0.0 // indirect
-	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	go.uber.org/zap v1.18.1 // indirect

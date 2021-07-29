@@ -2,13 +2,15 @@
 This package contains the code for the Blossom Smart Contracts.
 
 ## Deployment Steps
-1. Install chaincode
+0. Make sure the Blossom project is cloned on the peer machine.  The path provided in the following `install` command
+   assumes the chaincode is located in `$GOPATH`.
+1. Install chaincode on the peer
    
    ```
    docker exec cli peer chaincode install -n blossomcc -v v0 -p github.com/usnistgov/blossom/chaincode
    ```
 
-2. Instantiate chaincode
+2. Instantiate chaincode the chaincode on the channel `blossom-1`
    
    ```
    docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v v0 -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
@@ -32,6 +34,9 @@ This package contains the code for the Blossom Smart Contracts.
    docker exec cli peer chaincode query -C blossom-1 -n blossomcc -c '{"Args”:[“test”]}
    ```
    
+In the above commands, `blossom-1` is the name of the channel, `blossomcc` is the name of the chaincode, and `v0` is the chaincode version. 
+When updating chaincode update the version.
+
 ## Building
 From the chaincode root directory run `go build`.
 

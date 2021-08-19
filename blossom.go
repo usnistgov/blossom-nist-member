@@ -31,8 +31,7 @@ func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Respo
 }
 
 func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
-	fn, _ := stub.GetFunctionAndParameters()
-	args := stub.GetArgs()
+	fn, args := stub.GetFunctionAndParameters()
 
 	var (
 		result []byte
@@ -69,7 +68,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	case "GetSwIDsAssociatedWithAsset":
 		result, err = b.handleGetSwIDsAssociatedWithAsset(stub, args)
 	case "test":
-		result = []byte("awesome blossom")
+		result = []byte(args[0])
 	}
 
 	if err != nil {
@@ -79,23 +78,23 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	return shim.Success(result)
 }
 
-func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInterface, args []string) error {
 	agency := &model.Agency{}
-	if err := json.Unmarshal(args[0], agency); err != nil {
+	if err := json.Unmarshal([]byte(args[0]), agency); err != nil {
 		return err
 	}
 
 	return b.RequestAccount(stub, agency)
 }
 
-func (b *BlossomSmartContract) handleUploadATO(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleUploadATO(stub shim.ChaincodeStubInterface, args []string) error {
 	agencyName := string(args[0])
 	ato := string(args[1])
 
 	return b.UploadATO(stub, agencyName, ato)
 }
 
-func (b *BlossomSmartContract) handleUpdateAgencyStatus(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleUpdateAgencyStatus(stub shim.ChaincodeStubInterface, args []string) error {
 	agencyName := string(args[0])
 	status := model.Status(args[1])
 
@@ -111,7 +110,7 @@ func (b *BlossomSmartContract) handleAgencies(stub shim.ChaincodeStubInterface) 
 	return json.Marshal(agencies)
 }
 
-func (b *BlossomSmartContract) handleAgency(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleAgency(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	agencyName := string(args[0])
 
 	agency, err := b.Agency(stub, agencyName)
@@ -122,16 +121,16 @@ func (b *BlossomSmartContract) handleAgency(stub shim.ChaincodeStubInterface, ar
 	return json.Marshal(agency)
 }
 
-func (b *BlossomSmartContract) handleOnboardAsset(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleOnboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
 	asset := &model.Asset{}
-	if err := json.Unmarshal(args[0], asset); err != nil {
+	if err := json.Unmarshal([]byte(args[0]), asset); err != nil {
 		return err
 	}
 
 	return b.OnboardAsset(stub, asset)
 }
 
-func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
 	assetID := string(args[0])
 	return b.OffboardAsset(stub, assetID)
 }
@@ -145,7 +144,7 @@ func (b *BlossomSmartContract) handleAssets(stub shim.ChaincodeStubInterface) ([
 	return json.Marshal(assets)
 }
 
-func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	assetID := string(args[0])
 
 	asset, err := b.AssetInfo(stub, assetID)
@@ -156,7 +155,7 @@ func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface,
 	return json.Marshal(asset)
 }
 
-func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	assetID := string(args[0])
 	agencyName := string(args[1])
 	amount, err := strconv.Atoi(string(args[2]))
@@ -172,10 +171,10 @@ func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, 
 	return json.Marshal(result)
 }
 
-func (b *BlossomSmartContract) handleCheckin(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleCheckin(stub shim.ChaincodeStubInterface, args []string) error {
 	assetID := string(args[0])
 	licenses := make([]string, 0)
-	if err := json.Unmarshal(args[1], &licenses); err != nil {
+	if err := json.Unmarshal([]byte(args[1]), &licenses); err != nil {
 		return err
 	}
 	agencyName := string(args[2])
@@ -183,9 +182,9 @@ func (b *BlossomSmartContract) handleCheckin(stub shim.ChaincodeStubInterface, a
 	return b.Checkin(stub, assetID, licenses, agencyName)
 }
 
-func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface, args [][]byte) error {
+func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface, args []string) error {
 	swid := &model.SwID{}
-	if err := json.Unmarshal(args[0], swid); err != nil {
+	if err := json.Unmarshal([]byte(args[0]), swid); err != nil {
 		return err
 	}
 	agencyName := string(args[1])
@@ -193,7 +192,7 @@ func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface
 	return b.ReportSwID(stub, swid, agencyName)
 }
 
-func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	primaryTag := string(args[0])
 	swid, err := b.GetSwID(stub, primaryTag)
 	if err != nil {
@@ -203,7 +202,7 @@ func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, a
 	return json.Marshal(swid)
 }
 
-func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args [][]byte) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	asset := string(args[0])
 	swids, err := b.GetSwIDsAssociatedWithAsset(stub, asset)
 	if err != nil {

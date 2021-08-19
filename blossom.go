@@ -88,14 +88,14 @@ func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInter
 }
 
 func (b *BlossomSmartContract) handleUploadATO(stub shim.ChaincodeStubInterface, args []string) error {
-	agencyName := string(args[0])
-	ato := string(args[1])
+	agencyName := args[0]
+	ato := args[1]
 
 	return b.UploadATO(stub, agencyName, ato)
 }
 
 func (b *BlossomSmartContract) handleUpdateAgencyStatus(stub shim.ChaincodeStubInterface, args []string) error {
-	agencyName := string(args[0])
+	agencyName := args[0]
 	status := model.Status(args[1])
 
 	return b.UpdateAgencyStatus(stub, agencyName, status)
@@ -111,7 +111,7 @@ func (b *BlossomSmartContract) handleAgencies(stub shim.ChaincodeStubInterface) 
 }
 
 func (b *BlossomSmartContract) handleAgency(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	agencyName := string(args[0])
+	agencyName := args[0]
 
 	agency, err := b.Agency(stub, agencyName)
 	if err != nil {
@@ -131,7 +131,7 @@ func (b *BlossomSmartContract) handleOnboardAsset(stub shim.ChaincodeStubInterfa
 }
 
 func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
-	assetID := string(args[0])
+	assetID := args[0]
 	return b.OffboardAsset(stub, assetID)
 }
 
@@ -145,7 +145,7 @@ func (b *BlossomSmartContract) handleAssets(stub shim.ChaincodeStubInterface) ([
 }
 
 func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	assetID := string(args[0])
+	assetID := args[0]
 
 	asset, err := b.AssetInfo(stub, assetID)
 	if err != nil {
@@ -156,9 +156,9 @@ func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface,
 }
 
 func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	assetID := string(args[0])
-	agencyName := string(args[1])
-	amount, err := strconv.Atoi(string(args[2]))
+	assetID := args[0]
+	agencyName := args[1]
+	amount, err := strconv.Atoi(args[2])
 	if err != nil {
 		return nil, err
 	}
@@ -172,12 +172,12 @@ func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, 
 }
 
 func (b *BlossomSmartContract) handleCheckin(stub shim.ChaincodeStubInterface, args []string) error {
-	assetID := string(args[0])
+	assetID := args[0]
 	licenses := make([]string, 0)
 	if err := json.Unmarshal([]byte(args[1]), &licenses); err != nil {
 		return err
 	}
-	agencyName := string(args[2])
+	agencyName := args[2]
 
 	return b.Checkin(stub, assetID, licenses, agencyName)
 }
@@ -187,13 +187,13 @@ func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface
 	if err := json.Unmarshal([]byte(args[0]), swid); err != nil {
 		return err
 	}
-	agencyName := string(args[1])
+	agencyName := args[1]
 
 	return b.ReportSwID(stub, swid, agencyName)
 }
 
 func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	primaryTag := string(args[0])
+	primaryTag := args[0]
 	swid, err := b.GetSwID(stub, primaryTag)
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, a
 }
 
 func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	asset := string(args[0])
+	asset := args[0]
 	swids, err := b.GetSwIDsAssociatedWithAsset(stub, asset)
 	if err != nil {
 		return nil, err

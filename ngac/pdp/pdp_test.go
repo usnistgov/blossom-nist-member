@@ -1,12 +1,6 @@
 package pdp
 
-import (
-	"github.com/stretchr/testify/require"
-	mocks "github.com/usnistgov/blossom/chaincode/mocks"
-	"testing"
-)
-
-func TestInitGraph(t *testing.T) {
+/*func TestInitGraph(t *testing.T) {
 	// create the mock chaincode stub and context
 	mock := mocks.New()
 
@@ -25,4 +19,4 @@ func TestInitGraph(t *testing.T) {
 	err = adminDecider.InitGraph(mock.Stub)
 	// an error should occur because a1_system_owner cannot init blossom
 	require.Error(t, err)
-}
+}*/

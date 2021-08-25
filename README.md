@@ -2,18 +2,21 @@
 This package contains the code for the Blossom Smart Contracts.
 
 ## Deployment Steps
+In the below commands to deploy the chaincode, `blossom-1` is the name of the channel and `blossomcc` is the name of the chaincode.
+
 0. Make sure the Blossom project is cloned on the peer machine.  The path provided in the following `install` command
    assumes the chaincode is located in `$GOPATH`.
+   
 1. Install chaincode on the peer
    
    ```
-   docker exec cli peer chaincode install -n blossomcc -v v0 -p github.com/usnistgov/blossom/chaincode
+   docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode
    ```
 
 2. Instantiate chaincode the chaincode on the channel `blossom-1`
    
    ```
-   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v v0 -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
    ```
 
 3. Check chaincode instantiation
@@ -25,17 +28,16 @@ This package contains the code for the Blossom Smart Contracts.
 4. Invoke chaincode
 
    ```
-   docker exec cli peer chaincode invoke -C blossom-1 -n blossomcc -c  '{"Args":["test"]}' -o $ORDERER --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+   docker exec cli peer chaincode invoke -C blossom-1 -n blossomcc -c  '{"Args":["test", "awesome blossom"]}' -o $ORDERER --cafile /opt/home/managedblockchain-tls-chain.pem --tls
    ```
 
-5. Query chaincode
+## Upgrading Chaincode
+To upgrade the chaincode, run the following commands
 
-   ```
-   docker exec cli peer chaincode query -C blossom-1 -n blossomcc -c '{"Args”:[“test”]}
-   ```
-   
-In the above commands, `blossom-1` is the name of the channel, `blossomcc` is the name of the chaincode, and `v0` is the chaincode version. 
-When updating chaincode update the version.
+```
+docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode  
+docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+```
 
 ## Building
 From the chaincode root directory run `go build`.

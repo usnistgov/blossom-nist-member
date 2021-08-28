@@ -6,8 +6,8 @@ func ObjectAttribute(licenseID string) string {
 	return fmt.Sprintf("%s", licenseID)
 }
 
-func AssetsObjectAttribute(agency string) string {
-	return fmt.Sprintf("%s assets", agency)
+func AssetsObjectAttribute(account string) string {
+	return fmt.Sprintf("%s assets", account)
 }
 
 func LicenseObject(asset string, license string) string {

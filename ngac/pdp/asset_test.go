@@ -82,7 +82,7 @@ func TestCheckoutLicense(t *testing.T) {
 		require.NoError(t, err)
 
 		// request account
-		agency := &model.Agency{
+		account := &model.Account{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -97,19 +97,19 @@ func TestCheckoutLicense(t *testing.T) {
 
 		mock.SetUser(mocks.A1SystemOwner)
 
-		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(mock.Stub, agency)
+		accountDecider := NewAccountDecider()
+		err = accountDecider.RequestAccount(mock.Stub, account)
 		require.NoError(t, err)
 
-		mock.SetGraphState(agencyDecider.pap.Graph())
+		mock.SetGraphState(accountDecider.pap.Graph())
 
-		// approve agency
+		// approve account
 		mock.SetUser(mocks.Super)
-		agencyDecider = NewAgencyDecider()
-		err = agencyDecider.UpdateAgencyStatus(mock.Stub, agency.Name, model.Approved)
+		accountDecider = NewAccountDecider()
+		err = accountDecider.UpdateAccountStatus(mock.Stub, account.Name, model.Approved)
 		require.NoError(t, err)
 
-		mock.SetGraphState(agencyDecider.pap.Graph())
+		mock.SetGraphState(accountDecider.pap.Graph())
 
 		mock.SetUser(mocks.A1SystemAdmin)
 		licenseDecider := NewAssetDecider()
@@ -124,7 +124,7 @@ func TestCheckoutLicense(t *testing.T) {
 		require.NoError(t, err)
 
 		// request account
-		agency := &model.Agency{
+		account := &model.Account{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -140,13 +140,13 @@ func TestCheckoutLicense(t *testing.T) {
 		err = mock.SetUser(mocks.A1SystemOwner)
 		require.NoError(t, err)
 
-		agencyDecider := NewAgencyDecider()
-		err = agencyDecider.RequestAccount(mock.Stub, agency)
+		accountDecider := NewAccountDecider()
+		err = accountDecider.RequestAccount(mock.Stub, account)
 		require.NoError(t, err)
 
-		mock.SetGraphState(agencyDecider.pap.Graph())
+		mock.SetGraphState(accountDecider.pap.Graph())
 
-		// do not approve agency
+		// do not approve account
 
 		// checkout license as pending
 		mock.SetUser(mocks.A1SystemAdmin)
@@ -247,7 +247,7 @@ func TestFilterLicense(t *testing.T) {
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
 			CheckedOut: map[string]map[string]time.Time{
-				"agency1": {"test-asset-1": testTime},
+				"account1": {"test-asset-1": testTime},
 			},
 		},
 		{
@@ -261,7 +261,7 @@ func TestFilterLicense(t *testing.T) {
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
 			CheckedOut: map[string]map[string]time.Time{
-				"agency1": {"test-asset-2": testTime},
+				"account1": {"test-asset-2": testTime},
 			},
 		},
 	}
@@ -294,6 +294,6 @@ func TestFilterLicense(t *testing.T) {
 	require.Equal(t, []string{"1", "2", "3", "4", "5"}, license.Licenses)
 	require.Equal(t, []string{"2", "3", "4", "5"}, license.AvailableLicenses)
 	require.Equal(t, map[string]map[string]time.Time{
-		"agency1": {"test-asset-2": testTime},
+		"account1": {"test-asset-2": testTime},
 	}, license.CheckedOut)
 }

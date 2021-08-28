@@ -11,17 +11,17 @@ import (
 	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
 )
 
-type AgencyAdmin struct {
+type AccountAdmin struct {
 	graph pip.Graph
 }
 
-func NewAgencyAdmin(stub shim.ChaincodeStubInterface) (*AgencyAdmin, error) {
-	aa := &AgencyAdmin{}
+func NewAccountAdmin(stub shim.ChaincodeStubInterface) (*AccountAdmin, error) {
+	aa := &AccountAdmin{}
 	err := aa.setup(stub)
 	return aa, err
 }
 
-func (a *AgencyAdmin) setup(stub shim.ChaincodeStubInterface) error {
+func (a *AccountAdmin) setup(stub shim.ChaincodeStubInterface) error {
 	graph, err := ledger.GetGraph(stub)
 	if err != nil {
 		return errors.Wrap(err, "error retrieving ngac graph from ledger")
@@ -32,41 +32,41 @@ func (a *AgencyAdmin) setup(stub shim.ChaincodeStubInterface) error {
 	return nil
 }
 
-func (a *AgencyAdmin) Graph() pip.Graph {
+func (a *AccountAdmin) Graph() pip.Graph {
 	return a.graph
 }
 
-func (a *AgencyAdmin) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
+func (a *AccountAdmin) RequestAccount(stub shim.ChaincodeStubInterface, account *model.Account) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
+		return errors.Wrapf(err, "error setting up account admin")
 	}
 
-	dacPolicy := dacpolicy.NewAgencyPolicy(a.graph)
-	if err := dacPolicy.RequestAccount(agency); err != nil {
+	dacPolicy := dacpolicy.NewAccountPolicy(a.graph)
+	if err := dacPolicy.RequestAccount(account); err != nil {
 		return errors.Wrap(err, "error configuring account DAC policy")
 	}
 
-	rbacPolicy := rbacpolicy.NewAgencyPolicy(a.graph)
-	if err := rbacPolicy.RequestAccount(agency); err != nil {
+	rbacPolicy := rbacpolicy.NewAccountPolicy(a.graph)
+	if err := rbacPolicy.RequestAccount(account); err != nil {
 		return errors.Wrap(err, "error configuring account RBAC policy")
 	}
 
-	statusPolicy := statuspolicy.NewAgencyPolicy(a.graph)
-	if err := statusPolicy.RequestAccount(agency); err != nil {
+	statusPolicy := statuspolicy.NewAccountPolicy(a.graph)
+	if err := statusPolicy.RequestAccount(account); err != nil {
 		return errors.Wrap(err, "error configuring account Status policy")
 	}
 
 	return ledger.UpdateGraphState(stub, a.graph)
 }
 
-func (a *AgencyAdmin) UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agency string, status model.Status) error {
+func (a *AccountAdmin) UpdateAccountStatus(stub shim.ChaincodeStubInterface, account string, status model.Status) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
+		return errors.Wrapf(err, "error setting up account admin")
 	}
 
-	statusPolicy := statuspolicy.NewAgencyPolicy(a.graph)
-	if err := statusPolicy.UpdateAgencyStatus(agency, status); err != nil {
-		return errors.Wrap(err, "error updating agency status")
+	statusPolicy := statuspolicy.NewAccountPolicy(a.graph)
+	if err := statusPolicy.UpdateAccountStatus(account, status); err != nil {
+		return errors.Wrap(err, "error updating account status")
 	}
 
 	return ledger.UpdateGraphState(stub, a.graph)

@@ -11,12 +11,12 @@ import (
 )
 
 func TestUploadATO(t *testing.T) {
-	decider := NewAgencyDecider()
+	decider := NewAccountDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		mock.SetUser(mocks.A1SystemOwner)
@@ -28,7 +28,7 @@ func TestUploadATO(t *testing.T) {
 	t.Run("test a1 system admin", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		mock.SetUser(mocks.A1SystemAdmin)
@@ -38,59 +38,59 @@ func TestUploadATO(t *testing.T) {
 	})
 }
 
-func TestUpdateAgencyStatus(t *testing.T) {
-	decider := NewAgencyDecider()
+func TestUpdateAccountStatus(t *testing.T) {
+	decider := NewAccountDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		mock.SetUser(mocks.A1SystemOwner)
 
-		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
+		err = decider.UpdateAccountStatus(mock.Stub, "A1", "test")
 		require.Error(t, err)
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		mock.SetUser(mocks.A1SystemAdmin)
 
-		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
+		err = decider.UpdateAccountStatus(mock.Stub, "A1", "test")
 		require.Error(t, err)
 	})
 
 	t.Run("test super", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		mock.SetUser(mocks.Super)
 
-		err = decider.UpdateAgencyStatus(mock.Stub, "A1", "test")
+		err = decider.UpdateAccountStatus(mock.Stub, "A1", "test")
 		require.NoError(t, err)
 	})
 }
 
-func TestFilterAgency(t *testing.T) {
-	decider := NewAgencyDecider()
+func TestFilterAccount(t *testing.T) {
+	decider := NewAccountDecider()
 
 	t.Run("test a1 system owner", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
 		mock.SetUser(mocks.A1SystemOwner)
 
-		agency := &model.Agency{
+		account := &model.Account{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -110,35 +110,35 @@ func TestFilterAgency(t *testing.T) {
 
 		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
-		err = decider.filterAgency(agency)
+		err = decider.filterAccount(account)
 		require.NoError(t, err)
-		require.Equal(t, "A1", agency.Name)
-		require.Equal(t, "ato", agency.ATO)
-		require.Equal(t, "A1MSP", agency.MSPID)
-		require.Equal(t, model.Status("status"), agency.Status)
+		require.Equal(t, "A1", account.Name)
+		require.Equal(t, "ato", account.ATO)
+		require.Equal(t, "A1MSP", account.MSPID)
+		require.Equal(t, model.Status("status"), account.Status)
 		require.Equal(t, model.Users{
 			SystemOwner:           "a1_system_owner",
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
-		}, agency.Users)
+		}, account.Users)
 		require.Equal(t, map[string]map[string]time.Time{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Assets)
+		}, account.Assets)
 	})
 
 	t.Run("test a1 system admin", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
 		mock.SetUser(mocks.A1SystemAdmin)
 
-		agency := &model.Agency{
+		account := &model.Account{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -158,31 +158,31 @@ func TestFilterAgency(t *testing.T) {
 
 		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
-		err = decider.filterAgency(agency)
+		err = decider.filterAccount(account)
 		require.NoError(t, err)
-		require.Equal(t, "A1", agency.Name)
-		require.Equal(t, "", agency.ATO)
-		require.Equal(t, "", agency.MSPID)
-		require.Equal(t, model.Status(""), agency.Status)
-		require.Equal(t, model.Users{}, agency.Users)
+		require.Equal(t, "A1", account.Name)
+		require.Equal(t, "", account.ATO)
+		require.Equal(t, "", account.MSPID)
+		require.Equal(t, model.Status(""), account.Status)
+		require.Equal(t, model.Users{}, account.Users)
 		require.Equal(t, map[string]map[string]time.Time{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Assets)
+		}, account.Assets)
 	})
 
 	t.Run("test super", func(t *testing.T) {
 		mock := mocks.New()
 
-		err := initAgencyTestGraph(t, mock)
+		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
 		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
 		mock.SetUser(mocks.Super)
 
-		agency := &model.Agency{
+		account := &model.Account{
 			Name:  "A1",
 			ATO:   "ato",
 			MSPID: "A1MSP",
@@ -202,27 +202,27 @@ func TestFilterAgency(t *testing.T) {
 
 		err = decider.setup(mock.Stub)
 		require.NoError(t, err)
-		err = decider.filterAgency(agency)
+		err = decider.filterAccount(account)
 		require.NoError(t, err)
-		require.Equal(t, "A1", agency.Name)
-		require.Equal(t, "ato", agency.ATO)
-		require.Equal(t, "A1MSP", agency.MSPID)
-		require.Equal(t, model.Status("status"), agency.Status)
+		require.Equal(t, "A1", account.Name)
+		require.Equal(t, "ato", account.ATO)
+		require.Equal(t, "A1MSP", account.MSPID)
+		require.Equal(t, model.Status("status"), account.Status)
 		require.Equal(t, model.Users{
 			SystemOwner:           "a1_system_owner",
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
-		}, agency.Users)
+		}, account.Users)
 		require.Equal(t, map[string]map[string]time.Time{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
 			},
-		}, agency.Assets)
+		}, account.Assets)
 	})
 }
 
-func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
+func initAccountTestGraph(t *testing.T, mock mocks.Mock) error {
 	graph := memory.NewGraph()
 
 	// configure the policy
@@ -230,7 +230,7 @@ func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	require.NoError(t, err)
 
 	// add an account
-	agency := &model.Agency{
+	account := &model.Account{
 		Name:  "A1",
 		ATO:   "ato",
 		MSPID: "A1MSP",
@@ -249,11 +249,11 @@ func initAgencyTestGraph(t *testing.T, mock mocks.Mock) error {
 	err = mock.SetUser(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
-	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.RequestAccount(mock.Stub, agency)
+	accountDecider := NewAccountDecider()
+	err = accountDecider.RequestAccount(mock.Stub, account)
 	require.NoError(t, err)
 
-	mock.SetGraphState(agencyDecider.pap.Graph())
+	mock.SetGraphState(accountDecider.pap.Graph())
 
 	return nil
 }

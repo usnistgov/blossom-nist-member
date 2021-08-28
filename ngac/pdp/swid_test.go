@@ -22,13 +22,13 @@ func TestReportSwID(t *testing.T) {
 	err := mock.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	// update agency status
-	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.UpdateAgencyStatus(mock.Stub, "A1", model.Approved)
+	// update account status
+	accountDecider := NewAccountDecider()
+	err = accountDecider.UpdateAccountStatus(mock.Stub, "A1", model.Approved)
 	require.NoError(t, err)
 
 	// update graph state
-	mock.SetGraphState(agencyDecider.pap.Graph())
+	mock.SetGraphState(accountDecider.pap.Graph())
 
 	// change user to a1 sys sdmin
 	err = mock.SetUser(mocks.A1SystemAdmin)
@@ -73,7 +73,7 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	require.NoError(t, err)
 
 	// add an account
-	agency := &model.Agency{
+	account := &model.Account{
 		Name:  "A1",
 		ATO:   "ato",
 		MSPID: "A1MSP",
@@ -92,11 +92,11 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 	err = mock.SetUser(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
-	agencyDecider := NewAgencyDecider()
-	err = agencyDecider.RequestAccount(mock.Stub, agency)
+	accountDecider := NewAccountDecider()
+	err = accountDecider.RequestAccount(mock.Stub, account)
 	require.NoError(t, err)
 
-	mock.SetGraphState(agencyDecider.pap.Graph())
+	mock.SetGraphState(accountDecider.pap.Graph())
 
 	// set up the mock identity as the org1 admin
 	err = mock.SetUser(mocks.Super)

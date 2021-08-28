@@ -70,20 +70,20 @@ func (l *AssetAdmin) OffboardAsset(stub shim.ChaincodeStubInterface, assetID str
 	return ledger.UpdateGraphState(stub, l.graph)
 }
 
-func (l *AssetAdmin) Checkout(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
+func (l *AssetAdmin) Checkout(stub shim.ChaincodeStubInterface, accountName string, assetID string,
 	licenses map[string]time.Time) error {
 	dacPolicy := dacpolicy.NewAssetPolicy(l.graph)
-	if err := dacPolicy.Checkout(agencyName, assetID, licenses); err != nil {
+	if err := dacPolicy.Checkout(accountName, assetID, licenses); err != nil {
 		return errors.Wrap(err, "error checking out asset under the DAC policy")
 	}
 
 	return ledger.UpdateGraphState(stub, l.graph)
 }
 
-func (l *AssetAdmin) Checkin(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
+func (l *AssetAdmin) Checkin(stub shim.ChaincodeStubInterface, accountName string, assetID string,
 	licenses []string) error {
 	dacPolicy := dacpolicy.NewAssetPolicy(l.graph)
-	if err := dacPolicy.Checkin(agencyName, assetID, licenses); err != nil {
+	if err := dacPolicy.Checkin(accountName, assetID, licenses); err != nil {
 		return errors.Wrap(err, "error checking in asset under the DAC policy")
 	}
 

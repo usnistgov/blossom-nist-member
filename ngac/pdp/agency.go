@@ -7,27 +7,27 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
-	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
+	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
 	"time"
 )
 
-// AgencyDecider is the Policy Decision Point (PDP) for the Agency API
-type AgencyDecider struct {
+// AccountDecider is the Policy Decision Point (PDP) for the Account API
+type AccountDecider struct {
 	// user is the user that is currently executing a function
 	user string
-	// pap is the policy administration point for agencies
-	pap *pap.AgencyAdmin
+	// pap is the policy administration point for accounts
+	pap *pap.AccountAdmin
 	// decider is the NGAC decider used to make decisions
 	decider pdp.Decider
 }
 
-// NewAgencyDecider creates a new AgencyDecider with the user from the stub and a NGAC Decider using the NGAC graph
+// NewAccountDecider creates a new AccountDecider with the user from the stub and a NGAC Decider using the NGAC graph
 // from the ledger.
-func NewAgencyDecider() *AgencyDecider {
-	return &AgencyDecider{}
+func NewAccountDecider() *AccountDecider {
+	return &AccountDecider{}
 }
 
-func (a *AgencyDecider) setup(stub shim.ChaincodeStubInterface) error {
+func (a *AccountDecider) setup(stub shim.ChaincodeStubInterface) error {
 	user, err := GetUser(stub)
 	if err != nil {
 		return errors.Wrapf(err, "error getting user from request")
@@ -35,10 +35,10 @@ func (a *AgencyDecider) setup(stub shim.ChaincodeStubInterface) error {
 
 	a.user = user
 
-	// initialize the agency policy administration point
-	a.pap, err = pap.NewAgencyAdmin(stub)
+	// initialize the account policy administration point
+	a.pap, err = pap.NewAccountAdmin(stub)
 	if err != nil {
-		return errors.Wrapf(err, "error initializing agency administraion point")
+		return errors.Wrapf(err, "error initializing account administraion point")
 	}
 
 	a.decider = pdp.NewDecider(a.pap.Graph())
@@ -46,108 +46,108 @@ func (a *AgencyDecider) setup(stub shim.ChaincodeStubInterface) error {
 	return nil
 }
 
-func (a *AgencyDecider) FilterAgencies(stub shim.ChaincodeStubInterface, agencies []*model.Agency) ([]*model.Agency, error) {
+func (a *AccountDecider) FilterAccounts(stub shim.ChaincodeStubInterface, accounts []*model.Account) ([]*model.Account, error) {
 	if err := a.setup(stub); err != nil {
-		return nil, errors.Wrapf(err, "error setting up agency decider")
+		return nil, errors.Wrapf(err, "error setting up account decider")
 	}
 
-	filteredAgencies := make([]*model.Agency, 0)
-	for _, agency := range agencies {
-		if err := a.filterAgency(agency); err != nil {
-			return nil, errors.Wrapf(err, "error filtering agency")
+	filteredAccounts := make([]*model.Account, 0)
+	for _, account := range accounts {
+		if err := a.filterAccount(account); err != nil {
+			return nil, errors.Wrapf(err, "error filtering account")
 		}
 
-		if agency.Name == "" {
+		if account.Name == "" {
 			continue
 		}
 
-		filteredAgencies = append(filteredAgencies, agency)
+		filteredAccounts = append(filteredAccounts, account)
 	}
 
-	return filteredAgencies, nil
+	return filteredAccounts, nil
 }
 
-func (a *AgencyDecider) FilterAgency(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
+func (a *AccountDecider) FilterAccount(stub shim.ChaincodeStubInterface, account *model.Account) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up account decider")
 	}
 
-	return a.filterAgency(agency)
+	return a.filterAccount(account)
 }
 
-func (a *AgencyDecider) filterAgency(agency *model.Agency) error {
-	permissions, err := a.decider.ListPermissions(a.user, agencypap.InfoObjectName(agency.Name))
+func (a *AccountDecider) filterAccount(account *model.Account) error {
+	permissions, err := a.decider.ListPermissions(a.user, accountpap.InfoObjectName(account.Name))
 	if err != nil {
-		return errors.Wrapf(err, "error getting permissions for user %s on agency %s", a.user, agency.Name)
+		return errors.Wrapf(err, "error getting permissions for user %s on account %s", a.user, account.Name)
 	}
 
-	// if the user cannot view agency on the agency info object, return an empty agency
-	if !permissions.Contains(operations.ViewAgency) {
-		agency.Assets = make(map[string]map[string]time.Time)
-		agency.Status = ""
-		agency.ATO = ""
-		agency.Users = model.Users{}
-		agency.MSPID = ""
+	// if the user cannot view account on the account info object, return an empty account
+	if !permissions.Contains(operations.ViewAccount) {
+		account.Assets = make(map[string]map[string]time.Time)
+		account.Status = ""
+		account.ATO = ""
+		account.Users = model.Users{}
+		account.MSPID = ""
 		return nil
 	}
 
 	if !permissions.Contains(operations.ViewATO) {
-		agency.ATO = ""
+		account.ATO = ""
 	}
 
 	if !permissions.Contains(operations.ViewMSPID) {
-		agency.MSPID = ""
+		account.MSPID = ""
 	}
 
 	if !permissions.Contains(operations.ViewUsers) {
-		agency.Users = model.Users{}
+		account.Users = model.Users{}
 	}
 
 	if !permissions.Contains(operations.ViewStatus) {
-		agency.Status = ""
+		account.Status = ""
 	}
 
-	if !permissions.Contains(operations.ViewAgencyLicenses) {
-		agency.Assets = make(map[string]map[string]time.Time)
+	if !permissions.Contains(operations.ViewAccountLicenses) {
+		account.Assets = make(map[string]map[string]time.Time)
 	}
 
 	return nil
 }
 
-func (a *AgencyDecider) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
+func (a *AccountDecider) RequestAccount(stub shim.ChaincodeStubInterface, account *model.Account) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up account decider")
 	}
 
 	// any user can create an account
-	return a.pap.RequestAccount(stub, agency)
+	return a.pap.RequestAccount(stub, account)
 }
 
-func (a *AgencyDecider) UploadATO(stub shim.ChaincodeStubInterface, agency string) error {
+func (a *AccountDecider) UploadATO(stub shim.ChaincodeStubInterface, account string) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up account decider")
 	}
 
-	if ok, err := a.decider.HasPermissions(a.user, agencypap.InfoObjectName(agency), operations.UploadATO); err != nil {
-		return errors.Wrapf(err, "error checking if user %s can upload an ATO for agency %s", a.user, agency)
+	if ok, err := a.decider.HasPermissions(a.user, accountpap.InfoObjectName(account), operations.UploadATO); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can upload an ATO for account %s", a.user, account)
 	} else if !ok {
 		return ErrAccessDenied
 	}
 
-	// nothing to update in the agency admin
+	// nothing to update in the account admin
 	return nil
 }
 
-func (a *AgencyDecider) UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agency string, status model.Status) error {
+func (a *AccountDecider) UpdateAccountStatus(stub shim.ChaincodeStubInterface, account string, status model.Status) error {
 	if err := a.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up account decider")
 	}
 
-	if ok, err := a.decider.HasPermissions(a.user, agencypap.InfoObjectName(agency), operations.UpdateAgencyStatus); err != nil {
-		return errors.Wrapf(err, "error checking if user %s can update status of agency %s", a.user, agency)
+	if ok, err := a.decider.HasPermissions(a.user, accountpap.InfoObjectName(account), operations.UpdateAccountStatus); err != nil {
+		return errors.Wrapf(err, "error checking if user %s can update status of account %s", a.user, account)
 	} else if !ok {
 		return ErrAccessDenied
 	}
 
-	return a.pap.UpdateAgencyStatus(stub, agency, status)
+	return a.pap.UpdateAccountStatus(stub, account, status)
 }

@@ -16,7 +16,7 @@ import (
 type SwIDDecider struct {
 	// user is the user that is currently executing a function
 	user string
-	// pap is the policy administration point for agencies
+	// pap is the policy administration point for accounts
 	pap *pap.SwIDAdmin
 	// decider is the NGAC decider used to make decisions
 	decider pdp.Decider
@@ -36,10 +36,10 @@ func (s *SwIDDecider) setup(stub shim.ChaincodeStubInterface) error {
 
 	s.user = user
 
-	// initialize the agency policy administration point
+	// initialize the account policy administration point
 	s.pap, err = pap.NewSwIDAdmin(stub)
 	if err != nil {
-		return errors.Wrapf(err, "error initializing agency administraion point")
+		return errors.Wrapf(err, "error initializing account administraion point")
 	}
 
 	s.decider = pdp.NewDecider(s.pap.Graph())
@@ -47,7 +47,7 @@ func (s *SwIDDecider) setup(stub shim.ChaincodeStubInterface) error {
 	return nil
 }
 
-func (s *SwIDDecider) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+func (s *SwIDDecider) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error {
 	if err := s.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up swid decider")
 	}
@@ -59,7 +59,7 @@ func (s *SwIDDecider) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.S
 		return ErrAccessDenied
 	}
 
-	err := s.pap.ReportSwID(stub, swid, agency)
+	err := s.pap.ReportSwID(stub, swid, account)
 	return errors.Wrapf(err, "error reporting swid %s", swid.PrimaryTag)
 }
 

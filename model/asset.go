@@ -26,7 +26,7 @@ type (
 		Licenses []string `json:"licenses"`
 		// AvailableLicenses is the set of licenses that are available to be checked out
 		AvailableLicenses []string `json:"available_licenses"`
-		// CheckedOut stores the agencies that have checked out this asset and which licenses they have leased
+		// CheckedOut stores the accounts that have checked out this asset and which licenses they have leased
 		CheckedOut map[string]map[string]time.Time `json:"checked_out"`
 	}
 )

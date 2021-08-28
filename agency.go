@@ -12,228 +12,228 @@ import (
 )
 
 type (
-	// AgencyInterface provides the functions to interact with Agencies in blossom.
-	AgencyInterface interface {
-		// RequestAccount allows agencies to request an account in the Blossom system.  This function will stage the information
-		// provided in the Agency parameter in a separate structure until the request is accepted or denied.  The agency will
-		// be identified by the name provided in the request. The MSPID of the agency is needed to distinguish users, who may have
+	// AccountInterface provides the functions to interact with Accounts in blossom.
+	AccountInterface interface {
+		// RequestAccount allows accounts to request an account in the Blossom system.  This function will stage the information
+		// provided in the Account parameter in a separate structure until the request is accepted or denied.  The account will
+		// be identified by the name provided in the request. The MSPID of the account is needed to distinguish users, who may have
 		// the same username in a differing MSPs, in the NGAC system.
-		RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error
+		RequestAccount(stub shim.ChaincodeStubInterface, account *model.Account) error
 
-		// UploadATO updates the ATO field of the Agency with the given name.
+		// UploadATO updates the ATO field of the Account with the given name.
 		// TODO placeholder function until ATO model is finalized
-		UploadATO(stub shim.ChaincodeStubInterface, agency string, ato string) error
+		UploadATO(stub shim.ChaincodeStubInterface, account string, ato string) error
 
-		// UpdateAgencyStatus updates the status of an agency in Blossom.
-		// Updating the status to Approved allows the agency to read and write to blossom.
-		// Updating the status to Pending allows the agency to read write only agency related information such as ATOs.
+		// UpdateAccountStatus updates the status of an account in Blossom.
+		// Updating the status to Approved allows the account to read and write to blossom.
+		// Updating the status to Pending allows the account to read write only account related information such as ATOs.
 		// Updating the status to Inactive provides the same NGAC consequences as Pending
-		UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agency string, status model.Status) error
+		UpdateAccountStatus(stub shim.ChaincodeStubInterface, account string, status model.Status) error
 
-		// Agencies returns a list of all the agencies that are registered with Blossom.  Any agency in which the requesting
-		// user does not have access to will not be returned.  Likewise, any fields of any agency the user does not have access
+		// Accounts returns a list of all the accounts that are registered with Blossom.  Any account in which the requesting
+		// user does not have access to will not be returned.  Likewise, any fields of any account the user does not have access
 		// to will not be returned.
-		Agencies(stub shim.ChaincodeStubInterface) ([]*model.Agency, error)
+		Accounts(stub shim.ChaincodeStubInterface) ([]*model.Account, error)
 
-		// Agency returns the agency information of the agency with the provided name.  Any fields of any agency the user
+		// Account returns the account information of the account with the provided name.  Any fields of any account the user
 		// does not have access to will not be returned.
-		Agency(stub shim.ChaincodeStubInterface, agency string) (*model.Agency, error)
+		Account(stub shim.ChaincodeStubInterface, account string) (*model.Account, error)
 	}
 )
 
-func NewAgencyContract() AgencyInterface {
+func NewAccountContract() AccountInterface {
 	return &BlossomSmartContract{}
 }
 
-func (b *BlossomSmartContract) agencyExists(stub shim.ChaincodeStubInterface, agencyName string) (bool, error) {
-	data, err := stub.GetState(model.AgencyKey(agencyName))
+func (b *BlossomSmartContract) accountExists(stub shim.ChaincodeStubInterface, accountName string) (bool, error) {
+	data, err := stub.GetState(model.AccountKey(accountName))
 	if err != nil {
-		return false, errors.Wrapf(err, "error checking if agency %q already exists on the ledger", agencyName)
+		return false, errors.Wrapf(err, "error checking if account %q already exists on the ledger", accountName)
 	}
 
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface, agency *model.Agency) error {
-	// check that an agency doesn't already exist with the same name
-	if ok, err := b.agencyExists(stub, agency.Name); err != nil {
+func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface, account *model.Account) error {
+	// check that an account doesn't already exist with the same name
+	if ok, err := b.accountExists(stub, account.Name); err != nil {
 		return errors.Wrapf(err, "error requesting account")
 	} else if ok {
-		return errors.Errorf("an agency with the name %q already exists", agency.Name)
+		return errors.Errorf("an account with the name %q already exists", account.Name)
 	}
 
 	// begin NGAC
-	if err := pdp.NewAgencyDecider().RequestAccount(stub, agency); err != nil {
-		return errors.Wrapf(err, "error adding agency to NGAC")
+	if err := pdp.NewAccountDecider().RequestAccount(stub, account); err != nil {
+		return errors.Wrapf(err, "error adding account to NGAC")
 	}
 	// end NGAC
 
-	// add agency to ledger with pending status
-	agency.Status = model.PendingApproval
-	agency.Assets = make(map[string]map[string]time.Time)
+	// add account to ledger with pending status
+	account.Status = model.PendingApproval
+	account.Assets = make(map[string]map[string]time.Time)
 
-	// convert agency to bytes
-	bytes, err := json.Marshal(agency)
+	// convert account to bytes
+	bytes, err := json.Marshal(account)
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling agency %q", agency.Name)
+		return errors.Wrapf(err, "error marshaling account %q", account.Name)
 	}
 
-	// add agency to world state
-	if err = stub.PutState(model.AgencyKey(agency.Name), bytes); err != nil {
-		return errors.Wrapf(err, "error adding agency to ledger")
+	// add account to world state
+	if err = stub.PutState(model.AccountKey(account.Name), bytes); err != nil {
+		return errors.Wrapf(err, "error adding account to ledger")
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) UploadATO(stub shim.ChaincodeStubInterface, agencyName string, ato string) error {
-	if ok, err := b.agencyExists(stub, agencyName); err != nil {
-		return errors.Wrapf(err, "error checking if agency %q exists", agencyName)
+func (b *BlossomSmartContract) UploadATO(stub shim.ChaincodeStubInterface, accountName string, ato string) error {
+	if ok, err := b.accountExists(stub, accountName); err != nil {
+		return errors.Wrapf(err, "error checking if account %q exists", accountName)
 	} else if !ok {
-		return errors.Errorf("an agency with the name %q does not exist", agencyName)
+		return errors.Errorf("an account with the name %q does not exist", accountName)
 	}
 
 	// begin NGAC
-	if err := pdp.NewAgencyDecider().UploadATO(stub, agencyName); errors.Is(err, pdp.ErrAccessDenied) {
+	if err := pdp.NewAccountDecider().UploadATO(stub, accountName); errors.Is(err, pdp.ErrAccessDenied) {
 		return err
 	} else if err != nil {
 		return errors.Wrapf(err, "error checking if user can update ATO")
 	}
 	// end NGAC
 
-	bytes, err := stub.GetState(model.AgencyKey(agencyName))
+	bytes, err := stub.GetState(model.AccountKey(accountName))
 	if err != nil {
-		return errors.Wrapf(err, "error getting agency %q from world state", agencyName)
+		return errors.Wrapf(err, "error getting account %q from world state", accountName)
 	}
 
-	ledgerAgency := &model.Agency{}
-	if err = json.Unmarshal(bytes, ledgerAgency); err != nil {
-		return errors.Wrapf(err, "error unmarshaling agency %q", agencyName)
+	ledgerAccount := &model.Account{}
+	if err = json.Unmarshal(bytes, ledgerAccount); err != nil {
+		return errors.Wrapf(err, "error unmarshaling account %q", accountName)
 	}
 
 	// update ATO value
-	ledgerAgency.ATO = ato
+	ledgerAccount.ATO = ato
 
 	// marshal back to json
-	if bytes, err = json.Marshal(ledgerAgency); err != nil {
-		return errors.Wrapf(err, "error marshaling agency %q", agencyName)
+	if bytes, err = json.Marshal(ledgerAccount); err != nil {
+		return errors.Wrapf(err, "error marshaling account %q", accountName)
 	}
 
 	// update world state
-	if err = stub.PutState(model.AgencyKey(agencyName), bytes); err != nil {
-		return errors.Wrapf(err, "error updating ATO for agency %q", agencyName)
+	if err = stub.PutState(model.AccountKey(accountName), bytes); err != nil {
+		return errors.Wrapf(err, "error updating ATO for account %q", accountName)
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) UpdateAgencyStatus(stub shim.ChaincodeStubInterface, agencyName string, status model.Status) error {
-	if ok, err := b.agencyExists(stub, agencyName); err != nil {
-		return errors.Wrapf(err, "error checking if agency %q exists", agencyName)
+func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterface, accountName string, status model.Status) error {
+	if ok, err := b.accountExists(stub, accountName); err != nil {
+		return errors.Wrapf(err, "error checking if account %q exists", accountName)
 	} else if !ok {
-		return errors.Errorf("an agency with the name %q does not exist", agencyName)
+		return errors.Errorf("an account with the name %q does not exist", accountName)
 	}
 
 	// begin NGAC
-	if err := pdp.NewAgencyDecider().UpdateAgencyStatus(stub, agencyName, status); errors.Is(err, pdp.ErrAccessDenied) {
+	if err := pdp.NewAccountDecider().UpdateAccountStatus(stub, accountName, status); errors.Is(err, pdp.ErrAccessDenied) {
 		return err
 	} else if err != nil {
-		return errors.Wrapf(err, "error checking if user can update agency status")
+		return errors.Wrapf(err, "error checking if user can update account status")
 	}
 	// end NGAC
 
-	bytes, err := stub.GetState(model.AgencyKey(agencyName))
+	bytes, err := stub.GetState(model.AccountKey(accountName))
 	if err != nil {
-		return errors.Wrapf(err, "error getting agency %q from world state", agencyName)
+		return errors.Wrapf(err, "error getting account %q from world state", accountName)
 	}
 
-	ledgerAgency := &model.Agency{}
-	if err = json.Unmarshal(bytes, ledgerAgency); err != nil {
-		return errors.Wrapf(err, "error unmarshaling agency %q", agencyName)
+	ledgerAccount := &model.Account{}
+	if err = json.Unmarshal(bytes, ledgerAccount); err != nil {
+		return errors.Wrapf(err, "error unmarshaling account %q", accountName)
 	}
 
 	// update ATO value
-	ledgerAgency.Status = status
+	ledgerAccount.Status = status
 
 	// marshal back to json
-	if bytes, err = json.Marshal(ledgerAgency); err != nil {
-		return errors.Wrapf(err, "error marshaling agency %q", agencyName)
+	if bytes, err = json.Marshal(ledgerAccount); err != nil {
+		return errors.Wrapf(err, "error marshaling account %q", accountName)
 	}
 
 	// update world state
-	if err = stub.PutState(model.AgencyKey(agencyName), bytes); err != nil {
-		return errors.Wrapf(err, "error updating status of agency %q", agencyName)
+	if err = stub.PutState(model.AccountKey(accountName), bytes); err != nil {
+		return errors.Wrapf(err, "error updating status of account %q", accountName)
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) Agencies(stub shim.ChaincodeStubInterface) ([]*model.Agency, error) {
-	agencies, err := agencies(stub)
+func (b *BlossomSmartContract) Accounts(stub shim.ChaincodeStubInterface) ([]*model.Account, error) {
+	accounts, err := accounts(stub)
 	if err != nil {
-		return nil, errors.Wrap(err, "error getting agencies")
+		return nil, errors.Wrap(err, "error getting accounts")
 	}
 
 	// begin NGAC
-	if agencies, err = pdp.NewAgencyDecider().FilterAgencies(stub, agencies); err != nil {
-		return nil, errors.Wrapf(err, "error filtering agencies")
+	if accounts, err = pdp.NewAccountDecider().FilterAccounts(stub, accounts); err != nil {
+		return nil, errors.Wrapf(err, "error filtering accounts")
 	}
 	// end NGAC
 
-	return agencies, nil
+	return accounts, nil
 }
 
-func agencies(stub shim.ChaincodeStubInterface) ([]*model.Agency, error) {
+func accounts(stub shim.ChaincodeStubInterface) ([]*model.Account, error) {
 	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
 	}
 	defer resultsIterator.Close()
 
-	agencies := make([]*model.Agency, 0)
+	accounts := make([]*model.Account, 0)
 	for resultsIterator.HasNext() {
 		var queryResponse *queryresult.KV
 		if queryResponse, err = resultsIterator.Next(); err != nil {
 			return nil, err
 		}
 
-		// agencies on the ledger begin with the agency prefix -- ignore other assets
-		if !strings.HasPrefix(queryResponse.Key, model.AgencyPrefix) {
+		// accounts on the ledger begin with the account prefix -- ignore other assets
+		if !strings.HasPrefix(queryResponse.Key, model.AccountPrefix) {
 			continue
 		}
 
-		agency := &model.Agency{}
-		if err = json.Unmarshal(queryResponse.Value, agency); err != nil {
+		account := &model.Account{}
+		if err = json.Unmarshal(queryResponse.Value, account); err != nil {
 			return nil, err
 		}
 
-		agencies = append(agencies, agency)
+		accounts = append(accounts, account)
 	}
 
-	return agencies, nil
+	return accounts, nil
 }
 
-func (b *BlossomSmartContract) Agency(stub shim.ChaincodeStubInterface, agencyName string) (*model.Agency, error) {
+func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, accountName string) (*model.Account, error) {
 	var (
-		agency = &model.Agency{}
-		bytes  []byte
-		err    error
+		account = &model.Account{}
+		bytes   []byte
+		err     error
 	)
 
-	if bytes, err = stub.GetState(model.AgencyKey(agencyName)); err != nil {
-		return nil, errors.Wrapf(err, "error getting agency from ledger")
+	if bytes, err = stub.GetState(model.AccountKey(accountName)); err != nil {
+		return nil, errors.Wrapf(err, "error getting account from ledger")
 	}
 
-	if err = json.Unmarshal(bytes, agency); err != nil {
-		return nil, errors.Wrapf(err, "error deserializing agency")
+	if err = json.Unmarshal(bytes, account); err != nil {
+		return nil, errors.Wrapf(err, "error deserializing account")
 	}
 
 	// begin NGAC
-	// filter agency object removing any fields the user does not have access to
-	if err = pdp.NewAgencyDecider().FilterAgency(stub, agency); err != nil {
-		return nil, errors.Wrapf(err, "error filtering agency %s", agencyName)
+	// filter account object removing any fields the user does not have access to
+	if err = pdp.NewAccountDecider().FilterAccount(stub, account); err != nil {
+		return nil, errors.Wrapf(err, "error filtering account %s", accountName)
 	}
 	// end NGAC
 
-	return agency, nil
+	return account, nil
 }

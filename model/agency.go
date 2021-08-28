@@ -6,33 +6,33 @@ import (
 )
 
 type (
-	// Agency stores information on an agency in Blossom
-	Agency struct {
-		// Name is the unique name of the agency
+	// Account stores information for a Blossom account
+	Account struct {
+		// Name is the unique name of the account
 		Name string `json:"name"`
 		// ATO is the Authority To Operate document
-		ATO string `json:"ato"` // TODO string is placeholder for actual object
+		ATO string `json:"ato"`
 		// MSPID is the Membership Service Provider ID
 		MSPID string `json:"mspid"`
-		// Users contains the users of the organization that will access Blossom
+		// Users contains the users that will access Blossom
 		Users Users `json:"users"`
-		// Status of an agency within the Blossom system
+		// Status of an account within the Blossom system
 		Status Status `json:"status"`
-		// Assets stores the assets that an agency has checked out. The first map key is the asset ID, the second map
+		// Assets stores the assets that an account has checked out. The first map key is the asset ID, the second map
 		// key is the license ID and the time is the expiration of the license lease.
 		Assets map[string]map[string]time.Time `json:"assets"`
 	}
 
-	// Status represents the status of an agency within the blossom system
+	// Status represents the status of an account within the blossom system
 	Status string
 
-	// Users that will access blossom on behalf of an agency
+	// Users that will access blossom on behalf of an account
 	Users struct {
-		// SystemOwner is responsible for administrative tasks for the agency system
+		// SystemOwner is responsible for administrative tasks for the account system
 		SystemOwner string `json:"system_owner"`
-		// AcquisitionSpecialist authorizes transaction requests for the agency
+		// AcquisitionSpecialist authorizes transaction requests for the account
 		AcquisitionSpecialist string `json:"acquisition_specialist"`
-		// SystemAdministrator interacts with the smart contracts to checkin and checkout software licenses for the agency
+		// SystemAdministrator interacts with the smart contracts to checkin and checkout software licenses for the account
 		SystemAdministrator string `json:"system_administrator"`
 	}
 )
@@ -47,10 +47,10 @@ const (
 	InactiveSecurityRisk      Status = "Inactive: security risk"
 	InactiveRulesOfEngagement Status = "Inactive: breach in rules of engagement"
 
-	AgencyPrefix = "agency:"
+	AccountPrefix = "account:"
 )
 
-// AgencyKey returns the key for an agency on the ledger.  Agencies are stored with the format: "agency:<agency_name>".
-func AgencyKey(name string) string {
-	return fmt.Sprintf("%s%s", AgencyPrefix, name)
+// AccountKey returns the key for an account on the ledger.  Accounts are stored with the format: "account:<account_name>".
+func AccountKey(name string) string {
+	return fmt.Sprintf("%s%s", AccountPrefix, name)
 }

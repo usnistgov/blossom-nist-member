@@ -44,7 +44,7 @@ From the chaincode root directory run `go build`.
 
 ## APIs
 
-  - Agency: Request a Blossom account and modify account information.
+  - Account: Request a Blossom account and modify account information.
   - Asset: Onboard software assets and transact with them.
   - SwID: Report SwID tags.
 

@@ -9,7 +9,7 @@ import (
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/model"
-	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
+	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
@@ -143,11 +143,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	mock.SetGraphState(assetAdmin.graph)
 
-	// create a new test agency
-	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
+	// create a new test account
+	accountAdmin, err := NewAccountAdmin(mock.Stub)
 	require.NoError(t, err)
 
-	agency := &model.Agency{
+	account := &model.Account{
 		Name:  "Org2",
 		ATO:   "",
 		MSPID: "Org2MSP",
@@ -160,20 +160,20 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		Assets: nil,
 	}
 
-	err = agencyAdmin.RequestAccount(mock.Stub, agency)
+	err = accountAdmin.RequestAccount(mock.Stub, account)
 	require.NoError(t, err)
 
-	restartGraph := agencyAdmin.graph
-	mock.SetGraphState(agencyAdmin.graph)
+	restartGraph := accountAdmin.graph
+	mock.SetGraphState(accountAdmin.graph)
 
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(mock.Stub, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Stub, account.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
-	children, err := graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
+	children, err := graph.GetChildren(accountpap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "1"))
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
@@ -183,11 +183,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(mock.Stub, agency.Name, asset.ID, []string{"1", "2", "3"})
+	err = assetAdmin.Checkin(mock.Stub, account.Name, asset.ID, []string{"1", "2", "3"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
-	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
+	children, err = graph.GetChildren(accountpap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
 	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "1"))
 	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "2"))
@@ -198,12 +198,12 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkout(mock.Stub, agency.Name, asset.ID,
+	err = assetAdmin.Checkout(mock.Stub, account.Name, asset.ID,
 		map[string]time.Time{"1": {}, "2": {}, "3": {}})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
-	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
+	children, err = graph.GetChildren(accountpap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "1"))
 	require.Contains(t, children, assetpap.LicenseObject(asset.ID, "2"))
@@ -213,11 +213,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
-	err = assetAdmin.Checkin(mock.Stub, agency.Name, asset.ID, []string{"1", "2"})
+	err = assetAdmin.Checkin(mock.Stub, account.Name, asset.ID, []string{"1", "2"})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
-	children, err = graph.GetChildren(agencypap.ObjectAttributeName("Org2"))
+	children, err = graph.GetChildren(accountpap.ObjectAttributeName("Org2"))
 	require.NoError(t, err)
 	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "1"))
 	require.NotContains(t, children, assetpap.LicenseObject(asset.ID, "2"))

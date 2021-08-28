@@ -22,26 +22,26 @@ type (
 		OnboardAsset(stub shim.ChaincodeStubInterface, asset *model.Asset) error
 
 		// OffboardAsset removes an existing asset in Blossom.  This will remove the license from the ledger
-		// and from NGAC. An error will be returned if there are any agencies that have checked out the asset
+		// and from NGAC. An error will be returned if there are any accounts that have checked out the asset
 		// and the licenses are not returned
 		OffboardAsset(stub shim.ChaincodeStubInterface, id string) error
 
-		// Assets returns all software assets in Blossom. This information includes which agencies have licenses for each
+		// Assets returns all software assets in Blossom. This information includes which accounts have licenses for each
 		// asset.
 		Assets(stub shim.ChaincodeStubInterface) ([]*model.Asset, error)
 
 		// AssetInfo returns the info for the asset with the given asset ID.
 		AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error)
 
-		// Checkout requests software licenses for an agency.  The requesting user must have permission to request
-		// (i.e. System Administrator). The amount parameter is the amount of software licenses the agency is requesting.
+		// Checkout requests software licenses for an account.  The requesting user must have permission to request
+		// (i.e. System Administrator). The amount parameter is the amount of software licenses the account is requesting.
 		// This number is subtracted from the total available for the asset. Returns the set of licenses that are now assigned to
-		// the agency.
-		Checkout(stub shim.ChaincodeStubInterface, assetID string, agency string, amount int) (map[string]time.Time, error)
+		// the account.
+		Checkout(stub shim.ChaincodeStubInterface, assetID string, account string, amount int) (map[string]time.Time, error)
 
 		// Checkin returns the licenses to Blossom.  The return of these licenses is reflected in the amount available for
-		// the asset, and the licenses assigned to the agency on the ledger.
-		Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, agencyName string) error
+		// the asset, and the licenses assigned to the account on the ledger.
+		Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, accountName string) error
 	}
 )
 
@@ -206,18 +206,18 @@ func (b *BlossomSmartContract) AssetInfo(stub shim.ChaincodeStubInterface, id st
 func (b *BlossomSmartContract) Checkout(
 	stub shim.ChaincodeStubInterface,
 	assetID string,
-	agencyName string,
+	accountName string,
 	amount int) (map[string]time.Time, error) {
 
 	var (
-		asset  = &model.Asset{}
-		agency = &model.Agency{}
-		err    error
+		asset   = &model.Asset{}
+		account = &model.Account{}
+		err     error
 	)
 
-	// get the agency that will be leasing the licenses
-	if agency, err = b.Agency(stub, agencyName); err != nil {
-		return nil, errors.Wrapf(err, "error getting agency %q", agencyName)
+	// get the account that will be leasing the licenses
+	if account, err = b.Account(stub, accountName); err != nil {
+		return nil, errors.Wrapf(err, "error getting account %q", accountName)
 	}
 
 	// get asset being requested
@@ -227,21 +227,21 @@ func (b *BlossomSmartContract) Checkout(
 
 	// checkout the asset
 	var checkedOutLicenses map[string]time.Time
-	if checkedOutLicenses, err = checkout(agency, asset, amount); err != nil {
+	if checkedOutLicenses, err = checkout(account, asset, amount); err != nil {
 		return nil, errors.Wrapf(err, "error checking out %q", asset.ID)
 	}
 
-	// update agency's record of checked out licenses
+	// update account's record of checked out licenses
 	var bytes []byte
-	if bytes, err = json.Marshal(agency); err != nil {
-		return nil, errors.Wrapf(err, "error marshaling agency %q", agency.Name)
+	if bytes, err = json.Marshal(account); err != nil {
+		return nil, errors.Wrapf(err, "error marshaling account %q", account.Name)
 	}
 
-	if err = stub.PutState(model.AgencyKey(agency.Name), bytes); err != nil {
-		return nil, errors.Wrapf(err, "error updating agency state")
+	if err = stub.PutState(model.AccountKey(account.Name), bytes); err != nil {
+		return nil, errors.Wrapf(err, "error updating account state")
 	}
 
-	// update asset to reflect the licenses being leased to the agency
+	// update asset to reflect the licenses being leased to the account
 	if bytes, err = json.Marshal(asset); err != nil {
 		return nil, errors.Wrapf(err, "error marshaling asset %q", asset.ID)
 	}
@@ -253,9 +253,9 @@ func (b *BlossomSmartContract) Checkout(
 	// begin NGAC
 	// record the checkout in NGAC
 	// provide NGAC with the licenses that were checked out in order to reflect the change in the graph
-	// this change will provide the users of the requesting agency access to the licenses, nobody else
+	// this change will provide the users of the requesting account access to the licenses, nobody else
 	// will be able to access them
-	if err := pdp.NewAssetDecider().Checkout(stub, agencyName, assetID, checkedOutLicenses); err != nil {
+	if err := pdp.NewAssetDecider().Checkout(stub, accountName, assetID, checkedOutLicenses); err != nil {
 		return nil, errors.Wrapf(err, "error checking out asset in NGAC")
 	}
 	// end NGAC
@@ -263,7 +263,7 @@ func (b *BlossomSmartContract) Checkout(
 	return checkedOutLicenses, nil
 }
 
-func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]time.Time, error) {
+func checkout(account *model.Account, asset *model.Asset, amount int) (map[string]time.Time, error) {
 	// check that the amount requested is less than the amount available
 	if amount > asset.Available {
 		return nil, errors.Errorf("requested amount %v cannot be greater than the available amount %v",
@@ -286,9 +286,9 @@ func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]
 		retCheckedOutLicenses[license] = expiration
 	}
 
-	// update the agency assets
+	// update the account assets
 	// add to existing asset if they are checking out more of a software asset
-	allCheckedOutAssets, ok := agency.Assets[asset.ID]
+	allCheckedOutAssets, ok := account.Assets[asset.ID]
 	if ok {
 		allCheckedOutAssets = retCheckedOutLicenses
 	} else {
@@ -298,29 +298,29 @@ func checkout(agency *model.Agency, asset *model.Asset, amount int) (map[string]
 		}
 	}
 
-	// update asset in the agency
-	agency.Assets[asset.ID] = allCheckedOutAssets
+	// update asset in the account
+	account.Assets[asset.ID] = allCheckedOutAssets
 
-	// update the asset's agency tracker
-	agencyCheckedOut := make(map[string]time.Time)
+	// update the asset's account tracker
+	accountCheckedOut := make(map[string]time.Time)
 	for k, t := range allCheckedOutAssets {
-		agencyCheckedOut[k] = t
+		accountCheckedOut[k] = t
 	}
-	asset.CheckedOut[agency.Name] = agencyCheckedOut
+	asset.CheckedOut[account.Name] = accountCheckedOut
 
 	return retCheckedOutLicenses, nil
 }
 
-func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, agencyName string) error {
+func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID string, licenses []string, accountName string) error {
 	var (
-		asset  = &model.Asset{}
-		agency = &model.Agency{}
-		err    error
+		asset   = &model.Asset{}
+		account = &model.Account{}
+		err     error
 	)
 
-	// get agency
-	if agency, err = b.Agency(stub, agencyName); err != nil {
-		return errors.Wrapf(err, "error getting agency %q", agencyName)
+	// get account
+	if account, err = b.Account(stub, accountName); err != nil {
+		return errors.Wrapf(err, "error getting account %q", accountName)
 	}
 
 	// get asset
@@ -329,18 +329,18 @@ func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID
 	}
 
 	// check in asset logic
-	if err = checkin(agency, asset, licenses); err != nil {
+	if err = checkin(account, asset, licenses); err != nil {
 		return err
 	}
 
-	// update agency
+	// update account
 	var bytes []byte
-	if bytes, err = json.Marshal(agency); err != nil {
-		return errors.Wrapf(err, "error marshaling agency %q", agency.Name)
+	if bytes, err = json.Marshal(account); err != nil {
+		return errors.Wrapf(err, "error marshaling account %q", account.Name)
 	}
 
-	if err = stub.PutState(model.AgencyKey(agency.Name), bytes); err != nil {
-		return errors.Wrapf(err, "error updating agency state")
+	if err = stub.PutState(model.AccountKey(account.Name), bytes); err != nil {
+		return errors.Wrapf(err, "error updating account state")
 	}
 
 	// update asset
@@ -356,8 +356,8 @@ func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID
 	// record the checkin in NGAC
 	// provide NGAC with the licenses that were checked in in order to reflect the change in the graph
 	// this will move the licenses back into the pool of available licenses
-	// the agency users will no longer be able to see the licenses
-	if err := pdp.NewAssetDecider().Checkin(stub, agencyName, assetID, licenses); err != nil {
+	// the account users will no longer be able to see the licenses
+	if err := pdp.NewAssetDecider().Checkin(stub, accountName, assetID, licenses); err != nil {
 		return errors.Wrapf(err, "error checking in licenses in NGAC")
 	}
 	// end NGAC
@@ -365,46 +365,46 @@ func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID
 	return nil
 }
 
-func checkin(agency *model.Agency, asset *model.Asset, licenses []string) error {
-	checkedOut := agency.Assets[asset.ID]
+func checkin(account *model.Account, asset *model.Asset, licenses []string) error {
+	checkedOut := account.Assets[asset.ID]
 	for _, returnedKey := range licenses {
-		// check that the returned license is leased to the agency
-		if _, ok := agency.Assets[asset.ID][returnedKey]; !ok {
-			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, agency.Name)
+		// check that the returned license is leased to the account
+		if _, ok := account.Assets[asset.ID][returnedKey]; !ok {
+			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, account.Name)
 		}
 
 		delete(checkedOut, returnedKey)
 	}
 
-	// if all licenses were returned remove asset from agency's checked out
+	// if all licenses were returned remove asset from account's checked out
 	if len(checkedOut) == 0 {
-		delete(agency.Assets, asset.ID)
+		delete(account.Assets, asset.ID)
 	} else {
-		// update agency licenses
-		agency.Assets[asset.ID] = checkedOut
+		// update account licenses
+		account.Assets[asset.ID] = checkedOut
 	}
 
-	agencyCheckedOut, ok := asset.CheckedOut[agency.Name]
+	accountCheckedOut, ok := asset.CheckedOut[account.Name]
 	if !ok {
-		return errors.Errorf("agency %s has not checked out any licenses for asset %s", agency.Name, asset.ID)
+		return errors.Errorf("account %s has not checked out any licenses for asset %s", account.Name, asset.ID)
 	}
 
 	for _, license := range licenses {
-		// check that the agency has the license checked out
-		if _, ok = agencyCheckedOut[license]; !ok {
-			return errors.Errorf("returned license %s was not checked out by %s", license, agency.Name)
+		// check that the account has the license checked out
+		if _, ok = accountCheckedOut[license]; !ok {
+			return errors.Errorf("returned license %s was not checked out by %s", license, account.Name)
 		}
 
 		// remove the returned license from the checked out licenses
-		delete(agencyCheckedOut, license)
+		delete(accountCheckedOut, license)
 
 		// add the returned license to the available licenses
 		asset.AvailableLicenses = append(asset.AvailableLicenses, license)
 	}
 
-	// if all licenses are returned, remove the agency from the asset
-	if len(agencyCheckedOut) == 0 {
-		delete(asset.CheckedOut, agency.Name)
+	// if all licenses are returned, remove the account from the asset
+	if len(accountCheckedOut) == 0 {
+		delete(asset.CheckedOut, account.Name)
 	}
 
 	// update number of available licenses

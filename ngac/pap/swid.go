@@ -36,9 +36,9 @@ func (s *SwIDAdmin) Graph() pip.Graph {
 	return s.graph
 }
 
-func (s *SwIDAdmin) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+func (s *SwIDAdmin) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error {
 	if err := s.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency admin")
+		return errors.Wrapf(err, "error setting up account admin")
 	}
 
 	rbacPolicy := rbacpolicy.NewSwIDPolicy(s.graph)
@@ -47,7 +47,7 @@ func (s *SwIDAdmin) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwI
 	}
 
 	dacPolicy := dacpolicy.NewSwIDPolicy(s.graph)
-	if err := dacPolicy.ReportSwID(swid.PrimaryTag, agency); err != nil {
+	if err := dacPolicy.ReportSwID(swid.PrimaryTag, account); err != nil {
 		return errors.Wrap(err, "error configuring swid DAC policy")
 	}
 

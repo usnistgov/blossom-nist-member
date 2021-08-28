@@ -39,7 +39,7 @@ func (l *AssetDecider) setup(stub shim.ChaincodeStubInterface) error {
 	// initialize the license policy administration point
 	l.pap, err = pap.NewAssetAdmin(stub)
 	if err != nil {
-		return errors.Wrapf(err, "error initializing agency administraion point")
+		return errors.Wrapf(err, "error initializing account administraion point")
 	}
 
 	l.decider = pdp.NewDecider(l.pap.Graph())
@@ -128,7 +128,7 @@ func (l *AssetDecider) OnboardAsset(stub shim.ChaincodeStubInterface, asset *mod
 
 func (l *AssetDecider) OffboardAsset(stub shim.ChaincodeStubInterface, licenseID string) error {
 	if err := l.setup(stub); err != nil {
-		return errors.Wrapf(err, "error setting up agency decider")
+		return errors.Wrapf(err, "error setting up account decider")
 	}
 
 	// check user can onboard license
@@ -141,7 +141,7 @@ func (l *AssetDecider) OffboardAsset(stub shim.ChaincodeStubInterface, licenseID
 	return l.pap.OffboardAsset(stub, licenseID)
 }
 
-func (l *AssetDecider) Checkout(stub shim.ChaincodeStubInterface, agencyName string, assetID string,
+func (l *AssetDecider) Checkout(stub shim.ChaincodeStubInterface, accountName string, assetID string,
 	licenses map[string]time.Time) error {
 	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
@@ -154,10 +154,10 @@ func (l *AssetDecider) Checkout(stub shim.ChaincodeStubInterface, agencyName str
 		return ErrAccessDenied
 	}
 
-	return l.pap.Checkout(stub, agencyName, assetID, licenses)
+	return l.pap.Checkout(stub, accountName, assetID, licenses)
 }
 
-func (l *AssetDecider) Checkin(stub shim.ChaincodeStubInterface, agencyName string, licenseID string,
+func (l *AssetDecider) Checkin(stub shim.ChaincodeStubInterface, accountName string, licenseID string,
 	keys []string) error {
 	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
@@ -170,5 +170,5 @@ func (l *AssetDecider) Checkin(stub shim.ChaincodeStubInterface, agencyName stri
 		return ErrAccessDenied
 	}
 
-	return l.pap.Checkin(stub, agencyName, licenseID, keys)
+	return l.pap.Checkin(stub, accountName, licenseID, keys)
 }

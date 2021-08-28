@@ -3,7 +3,7 @@ package dac
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/pkg/errors"
-	agencypap "github.com/usnistgov/blossom/chaincode/ngac/pap/agency"
+	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"time"
 )
@@ -25,22 +25,22 @@ func (l AssetPolicy) OnboardAsset(assetOA pip.Node) error {
 	return nil
 }
 
-func (l AssetPolicy) Checkout(agencyName string, assetID string, licenses map[string]time.Time) error {
-	// assign the objects representing the licenses to the agency making the request's DAC object attribute
+func (l AssetPolicy) Checkout(accountName string, assetID string, licenses map[string]time.Time) error {
+	// assign the objects representing the licenses to the account making the request's DAC object attribute
 	for license := range licenses {
-		if err := l.graph.Assign(asset.LicenseObject(assetID, license), agencypap.ObjectAttributeName(agencyName)); err != nil {
-			return errors.Wrapf(err, "error assigning key %s to agency %s", license, agencyName)
+		if err := l.graph.Assign(asset.LicenseObject(assetID, license), accountpap.ObjectAttributeName(accountName)); err != nil {
+			return errors.Wrapf(err, "error assigning key %s to account %s", license, accountName)
 		}
 	}
 
 	return nil
 }
 
-func (l AssetPolicy) Checkin(agencyName string, assetID string, licenses []string) error {
-	// deassign the objects representing the licenses from the agency's DAC object attribute
+func (l AssetPolicy) Checkin(accountName string, assetID string, licenses []string) error {
+	// deassign the objects representing the licenses from the account's DAC object attribute
 	for _, license := range licenses {
-		if err := l.graph.Deassign(asset.LicenseObject(assetID, license), agencypap.ObjectAttributeName(agencyName)); err != nil {
-			return errors.Wrapf(err, "error assigning key %s to agency %s", license, agencyName)
+		if err := l.graph.Deassign(asset.LicenseObject(assetID, license), accountpap.ObjectAttributeName(accountName)); err != nil {
+			return errors.Wrapf(err, "error assigning key %s to account %s", license, accountName)
 		}
 	}
 

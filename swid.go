@@ -13,9 +13,9 @@ import (
 type (
 	// SwIDInterface provides the functions to interact with SwID tags in fabric.
 	SwIDInterface interface {
-		// ReportSwID is used by Agencies to report to Blossom when a software user has installed a piece of software associated
-		// with an asset that agency has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
-		ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error
+		// ReportSwID is used by Accounts to report to Blossom when a software user has installed a piece of software associated
+		// with an asset that account has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
+		ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
 		GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error)
@@ -38,7 +38,7 @@ func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, prim
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, agency string) error {
+func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error {
 	if ok, err := b.swidExists(stub, swid.PrimaryTag); err != nil {
 		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", swid.PrimaryTag)
 	} else if ok {
@@ -46,7 +46,7 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, swid
 	}
 
 	// begin NGAC
-	if err := pdp.NewSwIDDecider().ReportSwID(stub, swid, agency); err != nil {
+	if err := pdp.NewSwIDDecider().ReportSwID(stub, swid, account); err != nil {
 		return errors.Wrap(err, "error reporting SwID")
 	}
 	// end NGAC
@@ -123,7 +123,7 @@ func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(stub shim.ChaincodeSt
 			return nil, err
 		}
 
-		// agencies on the ledger begin with the agency prefix -- ignore other assets
+		// accounts on the ledger begin with the account prefix -- ignore other assets
 		if !strings.HasPrefix(queryResponse.Key, model.SwIDPrefix) {
 			continue
 		}

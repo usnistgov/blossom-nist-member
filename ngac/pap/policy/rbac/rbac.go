@@ -13,15 +13,15 @@ const (
 	SystemOwnerUA           = "SystemOwner"
 	AcquisitionSpecialistUA = "AcquisitionSpecialist"
 	SystemAdministratorUA   = "SystemAdministrator"
-	AgenciesOA              = "Agencies"
-	AgenciesUA              = "Agencies_UA"
+	AccountsOA              = "Accounts"
+	AccountsUA              = "Accounts_UA"
 	AssetsOA                = "Assets"
 	SwIDsOA                 = "SwIDs"
 )
 
 var SystemOwnerPermissions = pip.ToOps(
-	operations.ViewAgency,
-	operations.ViewAgencyLicenses,
+	operations.ViewAccount,
+	operations.ViewAccountLicenses,
 	operations.UploadATO,
 	operations.ViewATO,
 	operations.ViewMSPID,
@@ -34,17 +34,17 @@ var SystemAdminLicensesPermissions = pip.ToOps(
 	operations.CheckIn,
 	operations.ReportSwid)
 
-var SystemAdminAgenciesPermissions = pip.ToOps(
-	operations.ViewAgency,
-	operations.ViewAgencyLicenses,
+var SystemAdminAccountsPermissions = pip.ToOps(
+	operations.ViewAccount,
+	operations.ViewAccountLicenses,
 )
 
 var AcqSpecLicensesPermissions = pip.ToOps(
 	operations.ViewAsset)
 
-var AcqSpecAgenciesPermissions = pip.ToOps(
-	operations.ViewAgencyLicenses,
-	operations.ViewAgency,
+var AcqSpecAccountsPermissions = pip.ToOps(
+	operations.ViewAccountLicenses,
+	operations.ViewAccount,
 	operations.ViewStatus)
 
 var SystemAdminSwidPermissions = pip.ToOps(
@@ -83,14 +83,14 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning %q to %q", rbacOA.Name, rbacPC.Name)
 	}
 
-	// create a UA to hold each agency UA
-	agenciesUA, err := graph.CreateNode(AgenciesUA, pip.UserAttribute, nil)
+	// create a UA to hold each account UA
+	accountsUA, err := graph.CreateNode(AccountsUA, pip.UserAttribute, nil)
 	if err != nil {
-		return errors.Wrapf(err, "error creating agencies base user attribute")
+		return errors.Wrapf(err, "error creating accounts base user attribute")
 	}
 
-	if err = graph.Assign(agenciesUA.Name, rbacUA.Name); err != nil {
-		return errors.Wrapf(err, "error assigning %q to %q", agenciesUA.Name, rbacUA.Name)
+	if err = graph.Assign(accountsUA.Name, rbacUA.Name); err != nil {
+		return errors.Wrapf(err, "error assigning %q to %q", accountsUA.Name, rbacUA.Name)
 	}
 
 	// associate the admin UA with the default attributes, giving them * permissions on all nodes in the policy class
@@ -101,13 +101,13 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error associating %q with %q", adminUA, rbacOA.Name)
 	}
 
-	agenciesOA, err := graph.CreateNode(AgenciesOA, pip.ObjectAttribute, nil)
+	accountsOA, err := graph.CreateNode(AccountsOA, pip.ObjectAttribute, nil)
 	if err != nil {
-		return errors.Wrapf(err, "error creating agencies base object attribute")
+		return errors.Wrapf(err, "error creating accounts base object attribute")
 	}
 
-	if err = graph.Assign(agenciesOA.Name, rbacOA.Name); err != nil {
-		return errors.Wrapf(err, "error assigning %q to %q", agenciesOA.Name, rbacOA.Name)
+	if err = graph.Assign(accountsOA.Name, rbacOA.Name); err != nil {
+		return errors.Wrapf(err, "error assigning %q to %q", accountsOA.Name, rbacOA.Name)
 	}
 
 	licensesOA, err := graph.CreateNode(AssetsOA, pip.ObjectAttribute, nil)
@@ -155,31 +155,31 @@ func Configure(graph pip.Graph, adminUA string) error {
 		return errors.Wrapf(err, "error assigning %q to %q", acqSpecUA.Name, rbacUA.Name)
 	}
 
-	// system owners are only associated with agencies
-	if err = graph.Associate(systemOwnersUA.Name, agenciesOA.Name, SystemOwnerPermissions); err != nil {
-		return errors.Wrapf(err, "error associating %q with %q", systemOwnersUA.Name, agenciesOA.Name)
+	// system owners are only associated with accounts
+	if err = graph.Associate(systemOwnersUA.Name, accountsOA.Name, SystemOwnerPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", systemOwnersUA.Name, accountsOA.Name)
 	}
 
-	// system admins are associated with licenses and agencies
+	// system admins are associated with licenses and accounts
 	if err = graph.Associate(systemAdminsUA.Name, licensesOA.Name, SystemAdminLicensesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, licensesOA.Name)
 	}
 
-	if err = graph.Associate(systemAdminsUA.Name, agenciesOA.Name, SystemAdminAgenciesPermissions); err != nil {
-		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, agenciesOA.Name)
+	if err = graph.Associate(systemAdminsUA.Name, accountsOA.Name, SystemAdminAccountsPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, accountsOA.Name)
 	}
 
 	if err = graph.Associate(systemAdminsUA.Name, swidsOA.Name, SystemAdminSwidPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", systemAdminsUA.Name, swidsOA.Name)
 	}
 
-	// acquisition specialists are associated with licenses and agencies
+	// acquisition specialists are associated with licenses and accounts
 	if err = graph.Associate(acqSpecUA.Name, licensesOA.Name, AcqSpecLicensesPermissions); err != nil {
 		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, licensesOA.Name)
 	}
 
-	if err = graph.Associate(acqSpecUA.Name, agenciesOA.Name, AcqSpecAgenciesPermissions); err != nil {
-		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, agenciesOA.Name)
+	if err = graph.Associate(acqSpecUA.Name, accountsOA.Name, AcqSpecAccountsPermissions); err != nil {
+		return errors.Wrapf(err, "error associating %q with %q", acqSpecUA.Name, accountsOA.Name)
 	}
 
 	if err = graph.Associate(acqSpecUA.Name, swidsOA.Name, AcqSpecswidPermissions); err != nil {

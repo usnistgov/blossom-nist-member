@@ -42,11 +42,11 @@ func TestReportSwID(t *testing.T) {
 
 	mock.SetGraphState(assetAdmin.graph)
 
-	// create a new test agency
-	agencyAdmin, err := NewAgencyAdmin(mock.Stub)
+	// create a new test account
+	accountAdmin, err := NewAccountAdmin(mock.Stub)
 	require.NoError(t, err)
 
-	agency := &model.Agency{
+	account := &model.Account{
 		Name:  "Org2",
 		ATO:   "",
 		MSPID: "Org2MSP",
@@ -59,10 +59,10 @@ func TestReportSwID(t *testing.T) {
 		Assets: nil,
 	}
 
-	err = agencyAdmin.RequestAccount(mock.Stub, agency)
+	err = accountAdmin.RequestAccount(mock.Stub, account)
 	require.NoError(t, err)
 
-	mock.SetGraphState(agencyAdmin.graph)
+	mock.SetGraphState(accountAdmin.graph)
 
 	swidAdmin, err := NewSwIDAdmin(mock.Stub)
 	require.NoError(t, err)

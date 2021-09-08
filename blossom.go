@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
@@ -34,7 +37,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	fn, args := stub.GetFunctionAndParameters()
 
 	var (
-		result []byte
+		result []byte = []byte{}
 		err    error
 	)
 
@@ -69,6 +72,8 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		result, err = b.handleGetSwIDsAssociatedWithAsset(stub, args)
 	case "test":
 		result = []byte(args[0])
+	case "GetHistory":
+		result, err = b.handleGetHistory(stub, args)
 	}
 
 	if err != nil {
@@ -76,6 +81,59 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	}
 
 	return shim.Success(result)
+}
+
+func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) < 1 {
+		return nil, errors.New("incorrect number of arguments, expecting 1")
+	}
+
+	accountName := args[0]
+
+	// adapted from https://stackoverflow.com/a/52098770
+	resultsIter, err := stub.GetHistoryForKey(model.AccountKey(accountName))
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIter.Close()
+
+	var buff bytes.Buffer
+	buff.WriteString("[")
+
+	// has an array item already been written, requiring a comma before the next array item?
+	prevArrayItemExists := false
+
+	for resultsIter.HasNext() {
+		result, err := resultsIter.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		// Add a comma before array members, suppress it for the first array member
+		if prevArrayItemExists {
+			buff.WriteString(",")
+		}
+
+		resultValue := "null"
+		if !result.IsDelete {
+			resultValue = string(result.Value)
+		}
+
+		resultTimestamp := time.Unix(result.Timestamp.Seconds, int64(result.Timestamp.Nanos)).String()
+
+		buff.WriteString(fmt.Sprintf(`{
+			"TxId": "%s",
+			"Value": "%s",
+			"Timestamp": "%s",
+			"IsDelete": "%t"
+		}`, result.TxId, resultValue, resultTimestamp, result.IsDelete))
+
+		prevArrayItemExists = true
+	}
+	buff.WriteString("]")
+
+	fmt.Printf("- History returning:\n%s\n", buff.String())
+	return buff.Bytes(), nil
 }
 
 func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInterface, args []string) error {

@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
+	"time"
+
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
-	"strings"
 )
 
 type (
@@ -37,6 +39,9 @@ type (
 		// Account returns the account information of the account with the provided name.  Any fields of any account the user
 		// does not have access to will not be returned.
 		Account(stub shim.ChaincodeStubInterface, account string) (*model.Account, error)
+
+		// History returns the transaction history of the account.
+		GetHistory(stub shim.ChaincodeStubInterface, account string) ([]model.HistorySnapshot, error)
 	}
 )
 
@@ -235,4 +240,42 @@ func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, account
 	// end NGAC
 
 	return account, nil
+}
+
+func (b *BlossomSmartContract) GetHistory(stub shim.ChaincodeStubInterface, account string) ([]model.HistorySnapshot, error) {
+	history := []model.HistorySnapshot{}
+
+	iter, err := stub.GetHistoryForKey(model.AccountKey(account))
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Close()
+
+	for iter.HasNext() {
+		result, err := iter.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		snapshot := model.HistorySnapshot{
+			TxId:      result.TxId,
+			Timestamp: time.Unix(result.Timestamp.Seconds, int64(result.Timestamp.Nanos)),
+		}
+
+		err = json.Unmarshal([]byte(result.Value), &snapshot.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		// begin NGAC
+		// filter account object removing any fields the user does not have access to
+		if err = pdp.NewAccountDecider().FilterAccount(stub, &snapshot.Value); err != nil {
+			return nil, errors.Wrapf(err, "error filtering account %s", account)
+		}
+		// end NGAC
+
+		history = append(history, snapshot)
+	}
+
+	return history, nil
 }

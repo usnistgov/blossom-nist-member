@@ -8,7 +8,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	"strings"
-	"time"
 )
 
 type (
@@ -70,7 +69,7 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface, 
 
 	// add account to ledger with pending status
 	account.Status = model.PendingApproval
-	account.Assets = make(map[string]map[string]time.Time)
+	account.Assets = make(map[string]map[string]model.DateTime)
 
 	// convert account to bytes
 	bytes, err := json.Marshal(account)

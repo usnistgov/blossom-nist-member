@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
-	"time"
 )
 
 func TestCheckoutLicense(t *testing.T) {
@@ -14,11 +13,11 @@ func TestCheckoutLicense(t *testing.T) {
 		TotalAmount:       3,
 		Available:         3,
 		Cost:              20,
-		OnboardingDate:    time.Time{},
-		Expiration:        time.Time{},
+		OnboardingDate:    "",
+		Expiration:        "",
 		Licenses:          []string{"1", "2", "3"},
 		AvailableLicenses: []string{"1", "2", "3"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	account := &model.Account{
@@ -27,7 +26,7 @@ func TestCheckoutLicense(t *testing.T) {
 		MSPID:  "Account1MSP",
 		Users:  model.Users{},
 		Status: "",
-		Assets: make(map[string]map[string]time.Time),
+		Assets: make(map[string]map[string]model.DateTime),
 	}
 
 	licenses, err := checkout(account, asset, 2)
@@ -54,11 +53,11 @@ func TestCheckInLicense(t *testing.T) {
 		TotalAmount:       3,
 		Available:         3,
 		Cost:              20,
-		OnboardingDate:    time.Time{},
-		Expiration:        time.Time{},
+		OnboardingDate:    "",
+		Expiration:        "",
 		Licenses:          []string{"1", "2", "3"},
 		AvailableLicenses: []string{"1", "2", "3"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	account := &model.Account{
@@ -67,7 +66,7 @@ func TestCheckInLicense(t *testing.T) {
 		MSPID:  "Account1MSP",
 		Users:  model.Users{},
 		Status: "",
-		Assets: make(map[string]map[string]time.Time),
+		Assets: make(map[string]map[string]model.DateTime),
 	}
 
 	t.Run("test return all licenses", func(t *testing.T) {

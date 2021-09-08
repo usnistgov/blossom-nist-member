@@ -25,11 +25,6 @@ func main() {
 }
 
 func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	adminPDP := pdp.NewAdminDecider()
-	if err := adminPDP.InitGraph(stub); err != nil {
-		return shim.Error(err.Error())
-	}
-
 	return shim.Success(nil)
 }
 
@@ -41,7 +36,13 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		err    error
 	)
 
+	if fn != "InitNGAC" && !isNGACInitialized(stub) {
+		return shim.Error("ngac not initialized")
+	}
+
 	switch fn {
+	case "InitNGAC":
+		err = b.handleInitNGAC(stub)
 	case "RequestAccount":
 		err = b.handleRequestAccount(stub, args)
 	case "UploadATO":
@@ -81,6 +82,24 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	}
 
 	return shim.Success(result)
+}
+
+func isNGACInitialized(stub shim.ChaincodeStubInterface) bool {
+	graphBytes, err := stub.GetState("graph")
+	if err != nil {
+		return false
+	}
+
+	return graphBytes != nil
+}
+
+func (b *BlossomSmartContract) handleInitNGAC(stub shim.ChaincodeStubInterface) error {
+	adminPDP := pdp.NewAdminDecider()
+	if err := adminPDP.InitGraph(stub); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {

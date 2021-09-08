@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
 )
 
 type (
@@ -19,8 +18,8 @@ type (
 		// Status of an account within the Blossom system
 		Status Status `json:"status"`
 		// Assets stores the assets that an account has checked out. The first map key is the asset ID, the second map
-		// key is the license ID and the time is the expiration of the license lease.
-		Assets map[string]map[string]time.Time `json:"assets"`
+		// key is the license ID and the value is the expiration of the license lease.
+		Assets map[string]map[string]DateTime `json:"assets"`
 	}
 
 	// Status represents the status of an account within the blossom system

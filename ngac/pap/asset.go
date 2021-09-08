@@ -9,7 +9,6 @@ import (
 	dacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
 	rbacpolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	statuspolicy "github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
-	"time"
 )
 
 type AssetAdmin struct {
@@ -71,7 +70,7 @@ func (l *AssetAdmin) OffboardAsset(stub shim.ChaincodeStubInterface, assetID str
 }
 
 func (l *AssetAdmin) Checkout(stub shim.ChaincodeStubInterface, accountName string, assetID string,
-	licenses map[string]time.Time) error {
+	licenses map[string]model.DateTime) error {
 	dacPolicy := dacpolicy.NewAssetPolicy(l.graph)
 	if err := dacPolicy.Checkout(accountName, assetID, licenses); err != nil {
 		return errors.Wrap(err, "error checking out asset under the DAC policy")

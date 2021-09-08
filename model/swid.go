@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
 )
 
 type (
@@ -17,7 +16,7 @@ type (
 		// License is the ID of the associated license
 		License string `json:"license"`
 		// LeaseExpiration is the date when the lease associated with this SwID expires
-		LeaseExpiration time.Time `json:"lease_expiration"`
+		LeaseExpiration DateTime `json:"lease_expiration"`
 	}
 )
 

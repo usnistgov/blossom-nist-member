@@ -7,7 +7,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
-	"time"
 )
 
 func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
@@ -19,7 +18,7 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 		XML:             "xml",
 		Asset:           "test-asset",
 		License:         "test-asset:1",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 	b, err := json.Marshal(swid)
 	require.NoError(t, err)
@@ -30,7 +29,7 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 		XML:             "xml",
 		Asset:           "test-asset",
 		License:         "test-asset:2",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 	b, err = json.Marshal(swid)
 	require.NoError(t, err)
@@ -41,7 +40,7 @@ func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
 		XML:             "xml",
 		Asset:           "other-asset",
 		License:         "other-asset:1",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 	b, err = json.Marshal(swid)
 	require.NoError(t, err)

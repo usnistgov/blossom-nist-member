@@ -3,9 +3,9 @@ package dac
 import (
 	"github.com/PM-Master/policy-machine-go/pip"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/model"
 	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
-	"time"
 )
 
 type AssetPolicy struct {
@@ -25,7 +25,7 @@ func (l AssetPolicy) OnboardAsset(assetOA pip.Node) error {
 	return nil
 }
 
-func (l AssetPolicy) Checkout(accountName string, assetID string, licenses map[string]time.Time) error {
+func (l AssetPolicy) Checkout(accountName string, assetID string, licenses map[string]model.DateTime) error {
 	// assign the objects representing the licenses to the account making the request's DAC object attribute
 	for license := range licenses {
 		if err := l.graph.Assign(asset.LicenseObject(assetID, license), accountpap.ObjectAttributeName(accountName)); err != nil {

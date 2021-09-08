@@ -71,23 +71,23 @@ will initialize the NGAC graph on the blockchain.
 
 ## Usage
 
+#### 0. Prerequisites
+
+- A Fabric org called `Blossom` and a user with the name `super` in that org.
+- A Fabric org called `A1` with three users: `a1_system_owner`, `a1_acq_spec`, `a1_system_admin`
+
 #### 1. Initialize the NGAC graph
 
    - Function: InitNGAC
-
-   - User: super
-
+   - Username: super
    - Args: none
 
 
 #### 2. Onboard a sample asset
 
    - Function: OnboardAsset
-
    - Username: super
-
    - Args:
-
       - `
         {
            "id": "test-asset-id",
@@ -117,11 +117,8 @@ will initialize the NGAC graph on the blockchain.
 #### 3. Request a blossom account
 
    - Function: RequestAccount
-
    - Username: a1_system_owner
-
    - Args:
-
       - `
         {
           "name": "Agency1",
@@ -141,11 +138,8 @@ will initialize the NGAC graph on the blockchain.
 #### 4. Update Agency1 account status to 'Approved'
 
    - Function: UpdateAccountStatus
-
    - Username: super
-   
    - Args:
-   
       - `"Agency1"`
       - `"Approved"`
 
@@ -153,20 +147,15 @@ will initialize the NGAC graph on the blockchain.
 #### 5. View available assets
 
    - Function: Assets
-     
    - Username: a1_system_admin
-     
    - Args: none
 
 
 #### 6. Agency1 checks out 2 licenses of the sample asset
 
    - Function: Checkout
-
    - Username: a1_system_admin
-   
    - Args:
-
       - `"test-asset-id"`
       - `"Agency1"`
       - `2`
@@ -175,30 +164,23 @@ will initialize the NGAC graph on the blockchain.
 #### 7. Agency1 reports a SwID tag for a license
 
    - Function: ReportSwID
-
    - Username: a1_system_admin
-
    - Args:
-
       - `
         {
             "primary_tag": "swid-1",
             "xml": "<swid>test</swid>",
             "asset": "test-asset-id",
             "license": "test-asset-1",
-            "lease_expiration": "%s"
+            "lease_expiration": "01-01-2022"
         }
         `
-        
       - `"Agency1"`
 
 
 #### 8. Get SwIDs that are associated with the sample asset
 
    - Function: GetSwIDsAssociatedWithAsset
-
    - Username: a1_system_admin
-   
    - Args:
-
       - `"test-asset-id"`

@@ -9,7 +9,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
-	"time"
 )
 
 // SwIDDecider is the Policy Decision Point (PDP) for the SwID API
@@ -103,7 +102,7 @@ func (s *SwIDDecider) filterSwID(swid *model.SwID) error {
 		swid.XML = ""
 		swid.Asset = ""
 		swid.License = ""
-		swid.LeaseExpiration = time.Time{}
+		swid.LeaseExpiration = ""
 	}
 
 	return nil

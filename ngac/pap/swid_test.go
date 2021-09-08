@@ -10,7 +10,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
 	"testing"
-	"time"
 )
 
 func TestReportSwID(t *testing.T) {
@@ -30,11 +29,11 @@ func TestReportSwID(t *testing.T) {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	err = assetAdmin.OnboardAsset(mock.Stub, asset)
@@ -72,7 +71,7 @@ func TestReportSwID(t *testing.T) {
 		XML:             "xml",
 		Asset:           "test-asset-id",
 		License:         "1",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 
 	err = swidAdmin.ReportSwID(mock.Stub, swid, "Org2")

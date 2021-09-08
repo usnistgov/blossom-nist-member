@@ -64,3 +64,141 @@ requests and managing assets. Users in NGAC are defined using their username and
 
 On initial start up the super user must call the InitBlossom chaincode function.  This function initializes the NGAC graph
 which is needed for any subsequent chaincode calls.
+
+### Initialize NGAC
+To initialize the NGAC component the **super user** must call the chaincode function `InitNGAC`.  This function
+will initialize the NGAC graph on the blockchain.
+
+## Usage
+
+#### 1. Initialize the NGAC graph
+
+   - Function: InitNGAC
+
+   - User: super
+
+   - Args: none
+
+
+#### 2. Onboard a sample asset
+
+   - Function: OnboardAsset
+
+   - Username: super
+
+   - Args:
+
+      - `
+        {
+           "id": "test-asset-id",
+           "name": "test-asset",
+           "total_amount": 10,
+           "available": 10,
+           "cost": 100.00,
+           "onboarding_date": "",
+           "expiration": "2025-01-01",
+           "licenses": [
+            "test-asset-1",
+            "test-asset-2",
+            "test-asset-3",
+            "test-asset-4",
+            "test-asset-5",
+            "test-asset-6",
+            "test-asset-7",
+            "test-asset-8",
+            "test-asset-9",
+            "test-asset-10"
+           ],
+           "available_licenses": [],
+           "checked_out": {}
+        }
+        `
+   
+#### 3. Request a blossom account
+
+   - Function: RequestAccount
+
+   - Username: a1_system_owner
+
+   - Args:
+
+      - `
+        {
+          "name": "Agency1",
+          "ato": "this is a test ato",
+          "mspid": "A1MSP",
+          "users": {
+            "system_owner": "a1_system_owner",
+            "acquisition_specialist": "a1_acq_spec",
+            "system_administrator": "a1_system_admin"
+          },
+          "status": "",
+          "assets": {}
+        }
+        `
+
+
+#### 4. Update Agency1 account status to 'Approved'
+
+   - Function: UpdateAccountStatus
+
+   - Username: super
+   
+   - Args:
+   
+      - `"Agency1"`
+      - `"Approved"`
+
+
+#### 5. View available assets
+
+   - Function: Assets
+     
+   - Username: a1_system_admin
+     
+   - Args: none
+
+
+#### 6. Agency1 checks out 2 licenses of the sample asset
+
+   - Function: Checkout
+
+   - Username: a1_system_admin
+   
+   - Args:
+
+      - `"test-asset-id"`
+      - `"Agency1"`
+      - `2`
+
+
+#### 7. Agency1 reports a SwID tag for a license
+
+   - Function: ReportSwID
+
+   - Username: a1_system_admin
+
+   - Args:
+
+      - `
+        {
+            "primary_tag": "swid-1",
+            "xml": "<swid>test</swid>",
+            "asset": "test-asset-id",
+            "license": "test-asset-1",
+            "lease_expiration": "%s"
+        }
+        `
+        
+      - `"Agency1"`
+
+
+#### 8. Get SwIDs that are associated with the sample asset
+
+   - Function: GetSwIDsAssociatedWithAsset
+
+   - Username: a1_system_admin
+   
+   - Args:
+
+      - `"test-asset-id"`

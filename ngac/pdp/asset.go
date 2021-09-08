@@ -1,10 +1,8 @@
 package pdp
 
 import (
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"time"
-
 	"github.com/PM-Master/policy-machine-go/pdp"
+	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
@@ -67,11 +65,11 @@ func (l *AssetDecider) filterAsset(asset *model.Asset) error {
 		asset.TotalAmount = 0
 		asset.Available = 0
 		asset.Cost = 0
-		asset.OnboardingDate = time.Time{}
-		asset.Expiration = time.Time{}
+		asset.OnboardingDate = ""
+		asset.Expiration = ""
 		asset.Licenses = make([]string, 0)
 		asset.AvailableLicenses = make([]string, 0)
-		asset.CheckedOut = make(map[string]map[string]time.Time)
+		asset.CheckedOut = make(map[string]map[string]model.DateTime)
 		return nil
 	}
 
@@ -84,7 +82,7 @@ func (l *AssetDecider) filterAsset(asset *model.Asset) error {
 	}
 
 	if !permissions.Contains(operations.ViewCheckedOut) {
-		asset.CheckedOut = make(map[string]map[string]time.Time)
+		asset.CheckedOut = make(map[string]map[string]model.DateTime)
 	}
 
 	return nil
@@ -142,7 +140,7 @@ func (l *AssetDecider) OffboardAsset(stub shim.ChaincodeStubInterface, licenseID
 }
 
 func (l *AssetDecider) Checkout(stub shim.ChaincodeStubInterface, accountName string, assetID string,
-	licenses map[string]time.Time) error {
+	licenses map[string]model.DateTime) error {
 	if err := l.setup(stub); err != nil {
 		return errors.Wrapf(err, "error setting up asset decider")
 	}

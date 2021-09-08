@@ -8,7 +8,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/operations"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
-	"time"
 )
 
 // AccountDecider is the Policy Decision Point (PDP) for the Account API
@@ -83,7 +82,7 @@ func (a *AccountDecider) filterAccount(account *model.Account) error {
 
 	// if the user cannot view account on the account info object, return an empty account
 	if !permissions.Contains(operations.ViewAccount) {
-		account.Assets = make(map[string]map[string]time.Time)
+		account.Assets = make(map[string]map[string]model.DateTime)
 		account.Status = ""
 		account.ATO = ""
 		account.Users = model.Users{}
@@ -108,7 +107,7 @@ func (a *AccountDecider) filterAccount(account *model.Account) error {
 	}
 
 	if !permissions.Contains(operations.ViewAccountLicenses) {
-		account.Assets = make(map[string]map[string]time.Time)
+		account.Assets = make(map[string]map[string]model.DateTime)
 	}
 
 	return nil

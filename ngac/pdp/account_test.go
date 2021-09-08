@@ -7,7 +7,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	"testing"
-	"time"
 )
 
 func TestUploadATO(t *testing.T) {
@@ -87,7 +86,7 @@ func TestFilterAccount(t *testing.T) {
 		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
-		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
+		exp := model.DateTime("01-01-2000")
 		mock.SetUser(mocks.A1SystemOwner)
 
 		account := &model.Account{
@@ -100,7 +99,7 @@ func TestFilterAccount(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Assets: map[string]map[string]time.Time{
+			Assets: map[string]map[string]model.DateTime{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -121,7 +120,7 @@ func TestFilterAccount(t *testing.T) {
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		}, account.Users)
-		require.Equal(t, map[string]map[string]time.Time{
+		require.Equal(t, map[string]map[string]model.DateTime{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
@@ -135,7 +134,7 @@ func TestFilterAccount(t *testing.T) {
 		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
-		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
+		exp := model.DateTime("01-01-2000")
 		mock.SetUser(mocks.A1SystemAdmin)
 
 		account := &model.Account{
@@ -148,7 +147,7 @@ func TestFilterAccount(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Assets: map[string]map[string]time.Time{
+			Assets: map[string]map[string]model.DateTime{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -165,7 +164,7 @@ func TestFilterAccount(t *testing.T) {
 		require.Equal(t, "", account.MSPID)
 		require.Equal(t, model.Status(""), account.Status)
 		require.Equal(t, model.Users{}, account.Users)
-		require.Equal(t, map[string]map[string]time.Time{
+		require.Equal(t, map[string]map[string]model.DateTime{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
@@ -179,7 +178,7 @@ func TestFilterAccount(t *testing.T) {
 		err := initAccountTestGraph(t, mock)
 		require.NoError(t, err)
 
-		exp := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
+		exp := model.DateTime("01-01-2000")
 		mock.SetUser(mocks.Super)
 
 		account := &model.Account{
@@ -192,7 +191,7 @@ func TestFilterAccount(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Assets: map[string]map[string]time.Time{
+			Assets: map[string]map[string]model.DateTime{
 				"license1": {
 					"k1": exp,
 					"k2": exp,
@@ -213,7 +212,7 @@ func TestFilterAccount(t *testing.T) {
 			SystemAdministrator:   "a1_system_admin",
 			AcquisitionSpecialist: "a1_acq_spec",
 		}, account.Users)
-		require.Equal(t, map[string]map[string]time.Time{
+		require.Equal(t, map[string]map[string]model.DateTime{
 			"license1": {
 				"k1": exp,
 				"k2": exp,
@@ -240,7 +239,7 @@ func initAccountTestGraph(t *testing.T, mock mocks.Mock) error {
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
 		Status: "status",
-		Assets: make(map[string]map[string]time.Time),
+		Assets: make(map[string]map[string]model.DateTime),
 	}
 
 	mock.SetGraphState(graph)

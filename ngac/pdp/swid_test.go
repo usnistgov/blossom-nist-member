@@ -10,7 +10,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	swidpap "github.com/usnistgov/blossom/chaincode/ngac/pap/swid"
 	"testing"
-	"time"
 )
 
 func TestReportSwID(t *testing.T) {
@@ -36,7 +35,7 @@ func TestReportSwID(t *testing.T) {
 
 	licenseDecider := NewAssetDecider()
 	err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
-		map[string]time.Time{"1": time.Now()})
+		map[string]model.DateTime{"1": ""})
 	require.NoError(t, err)
 
 	mock.SetGraphState(licenseDecider.pap.Graph())
@@ -48,7 +47,7 @@ func TestReportSwID(t *testing.T) {
 		XML:             "xml",
 		Asset:           "test-asset-id",
 		License:         "1",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 	err = swidDecider.ReportSwID(mock.Stub, swid, "A1")
 	require.NoError(t, err)
@@ -59,7 +58,7 @@ func TestReportSwID(t *testing.T) {
 		XML:             "xml",
 		Asset:           "test-asset-id",
 		License:         "2",
-		LeaseExpiration: time.Time{},
+		LeaseExpiration: "",
 	}
 	err = swidDecider.ReportSwID(mock.Stub, swid, "A1")
 	require.Error(t, err)
@@ -83,7 +82,7 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 			AcquisitionSpecialist: "a1_acq_spec",
 		},
 		Status: "status",
-		Assets: make(map[string]map[string]time.Time),
+		Assets: make(map[string]map[string]model.DateTime),
 	}
 
 	mock.SetGraphState(graph)
@@ -109,11 +108,11 @@ func initSwidTestGraph(t *testing.T, mock mocks.Mock) {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	licenseDecider := NewAssetDecider()

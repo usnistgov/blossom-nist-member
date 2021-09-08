@@ -37,7 +37,7 @@ type (
 		// (i.e. System Administrator). The amount parameter is the amount of software licenses the account is requesting.
 		// This number is subtracted from the total available for the asset. Returns the set of licenses that are now assigned to
 		// the account.
-		Checkout(stub shim.ChaincodeStubInterface, assetID string, account string, amount int) (map[string]time.Time, error)
+		Checkout(stub shim.ChaincodeStubInterface, assetID string, account string, amount int) (map[string]model.DateTime, error)
 
 		// Checkin returns the licenses to Blossom.  The return of these licenses is reflected in the amount available for
 		// the asset, and the licenses assigned to the account on the ledger.
@@ -73,8 +73,8 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, as
 
 	// at the time of onboarding all licenses are available
 	asset.AvailableLicenses = asset.Licenses
-	asset.OnboardingDate = time.Now()
-	asset.CheckedOut = make(map[string]map[string]time.Time)
+	asset.OnboardingDate = model.DateTime(time.Now().String())
+	asset.CheckedOut = make(map[string]map[string]model.DateTime)
 
 	// convert license to bytes
 	bytes, err := json.Marshal(asset)
@@ -173,24 +173,9 @@ func assets(stub shim.ChaincodeStubInterface) ([]*model.Asset, error) {
 }
 
 func (b *BlossomSmartContract) AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
-	if ok, err := b.assetExists(stub, id); err != nil {
-		return nil, errors.Wrapf(err, "error checking if asset exists")
-	} else if !ok {
-		return nil, errors.Errorf("an asset with the ID %q does not exist", id)
-	}
-
-	var (
-		asset = &model.Asset{}
-		bytes []byte
-		err   error
-	)
-
-	if bytes, err = stub.GetState(model.AssetKey(id)); err != nil {
-		return nil, errors.Wrapf(err, "error getting asset from ledger")
-	}
-
-	if err = json.Unmarshal(bytes, asset); err != nil {
-		return nil, errors.Wrapf(err, "error deserializing license")
+	asset, err := b.assetInfo(stub, id)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error retrieving asset info")
 	}
 
 	// begin NGAC
@@ -207,7 +192,7 @@ func (b *BlossomSmartContract) Checkout(
 	stub shim.ChaincodeStubInterface,
 	assetID string,
 	accountName string,
-	amount int) (map[string]time.Time, error) {
+	amount int) (map[string]model.DateTime, error) {
 
 	var (
 		asset   = &model.Asset{}
@@ -221,12 +206,12 @@ func (b *BlossomSmartContract) Checkout(
 	}
 
 	// get asset being requested
-	if asset, err = b.AssetInfo(stub, assetID); err != nil {
+	if asset, err = b.assetInfo(stub, assetID); err != nil {
 		return nil, errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 
 	// checkout the asset
-	var checkedOutLicenses map[string]time.Time
+	var checkedOutLicenses map[string]model.DateTime
 	if checkedOutLicenses, err = checkout(account, asset, amount); err != nil {
 		return nil, errors.Wrapf(err, "error checking out %q", asset.ID)
 	}
@@ -263,7 +248,31 @@ func (b *BlossomSmartContract) Checkout(
 	return checkedOutLicenses, nil
 }
 
-func checkout(account *model.Account, asset *model.Asset, amount int) (map[string]time.Time, error) {
+func (b *BlossomSmartContract) assetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
+	if ok, err := b.assetExists(stub, id); err != nil {
+		return nil, errors.Wrapf(err, "error checking if asset exists")
+	} else if !ok {
+		return nil, errors.Errorf("an asset with the ID %q does not exist", id)
+	}
+
+	var (
+		asset = &model.Asset{}
+		bytes []byte
+		err   error
+	)
+
+	if bytes, err = stub.GetState(model.AssetKey(id)); err != nil {
+		return nil, errors.Wrapf(err, "error getting asset from ledger")
+	}
+
+	if err = json.Unmarshal(bytes, asset); err != nil {
+		return nil, errors.Wrapf(err, "error deserializing license")
+	}
+
+	return asset, nil
+}
+
+func checkout(account *model.Account, asset *model.Asset, amount int) (map[string]model.DateTime, error) {
 	// check that the amount requested is less than the amount available
 	if amount > asset.Available {
 		return nil, errors.Errorf("requested amount %v cannot be greater than the available amount %v",
@@ -279,8 +288,8 @@ func checkout(account *model.Account, asset *model.Asset, amount int) (map[strin
 	asset.AvailableLicenses = asset.AvailableLicenses[amount:]
 
 	// create the array of licenses that are checked out including expiration dates
-	retCheckedOutLicenses := make(map[string]time.Time)
-	expiration := time.Now().AddDate(1, 0, 0)
+	retCheckedOutLicenses := make(map[string]model.DateTime)
+	expiration := model.DateTime(time.Now().AddDate(1, 0, 0).String())
 	for _, license := range fromAvailable {
 		// set the expiration of the license to one year from now
 		retCheckedOutLicenses[license] = expiration
@@ -292,7 +301,7 @@ func checkout(account *model.Account, asset *model.Asset, amount int) (map[strin
 	if ok {
 		allCheckedOutAssets = retCheckedOutLicenses
 	} else {
-		allCheckedOutAssets = make(map[string]time.Time)
+		allCheckedOutAssets = make(map[string]model.DateTime)
 		for license, exp := range retCheckedOutLicenses {
 			allCheckedOutAssets[license] = exp
 		}
@@ -302,7 +311,7 @@ func checkout(account *model.Account, asset *model.Asset, amount int) (map[strin
 	account.Assets[asset.ID] = allCheckedOutAssets
 
 	// update the asset's account tracker
-	accountCheckedOut := make(map[string]time.Time)
+	accountCheckedOut := make(map[string]model.DateTime)
 	for k, t := range allCheckedOutAssets {
 		accountCheckedOut[k] = t
 	}
@@ -324,7 +333,7 @@ func (b *BlossomSmartContract) Checkin(stub shim.ChaincodeStubInterface, assetID
 	}
 
 	// get asset
-	if asset, err = b.AssetInfo(stub, assetID); err != nil {
+	if asset, err = b.assetInfo(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error getting info for asset %q", assetID)
 	}
 

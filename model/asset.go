@@ -2,7 +2,6 @@ package model
 
 import (
 	"fmt"
-	"time"
 )
 
 type (
@@ -19,16 +18,19 @@ type (
 		// Cost is the cost of obtaining a license
 		Cost float64 `json:"cost"`
 		// OnboardingDate is the date in which the asset was added to Blossom
-		OnboardingDate time.Time `json:"onboarding_date"`
+		OnboardingDate DateTime `json:"onboarding_date"`
 		// Expiration is the date in which the asset will expire from Blossom
-		Expiration time.Time `json:"expiration"`
+		Expiration DateTime `json:"expiration"`
 		// Licenses is the complete set of licenses associated with this asset
 		Licenses []string `json:"licenses"`
 		// AvailableLicenses is the set of licenses that are available to be checked out
 		AvailableLicenses []string `json:"available_licenses"`
-		// CheckedOut stores the accounts that have checked out this asset and which licenses they have leased
-		CheckedOut map[string]map[string]time.Time `json:"checked_out"`
+		// CheckedOut stores the accounts that have checked out this asset, which licenses they have leased and the
+		// expiration for each license
+		CheckedOut map[string]map[string]DateTime `json:"checked_out"`
 	}
+
+	DateTime string
 )
 
 const AssetPrefix = "asset:"

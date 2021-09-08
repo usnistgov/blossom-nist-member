@@ -10,7 +10,6 @@ import (
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
 	"testing"
-	"time"
 )
 
 func TestOnboardLicense(t *testing.T) {
@@ -25,11 +24,11 @@ func TestOnboardLicense(t *testing.T) {
 		TotalAmount:       0,
 		Available:         0,
 		Cost:              0,
-		OnboardingDate:    time.Time{},
-		Expiration:        time.Time{},
+		OnboardingDate:    "",
+		Expiration:        "",
 		Licenses:          make([]string, 0),
 		AvailableLicenses: make([]string, 0),
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	decider := NewAssetDecider()
@@ -92,7 +91,7 @@ func TestCheckoutLicense(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Assets: make(map[string]map[string]time.Time),
+			Assets: make(map[string]map[string]model.DateTime),
 		}
 
 		mock.SetUser(mocks.A1SystemOwner)
@@ -114,7 +113,7 @@ func TestCheckoutLicense(t *testing.T) {
 		mock.SetUser(mocks.A1SystemAdmin)
 		licenseDecider := NewAssetDecider()
 		err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
-			map[string]time.Time{"1": time.Now()})
+			map[string]model.DateTime{"1": ""})
 		require.NoError(t, err)
 	})
 
@@ -134,7 +133,7 @@ func TestCheckoutLicense(t *testing.T) {
 				AcquisitionSpecialist: "a1_acq_spec",
 			},
 			Status: "status",
-			Assets: make(map[string]map[string]time.Time),
+			Assets: make(map[string]map[string]model.DateTime),
 		}
 
 		err = mock.SetUser(mocks.A1SystemOwner)
@@ -152,7 +151,7 @@ func TestCheckoutLicense(t *testing.T) {
 		mock.SetUser(mocks.A1SystemAdmin)
 		licenseDecider := NewAssetDecider()
 		err = licenseDecider.Checkout(mock.Stub, "A1", "test-asset-id",
-			map[string]time.Time{"1": time.Now()})
+			map[string]model.DateTime{"1": ""})
 		require.Error(t, err)
 	})
 }
@@ -179,11 +178,11 @@ func initLicenseTestGraph(t *testing.T, mock mocks.Mock) error {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	// onboard the license as the super
@@ -234,7 +233,7 @@ func TestFilterLicense(t *testing.T) {
 		operations.ViewAvailableLicenses, operations.ViewCheckedOut))
 	require.NoError(t, err)
 
-	testTime := time.Date(1, 1, 1, 1, 1, 1, 1, time.Local)
+	testTime := model.DateTime("01-01-2000")
 	assets := []*model.Asset{
 		{
 			ID:                "test-asset-1",
@@ -246,7 +245,7 @@ func TestFilterLicense(t *testing.T) {
 			Expiration:        testTime,
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
-			CheckedOut: map[string]map[string]time.Time{
+			CheckedOut: map[string]map[string]model.DateTime{
 				"account1": {"test-asset-1": testTime},
 			},
 		},
@@ -256,11 +255,11 @@ func TestFilterLicense(t *testing.T) {
 			TotalAmount:       5,
 			Available:         4,
 			Cost:              99,
-			OnboardingDate:    time.Time{},
-			Expiration:        time.Time{},
+			OnboardingDate:    "",
+			Expiration:        "",
 			Licenses:          []string{"1", "2", "3", "4", "5"},
 			AvailableLicenses: []string{"2", "3", "4", "5"},
-			CheckedOut: map[string]map[string]time.Time{
+			CheckedOut: map[string]map[string]model.DateTime{
 				"account1": {"test-asset-2": testTime},
 			},
 		},
@@ -283,7 +282,7 @@ func TestFilterLicense(t *testing.T) {
 	require.Equal(t, float64(99), license.Cost)
 	require.Equal(t, []string{}, license.Licenses)
 	require.Equal(t, []string{}, license.AvailableLicenses)
-	require.Equal(t, map[string]map[string]time.Time{}, license.CheckedOut)
+	require.Equal(t, map[string]map[string]model.DateTime{}, license.CheckedOut)
 
 	license = assets[1]
 	require.Equal(t, "test-asset-2", license.ID)
@@ -293,7 +292,7 @@ func TestFilterLicense(t *testing.T) {
 	require.Equal(t, float64(99), license.Cost)
 	require.Equal(t, []string{"1", "2", "3", "4", "5"}, license.Licenses)
 	require.Equal(t, []string{"2", "3", "4", "5"}, license.AvailableLicenses)
-	require.Equal(t, map[string]map[string]time.Time{
+	require.Equal(t, map[string]map[string]model.DateTime{
 		"account1": {"test-asset-2": testTime},
 	}, license.CheckedOut)
 }

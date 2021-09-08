@@ -1,19 +1,17 @@
 package pap
 
 import (
-	"github.com/usnistgov/blossom/chaincode/mocks"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
-	"testing"
-	"time"
-
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	accountpap "github.com/usnistgov/blossom/chaincode/ngac/pap/account"
 	assetpap "github.com/usnistgov/blossom/chaincode/ngac/pap/asset"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy"
+	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/dac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/rbac"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap/policy/status"
+	"testing"
 )
 
 func TestOnboardLicense(t *testing.T) {
@@ -33,11 +31,11 @@ func TestOnboardLicense(t *testing.T) {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	err = assetAdmin.OnboardAsset(mock.Stub, asset)
@@ -80,11 +78,11 @@ func TestOffboardLicense(t *testing.T) {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	err = assetAdmin.OnboardAsset(mock.Stub, asset)
@@ -131,11 +129,11 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 		TotalAmount:       5,
 		Available:         5,
 		Cost:              20,
-		OnboardingDate:    time.Date(2021, 5, 12, 12, 0, 0, 0, time.Local),
-		Expiration:        time.Date(2026, 5, 12, 12, 0, 0, 0, time.Local),
+		OnboardingDate:    "2021-5-12",
+		Expiration:        "2026-5-12",
 		Licenses:          []string{"1", "2", "3", "4", "5"},
 		AvailableLicenses: []string{"1", "2", "3", "4", "5"},
-		CheckedOut:        make(map[string]map[string]time.Time),
+		CheckedOut:        make(map[string]map[string]model.DateTime),
 	}
 
 	err = assetAdmin.OnboardAsset(mock.Stub, asset)
@@ -169,7 +167,7 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 	err = assetAdmin.Checkout(mock.Stub, account.Name, asset.ID,
-		map[string]time.Time{"1": {}, "2": {}, "3": {}})
+		map[string]model.DateTime{"1": "", "2": "", "3": ""})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph
@@ -199,7 +197,7 @@ func TestCheckoutCheckinLicense(t *testing.T) {
 	assetAdmin, err = NewAssetAdmin(mock.Stub)
 	require.NoError(t, err)
 	err = assetAdmin.Checkout(mock.Stub, account.Name, asset.ID,
-		map[string]time.Time{"1": {}, "2": {}, "3": {}})
+		map[string]model.DateTime{"1": "", "2": "", "3": ""})
 	require.NoError(t, err)
 
 	graph = assetAdmin.graph

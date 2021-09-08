@@ -21,7 +21,7 @@ type (
 		GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error)
 
 		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset.
-		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error)
+		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, assetID string) ([]*model.SwID, error)
 	}
 )
 

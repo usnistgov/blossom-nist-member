@@ -30,7 +30,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	fn, args := stub.GetFunctionAndParameters()
 
 	var (
-		result []byte = []byte{}
+		result []byte
 		err    error
 	)
 

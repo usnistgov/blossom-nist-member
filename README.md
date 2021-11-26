@@ -18,6 +18,12 @@ $ mkdir -p $GOPATH/src/github.com/usnistgov/blossom
 $ ln -s $(pwd) $GOPATH/github.com/usnistgov/blossom/chaincode
 ```
 4. Your VS Code instance is working from the `$GOPATH` symlink (this is important!)
+5. You have downloaded the required go dependencies:
+```bash
+# working from the chaincode folder !!
+go mod vendor
+go mod tidy
+```
 
 From there you can deploy the test environment using the following steps:
 1. Open the `IBM Blockchain Platform` side panel

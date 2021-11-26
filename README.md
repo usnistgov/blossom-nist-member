@@ -1,6 +1,30 @@
 # Blossom Smart Contracts
 This package contains the code for the Blossom Smart Contracts.
 
+## Local Testing
+
+To deploy the chaincode locally for testing, you can use the `IBM Blockchain Extension` for VS Code.
+
+In order to test it locally, ensure that:
+1. Go and Docker is installed on your machine and your user is part of the `docker` group
+2. You have the `IBM Blockchain Extension` for VS Code: https://marketplace.visualstudio.com/items?itemName=IBMBlockchain.ibm-blockchain-platform
+3. You have cloned the chaincode to a folder under your `$GOPATH`, or you have created a symlink from the chaincode to a folder under your `$GOPATH` as shown below:
+```bash
+# ensure $GOPATH is set to /home/<your username>/go
+$ echo $GOPATH
+# create appropriate folder under $GOPATH
+$ mkdir -p $GOPATH/src/github.com/usnistgov/blossom
+# working from the chaincode folder, create a symbolic link
+$ ln -s $(pwd) $GOPATH/github.com/usnistgov/blossom/chaincode
+```
+4. Your VS Code instance is working from the `$GOPATH` symlink (this is important!)
+
+From there you can deploy the test environment using the following steps:
+1. Open the `IBM Blockchain Platform` side panel
+2. Create a new `Fabric Environment` from the 1 org template
+3. Hit `+ Deploy smart contract` from the `my channel` dropdown
+4. Select `chaincode (open project)`, give it a name and a version number, and hit follow the prompts.
+
 ## Deployment Steps
 In the below commands to deploy the chaincode, `blossom-1` is the name of the channel and `blossomcc` is the name of the chaincode.
 

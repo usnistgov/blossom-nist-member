@@ -1,100 +1,166 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
 )
 
-func TestCheckoutLicense(t *testing.T) {
-	asset := &model.Asset{
-		ID:                "123",
-		Name:              "my-asset",
-		TotalAmount:       3,
-		Available:         3,
-		Cost:              20,
-		OnboardingDate:    "",
-		Expiration:        "",
-		Licenses:          []string{"1", "2", "3"},
-		AvailableLicenses: []string{"1", "2", "3"},
-		CheckedOut:        make(map[string]map[string]model.DateTime),
-	}
+func TestOnboardAsset(t *testing.T) {
+	stub := newTestStub(t)
+	bcc := BlossomSmartContract{}
 
-	account := &model.Account{
-		Name:   "Account1",
-		ATO:    "",
-		MSPID:  "Account1MSP",
-		Users:  model.Users{},
-		Status: "",
-		Assets: make(map[string]map[string]model.DateTime),
-	}
-
-	licenses, err := checkout(account, asset, 2)
+	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	require.Contains(t, licenses, "1")
-	require.Contains(t, licenses, "2")
+	err = bcc.handleInitNGAC(stub)
+	require.NoError(t, err)
 
-	require.Equal(t, []string{"3"}, asset.AvailableLicenses)
-	require.Equal(t, 1, asset.Available)
-	require.Contains(t, asset.CheckedOut, "Account1")
-	require.Contains(t, asset.CheckedOut["Account1"], "1")
-	require.Contains(t, asset.CheckedOut["Account1"], "2")
+	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	require.Contains(t, account.Assets, "123")
-	require.Contains(t, account.Assets["123"], "1")
-	require.Contains(t, account.Assets["123"], "2")
+	data, err := stub.GetPrivateData(CatalogCollectionName(), model.AssetKey("123"))
+	require.NoError(t, err)
+
+	assetPub := model.AssetPublic{}
+	err = json.Unmarshal(data, &assetPub)
+	require.NoError(t, err)
+	require.Equal(t, "123", assetPub.ID)
+	require.Equal(t, "myasset", assetPub.Name)
+	require.Equal(t, 2, assetPub.Available)
+
+	data, err = stub.GetPrivateData(LicensesCollectionName(), model.AssetKey("123"))
+	require.NoError(t, err)
+
+	assetPvt := model.AssetPrivate{}
+	err = json.Unmarshal(data, &assetPvt)
+	require.NoError(t, err)
+	require.Equal(t, 2, assetPvt.TotalAmount)
+	require.Equal(t, []string{"1", "2"}, assetPvt.Licenses)
+	require.Equal(t, []string{"1", "2"}, assetPvt.AvailableLicenses)
+	require.Empty(t, assetPvt.CheckedOut)
 }
 
-func TestCheckInLicense(t *testing.T) {
-	asset := &model.Asset{
-		ID:                "123",
-		Name:              "my-asset",
-		TotalAmount:       3,
-		Available:         3,
-		Cost:              20,
-		OnboardingDate:    "",
-		Expiration:        "",
-		Licenses:          []string{"1", "2", "3"},
-		AvailableLicenses: []string{"1", "2", "3"},
-		CheckedOut:        make(map[string]map[string]model.DateTime),
-	}
+func TestOffboardAsset(t *testing.T) {
+	stub := newTestStub(t)
+	bcc := BlossomSmartContract{}
 
-	account := &model.Account{
-		Name:   "Account1",
-		ATO:    "",
-		MSPID:  "Account1MSP",
-		Users:  model.Users{},
-		Status: "",
-		Assets: make(map[string]map[string]model.DateTime),
-	}
+	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	t.Run("test return all licenses", func(t *testing.T) {
-		_, err := checkout(account, asset, 2)
+	stub.SetFunctionAndArgs("OffboardAsset", "123")
+	result := bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
+
+	data, err := stub.GetPrivateData(CatalogCollectionName(), model.AssetKey("123"))
+	require.NoError(t, err)
+	require.Nil(t, data)
+
+	data, err = stub.GetPrivateData(LicensesCollectionName(), model.AssetKey("123"))
+	require.NoError(t, err)
+	require.Nil(t, data)
+}
+
+func TestAssets(t *testing.T) {
+	stub := newTestStub(t)
+	bcc := BlossomSmartContract{}
+
+	onboardTestAsset(t, stub, "123", "myasset1", []string{"1", "2"})
+	onboardTestAsset(t, stub, "321", "myasset2", []string{"1", "2"})
+
+	assets, err := bcc.Assets(stub)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(assets))
+}
+
+func TestAssetInfo(t *testing.T) {
+	stub := newTestStub(t)
+	bcc := BlossomSmartContract{}
+
+	err := stub.SetUser(mocks.Super)
+	require.NoError(t, err)
+
+	err = bcc.handleInitNGAC(stub)
+	require.NoError(t, err)
+
+	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
+
+	asset, err := bcc.AssetInfo(stub, "123")
+	require.NoError(t, err)
+	require.Equal(t, "123", asset.ID)
+	require.Equal(t, "myasset", asset.Name)
+	require.Equal(t, 2, asset.TotalAmount)
+	require.Equal(t, 2, asset.Available)
+	require.Equal(t, []string{"1", "2"}, asset.AvailableLicenses)
+	require.Equal(t, []string{"1", "2"}, asset.Licenses)
+	require.Empty(t, asset.CheckedOut)
+}
+
+func TestCheckout(t *testing.T) {
+	stub := newTestStub(t)
+
+	bcc := BlossomSmartContract{}
+	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
+
+	err := stub.SetUser(mocks.A1SystemOwner)
+	require.NoError(t, err)
+
+	requestTestAccount(t, stub, A1MSP)
+
+	err = stub.SetUser(mocks.Super)
+	require.NoError(t, err)
+
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
+	require.NoError(t, err)
+
+	t.Run("error unauthorized to request checkout", func(t *testing.T) {
+		err = stub.SetUser(mocks.A1SystemOwner)
 		require.NoError(t, err)
 
-		err = checkin(account, asset, []string{"1", "2"})
+		stub.SetFunctionAndArgs("RequestCheckout")
+		err = stub.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
 		require.NoError(t, err)
-
-		require.Equal(t, []string{"3", "1", "2"}, asset.AvailableLicenses)
-		require.Equal(t, 3, asset.Available)
-		require.NotContains(t, asset.CheckedOut, "Account1")
-		require.NotContains(t, account.Assets, "123")
+		result := bcc.Invoke(stub)
+		require.Equal(t, int32(500), result.Status)
 	})
 
-	t.Run("test return 2 of 3 licenses", func(t *testing.T) {
-		_, err := checkout(account, asset, 3)
+	t.Run("authorized request checkout", func(t *testing.T) {
+		err = stub.SetUser(mocks.A1SystemAdmin)
+		require.NoError(t, err)
+		stub.SetFunctionAndArgs("RequestCheckout")
+		err = stub.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
+		require.NoError(t, err)
+		result := bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status)
+
+		err = stub.SetUser(mocks.Super)
 		require.NoError(t, err)
 
-		err = checkin(account, asset, []string{"1", "2"})
+		stub.SetFunctionAndArgs("ApproveCheckout")
+		err = stub.SetTransient("checkout", approveCheckoutTransientInput{A1MSP, "123"})
+		require.NoError(t, err)
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status)
+
+		err = stub.SetUser(mocks.A1SystemAdmin)
 		require.NoError(t, err)
 
-		require.Equal(t, []string{"1", "2"}, asset.AvailableLicenses)
-		require.Equal(t, 2, asset.Available)
-		require.Contains(t, asset.CheckedOut, "Account1")
-		require.Contains(t, asset.CheckedOut["Account1"], "3")
-		require.Contains(t, account.Assets, "123")
-		require.Contains(t, account.Assets["123"], "3")
+		stub.SetFunctionAndArgs("Licenses", A1MSP, "123")
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status)
+
+		licenses := make(map[string]model.DateTime, 0)
+		err = json.Unmarshal(result.Payload, &licenses)
+		require.NoError(t, err)
+
+		err = stub.SetUser(mocks.Super)
+		info, err := bcc.AssetInfo(stub, "123")
+		require.NoError(t, err)
+		require.Equal(t, 2, info.TotalAmount)
+		require.Equal(t, "123", info.ID)
+		require.Equal(t, "myasset", info.Name)
+		require.Equal(t, []string{"2"}, info.AvailableLicenses)
+		require.Equal(t, 1, info.Available)
+		require.Equal(t, map[string]map[string]model.DateTime{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
 	})
-
 }

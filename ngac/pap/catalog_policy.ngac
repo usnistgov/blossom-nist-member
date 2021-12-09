@@ -1,0 +1,39 @@
+let BlossomObject = blossom_object;
+let BlossomOA = blossom_OA;
+let BlossomAdminUser = super:BlossomMSP;
+let BlossomAdminUA = super:BlossomMSP_UA;
+
+create policy catalog;
+    # super policy to handle initialization
+    create user attribute $BlossomAdminUA in catalog;
+    create user $BlossomAdminUser in $BlossomAdminUA;
+
+    create object attribute $BlossomOA in catalog;
+    create object $BlossomObject in $BlossomOA;
+
+    grant $BlossomAdminUA * on $BlossomOA;
+
+    # asset onboard/offboard policy
+    create user attribute Onboarders in catalog;
+    create user attribute Offboarders in catalog;
+
+    create object attribute assets in catalog;
+
+    grant $BlossomAdminUA * on assets;
+    grant Onboarders onboard_asset on assets;
+    grant Offboarders offboard_asset on assets;
+
+obligation onboard_asset
+when ANY_USER
+performs onboard_asset(asset_id)
+do (
+    # check onboard_asset on assets OR check assign_to assets
+    create object $asset_id in assets;
+);
+
+obligation offboard_asset
+when ANY_USER
+performs offboard_asset(asset_id)
+do (
+    delete $asset_id;
+);

@@ -4,16 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
-
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 )
 
-type BlossomSmartContract struct {
-}
+type BlossomSmartContract struct{}
 
 // main function starts up the chaincode in the container during instantiate
 func main() {
@@ -42,9 +39,9 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	case "InitNGAC":
 		err = b.handleInitNGAC(stub)
 	case "RequestAccount":
-		err = b.handleRequestAccount(stub, args)
+		err = b.handleRequestAccount(stub)
 	case "UploadATO":
-		err = b.handleUploadATO(stub, args)
+		err = b.handleUploadATO(stub)
 	case "UpdateAccountStatus":
 		err = b.handleUpdateAccountStatus(stub, args)
 	case "Accounts":
@@ -59,10 +56,16 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		result, err = b.handleAssets(stub)
 	case "AssetInfo":
 		result, err = b.handleAssetInfo(stub, args)
-	case "Checkout":
-		result, err = b.handleCheckout(stub, args)
-	case "Checkin":
-		err = b.handleCheckin(stub, args)
+	case "RequestCheckout":
+		err = b.handleRequestCheckout(stub)
+	case "ApproveCheckout":
+		err = b.handleApproveCheckout(stub)
+	case "Licenses":
+		result, err = b.handleLicenses(stub, args)
+	case "InitiateCheckin":
+		err = b.handleInitiateCheckin(stub)
+	case "ProcessCheckin":
+		err = b.handleProcessCheckin(stub)
 	case "ReportSwID":
 		err = b.handleReportSwID(stub, args)
 	case "GetSwID":
@@ -83,7 +86,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 }
 
 func isNGACInitialized(stub shim.ChaincodeStubInterface) bool {
-	graphBytes, err := stub.GetState("graph")
+	graphBytes, err := stub.GetPrivateData(CatalogCollectionName(), "graph")
 	if err != nil {
 		return false
 	}
@@ -92,12 +95,7 @@ func isNGACInitialized(stub shim.ChaincodeStubInterface) bool {
 }
 
 func (b *BlossomSmartContract) handleInitNGAC(stub shim.ChaincodeStubInterface) error {
-	adminPDP := pdp.NewAdminDecider()
-	if err := adminPDP.InitGraph(stub); err != nil {
-		return err
-	}
-
-	return nil
+	return pdp.InitCatalogNGAC(stub, CatalogCollectionName())
 }
 
 func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
@@ -115,25 +113,17 @@ func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface
 	return json.Marshal(history)
 }
 
-func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInterface, args []string) error {
-	account := &model.Account{}
-	if err := json.Unmarshal([]byte(args[0]), account); err != nil {
-		return err
-	}
-
-	return b.RequestAccount(stub, account)
+func (b *BlossomSmartContract) handleRequestAccount(stub shim.ChaincodeStubInterface) error {
+	return b.RequestAccount(stub)
 }
 
-func (b *BlossomSmartContract) handleUploadATO(stub shim.ChaincodeStubInterface, args []string) error {
-	accountName := args[0]
-	ato := args[1]
-
-	return b.UploadATO(stub, accountName, ato)
+func (b *BlossomSmartContract) handleUploadATO(stub shim.ChaincodeStubInterface) error {
+	return b.UploadATO(stub)
 }
 
 func (b *BlossomSmartContract) handleUpdateAccountStatus(stub shim.ChaincodeStubInterface, args []string) error {
 	accountName := args[0]
-	status := model.Status(args[1])
+	status := args[1]
 
 	return b.UpdateAccountStatus(stub, accountName, status)
 }
@@ -159,12 +149,11 @@ func (b *BlossomSmartContract) handleAccount(stub shim.ChaincodeStubInterface, a
 }
 
 func (b *BlossomSmartContract) handleOnboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
-	asset := &model.Asset{}
-	if err := json.Unmarshal([]byte(args[0]), asset); err != nil {
-		return err
-	}
+	id := args[0]
+	name := args[1]
+	exp := args[2]
 
-	return b.OnboardAsset(stub, asset)
+	return b.OnboardAsset(stub, id, name, model.DateTime(exp))
 }
 
 func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
@@ -192,15 +181,19 @@ func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface,
 	return json.Marshal(asset)
 }
 
-func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	assetID := args[0]
-	accountName := args[1]
-	amount, err := strconv.Atoi(args[2])
-	if err != nil {
-		return nil, err
-	}
+func (b *BlossomSmartContract) handleRequestCheckout(stub shim.ChaincodeStubInterface) error {
+	return b.RequestCheckout(stub)
+}
 
-	result, err := b.Checkout(stub, assetID, accountName, amount)
+func (b *BlossomSmartContract) handleApproveCheckout(stub shim.ChaincodeStubInterface) error {
+	return b.ApproveCheckout(stub)
+}
+
+func (b *BlossomSmartContract) handleLicenses(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	accountName := args[0]
+	assetID := args[1]
+
+	result, err := b.Licenses(stub, accountName, assetID)
 	if err != nil {
 		return nil, err
 	}
@@ -208,30 +201,29 @@ func (b *BlossomSmartContract) handleCheckout(stub shim.ChaincodeStubInterface, 
 	return json.Marshal(result)
 }
 
-func (b *BlossomSmartContract) handleCheckin(stub shim.ChaincodeStubInterface, args []string) error {
-	assetID := args[0]
-	licenses := make([]string, 0)
-	if err := json.Unmarshal([]byte(args[1]), &licenses); err != nil {
-		return err
-	}
-	accountName := args[2]
+func (b *BlossomSmartContract) handleInitiateCheckin(stub shim.ChaincodeStubInterface) error {
+	return b.InitiateCheckin(stub)
+}
 
-	return b.Checkin(stub, assetID, licenses, accountName)
+func (b *BlossomSmartContract) handleProcessCheckin(stub shim.ChaincodeStubInterface) error {
+	return b.InitiateCheckin(stub)
 }
 
 func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface, args []string) error {
-	swid := &model.SwID{}
-	if err := json.Unmarshal([]byte(args[0]), swid); err != nil {
-		return err
-	}
-	accountName := args[1]
+	account := args[0]
+	primaryTag := args[1]
+	asset := args[2]
+	license := args[3]
+	xml := args[4]
 
-	return b.ReportSwID(stub, swid, accountName)
+	return b.ReportSwID(stub, account, primaryTag, asset, license, xml)
 }
 
 func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	primaryTag := args[0]
-	swid, err := b.GetSwID(stub, primaryTag)
+	account := args[0]
+	primaryTag := args[1]
+
+	swid, err := b.GetSwID(stub, account, primaryTag)
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +232,9 @@ func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface, a
 }
 
 func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	asset := args[0]
-	swids, err := b.GetSwIDsAssociatedWithAsset(stub, asset)
+	account := args[0]
+	asset := args[1]
+	swids, err := b.GetSwIDsAssociatedWithAsset(stub, account, asset)
 	if err != nil {
 		return nil, err
 	}

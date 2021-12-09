@@ -1,8 +1,7 @@
 package mocks
 
 import (
-	"encoding/json"
-	"github.com/PM-Master/policy-machine-go/pip"
+	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
@@ -77,8 +76,8 @@ func A2AcqSpec() (string, string) {
 	return str, "A2MSP"
 }
 
-func (c *Mock) SetGraphState(graph pip.Graph) {
-	graphBytes, err := json.Marshal(graph)
+func (c *Mock) SetNGACState(fe ngac.FunctionalEntity) {
+	graphBytes, err := fe.Graph().MarshalJSON()
 	if err != nil {
 		panic(err)
 	}

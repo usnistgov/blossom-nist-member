@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/Microsoft/hcsshim v0.8.20 // indirect
-	github.com/PM-Master/policy-machine-go v0.0.0-20210511011441-4e48d7cbbb63
+	github.com/PM-Master/policy-machine-go v0.0.0-20211208041052-2d048ded1c82
 	github.com/Shopify/sarama v1.29.1 // indirect
 	github.com/containerd/containerd v1.5.4 // indirect
 	github.com/fsouza/go-dockerclient v1.7.3 // indirect

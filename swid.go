@@ -15,13 +15,13 @@ type (
 	SwIDInterface interface {
 		// ReportSwID is used by Accounts to report to Blossom when a software user has installed a piece of software associated
 		// with an asset that account has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
-		ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error
+		ReportSwID(stub shim.ChaincodeStubInterface, account, primaryTag, asset, license, xml string) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
-		GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error)
+		GetSwID(stub shim.ChaincodeStubInterface, account, primaryTag string) (*model.SwID, error)
 
 		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset.
-		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, assetID string) ([]*model.SwID, error)
+		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account, assetID string) ([]*model.SwID, error)
 	}
 )
 
@@ -29,8 +29,8 @@ func NewSwIDContract() SwIDInterface {
 	return &BlossomSmartContract{}
 }
 
-func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, primaryTag string) (bool, error) {
-	data, err := stub.GetState(model.SwIDKey(primaryTag))
+func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, account, primaryTag string) (bool, error) {
+	data, err := stub.GetPrivateData(AccountCollectionName(account), model.SwIDKey(primaryTag))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if SwID with primary tag %q already exists on the ledger", primaryTag)
 	}
@@ -38,36 +38,44 @@ func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, prim
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, swid *model.SwID, account string) error {
-	if ok, err := b.swidExists(stub, swid.PrimaryTag); err != nil {
-		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", swid.PrimaryTag)
+func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, account, primaryTag, asset, license, xml string) error {
+	if ok, err := b.swidExists(stub, account, primaryTag); err != nil {
+		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", primaryTag)
 	} else if ok {
-		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", swid.PrimaryTag)
+		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", primaryTag)
 	}
 
-	// begin NGAC
-	if err := pdp.NewSwIDDecider().ReportSwID(stub, swid, account); err != nil {
-		return errors.Wrap(err, "error reporting SwID")
+	collection := AccountCollectionName(account)
+
+	// ngac check
+	if err := pdp.CanReportSwID(stub, collection, account); err != nil {
+		return errors.Wrapf(err, "ngac check failed")
 	}
-	// end NGAC
+
+	swid := &model.SwID{
+		PrimaryTag: primaryTag,
+		XML:        xml,
+		Asset:      asset,
+		License:    license,
+	}
 
 	swidBytes, err := json.Marshal(swid)
 	if err != nil {
 		return errors.Wrapf(err, "error serializing swid tag")
 	}
 
-	if err = stub.PutState(model.SwIDKey(swid.PrimaryTag), swidBytes); err != nil {
+	if err = stub.PutPrivateData(collection, model.SwIDKey(swid.PrimaryTag), swidBytes); err != nil {
 		return errors.Wrapf(err, "error updating SwID %s", swid.PrimaryTag)
 	}
 
 	return nil
 }
 
-func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, primaryTag string) (*model.SwID, error) {
-	if ok, err := b.swidExists(stub, primaryTag); err != nil {
+func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, account, primaryTag string) (*model.SwID, error) {
+	if ok, err := b.swidExists(stub, account, primaryTag); err != nil {
 		return nil, errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", primaryTag)
-	} else if ok {
-		return nil, errors.Errorf("a SwID tag with the primary tag %s has already been reported", primaryTag)
+	} else if !ok {
+		return nil, errors.Errorf("a SwID tag with the primary tag %s has not been reported", primaryTag)
 	}
 
 	var (
@@ -75,7 +83,7 @@ func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, primary
 		err       error
 	)
 
-	if swidBytes, err = stub.GetState(model.SwIDKey(primaryTag)); err != nil {
+	if swidBytes, err = stub.GetPrivateData(AccountCollectionName(account), model.SwIDKey(primaryTag)); err != nil {
 		return nil, errors.Wrapf(err, "error getting SwID %s", primaryTag)
 	}
 
@@ -84,33 +92,12 @@ func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, primary
 		return nil, errors.Wrapf(err, "error deserializing SwID tag %s", primaryTag)
 	}
 
-	// begin NGAC
-	if err = pdp.NewSwIDDecider().FilterSwID(stub, swid); err != nil {
-		return nil, errors.Wrap(err, "error filtering SwID")
-	}
-	// end NGAC
-
-	return &model.SwID{}, nil
+	return swid, nil
 }
 
-func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error) {
-	swids, err := b.getSwIDsAssociatedWithAsset(stub, asset)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error retrieving swids from ledger")
-	}
+func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account, asset string) ([]*model.SwID, error) {
+	resultsIterator, err := stub.GetPrivateDataByRange(AccountCollectionName(account), "", "")
 
-	// begin NGAC
-	// filter out any swid tags the user cannot view
-	if swids, err = pdp.NewSwIDDecider().FilterSwIDs(stub, swids); err != nil {
-		return nil, errors.Wrap(err, "error filtering swids")
-	}
-	// end NGAC
-
-	return swids, nil
-}
-
-func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, asset string) ([]*model.SwID, error) {
-	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +110,7 @@ func (b *BlossomSmartContract) getSwIDsAssociatedWithAsset(stub shim.ChaincodeSt
 			return nil, err
 		}
 
-		// accounts on the ledger begin with the account prefix -- ignore other assets
+		// assets on the ledger begin with the asset prefix -- ignore other results
 		if !strings.HasPrefix(queryResponse.Key, model.SwIDPrefix) {
 			continue
 		}

@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"encoding/json"
+	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -8,14 +10,19 @@ import (
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/hyperledger/fabric/protos/peer"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/ngac/common"
 )
 
 type MemChaincodeStub struct {
-	state    map[string][]byte
-	args     [][]byte
-	function string
-	user     []byte
-	iterator []*kv
+	state     map[string][]byte
+	args      [][]byte
+	function  string
+	user      []byte
+	msp       string
+	iterator  []*kv
+	stub      *ChaincodeStub
+	transient map[string][]byte
+	pvtData   *PvtData
 }
 
 type kv struct {
@@ -38,18 +45,58 @@ func (m *MemChaincodeStub) Next() (*queryresult.KV, error) {
 	return &queryresult.KV{Key: kv.k, Value: kv.v}, nil
 }
 
-func NewMemCCStub() MemChaincodeStub {
-	return MemChaincodeStub{
-		state:    make(map[string][]byte),
-		args:     make([][]byte, 0),
-		function: "",
-		user:     make([]byte, 0),
+func NewMemCCStub() *MemChaincodeStub {
+	return &MemChaincodeStub{
+		state:     make(map[string][]byte),
+		args:      make([][]byte, 0),
+		function:  "",
+		user:      make([]byte, 0),
+		stub:      &ChaincodeStub{},
+		transient: make(map[string][]byte),
+		pvtData:   NewPvtData(),
 	}
 }
 
-func (m *MemChaincodeStub) SetFunctionAndArgs(function string, args ...[]byte) {
+func (m *MemChaincodeStub) PutNGAC(collection string, fe ngac.FunctionalEntity) error {
+	bytes, err := fe.Graph().MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	if err = m.PutPrivateData(collection, common.GraphKey, bytes); err != nil {
+		return err
+	}
+
+	bytes, err = fe.Prohibitions().MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	if err = m.PutPrivateData(collection, common.ProhibitionsKey, bytes); err != nil {
+		return err
+	}
+
+	bytes, err = fe.Obligations().MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	if err = m.PutPrivateData(collection, common.ObligationsKey, bytes); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *MemChaincodeStub) SetFunctionAndArgs(function string, args ...string) {
 	m.function = function
-	m.args = args
+
+	bytes := make([][]byte, 0)
+	for _, a := range args {
+		bytes = append(bytes, []byte(a))
+	}
+
+	m.args = bytes
 }
 
 func (m *MemChaincodeStub) SetUser(userFun func() (string, string)) error {
@@ -61,6 +108,22 @@ func (m *MemChaincodeStub) SetUser(userFun func() (string, string)) error {
 	}
 
 	m.user = bytes
+	m.msp = mspid
+
+	return nil
+}
+
+func (m *MemChaincodeStub) SetMSPID(mspid string) {
+	m.msp = mspid
+}
+
+func (m *MemChaincodeStub) SetTransient(key string, value interface{}) error {
+	bytes, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+
+	m.transient[key] = bytes
 
 	return nil
 }
@@ -160,8 +223,12 @@ func (m *MemChaincodeStub) GetHistoryForKey(key string) (shim.HistoryQueryIterat
 	panic("implement me")
 }
 
+func (m *MemChaincodeStub) CreateCollection(collection string, readers []string, writers []string) {
+	m.pvtData.CreateNewCollection(collection, readers, writers)
+}
+
 func (m *MemChaincodeStub) GetPrivateData(collection, key string) ([]byte, error) {
-	panic("implement me")
+	return m.pvtData.GetPrivateData(m.msp, collection, key)
 }
 
 func (m *MemChaincodeStub) GetPrivateDataHash(collection, key string) ([]byte, error) {
@@ -169,11 +236,11 @@ func (m *MemChaincodeStub) GetPrivateDataHash(collection, key string) ([]byte, e
 }
 
 func (m *MemChaincodeStub) PutPrivateData(collection string, key string, value []byte) error {
-	panic("implement me")
+	return m.pvtData.PutPrivateData(m.msp, collection, key, value)
 }
 
 func (m *MemChaincodeStub) DelPrivateData(collection, key string) error {
-	panic("implement me")
+	return m.pvtData.DelPrivateData(m.msp, collection, key)
 }
 
 func (m *MemChaincodeStub) SetPrivateDataValidationParameter(collection, key string, ep []byte) error {
@@ -185,7 +252,7 @@ func (m *MemChaincodeStub) GetPrivateDataValidationParameter(collection, key str
 }
 
 func (m *MemChaincodeStub) GetPrivateDataByRange(collection, startKey, endKey string) (shim.StateQueryIteratorInterface, error) {
-	panic("implement me")
+	return m.pvtData.GetPrivateDataByRange(m.msp, collection, startKey, endKey)
 }
 
 func (m *MemChaincodeStub) GetPrivateDataByPartialCompositeKey(collection, objectType string, keys []string) (shim.StateQueryIteratorInterface, error) {
@@ -201,7 +268,7 @@ func (m *MemChaincodeStub) GetCreator() ([]byte, error) {
 }
 
 func (m *MemChaincodeStub) GetTransient() (map[string][]byte, error) {
-	panic("implement me")
+	return m.transient, nil
 }
 
 func (m *MemChaincodeStub) GetBinding() ([]byte, error) {

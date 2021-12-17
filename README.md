@@ -15,7 +15,7 @@ $ echo $GOPATH
 # create appropriate folder under $GOPATH
 $ mkdir -p $GOPATH/src/github.com/usnistgov/blossom
 # working from the chaincode folder, create a symbolic link
-$ ln -s $(pwd) $GOPATH/github.com/usnistgov/blossom/chaincode
+$ ln -s $(pwd) $GOPATH/src/github.com/usnistgov/blossom/chaincode
 ```
 4. Your VS Code instance is working from the `$GOPATH` symlink (this is important!)
 5. You have downloaded the required go dependencies:

@@ -6,6 +6,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	events "github.com/usnistgov/blossom/chaincode/ngac/epp"
 	decider "github.com/usnistgov/blossom/chaincode/ngac/pdp"
+	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -22,6 +23,11 @@ type (
 		// user's member.
 		// TRANSIENT MAP: export ACCOUNT=$(echo -n "{\"system_owner\":\"\",\"system_admin\":\"\",\"acquisition_specialist\":\"\",\"ato\":\"\"}" | base64 | tr -d \\n)
 		RequestAccount(stub shim.ChaincodeStubInterface) error
+
+		// ApproveAccount initializes the account's NGAC graph in the account's PDC, with the user invoking this function
+		// being the admin in the graph.  The status of the account will be Pending after execution.  The admin user can
+		// call UpdateAccountStatus to update the status of the account.
+		ApproveAccount(stub shim.ChaincodeStubInterface, account string) error
 
 		// UploadATO updates the ATO field of the Account with the given name.
 		// TRANSIENT MAP: export ATO=$(echo -n "{\"ato\":\"\"}" | base64 | tr -d \\n)
@@ -97,11 +103,7 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) 
 	acctPub := model.AccountPublic{
 		Name:   accountName,
 		MSPID:  mspid,
-		Status: model.PendingATO,
-	}
-
-	if transientInput.ATO != "" {
-		acctPub.Status = model.PendingApproval
+		Status: model.PendingApproval,
 	}
 
 	// account private goes on private data collection for the msp
@@ -131,16 +133,33 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) 
 		return fmt.Errorf("error marshaling private account details for %q: %v", accountName, err)
 	}
 
-	collection := AccountCollectionName(accountName)
+	collection := AccountCollection(accountName)
 
 	if err = stub.PutPrivateData(collection, model.AccountKey(accountName), pvtBytes); err != nil {
 		return fmt.Errorf("error putting private data: %v", err)
 	}
 
-	// process the request_account event in NGAC
-	if err = events.ProcessRequestAccount(stub, collection, accountName,
-		transientInput.SystemOwner, transientInput.SystemAdmin, transientInput.AcquisitionSpecialist); err != nil {
-		return fmt.Errorf("error processing request_account event: %v", err)
+	return nil
+}
+
+func (b *BlossomSmartContract) ApproveAccount(stub shim.ChaincodeStubInterface, account string) error {
+	var (
+		acctPvt *model.AccountPrivate
+		bytes   []byte
+		err     error
+	)
+
+	// get account private details from PDC to add users to NGAC graph
+	if bytes, err = stub.GetPrivateData(AccountCollection(account), model.AccountKey(account)); err != nil {
+		return fmt.Errorf("error getting private data: %v", err)
+	} else {
+		if err = json.Unmarshal(bytes, &acctPvt); err != nil {
+			return fmt.Errorf("error deserializing account private info: %v", err)
+		}
+	}
+
+	if err = decider.InitAccountNGAC(stub, AccountCollection(account), account, acctPvt); err != nil {
+		return fmt.Errorf("error approving account in NGAC: %v", err)
 	}
 
 	return nil
@@ -163,7 +182,7 @@ func (b *BlossomSmartContract) UploadATO(stub shim.ChaincodeStubInterface) error
 		return fmt.Errorf("an account with the name %q does not exist", accountName)
 	}
 
-	collection := AccountCollectionName(accountName)
+	collection := AccountCollection(accountName)
 
 	// ngac check
 	if err := decider.CanUploadATO(stub, collection, accountName); err != nil {
@@ -209,7 +228,7 @@ func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterf
 	}
 
 	// ngac check
-	if err = decider.CanUpdateAccountStatus(stub, AccountCollectionName(accountName), accountName); err != nil {
+	if err = decider.CanUpdateAccountStatus(stub, AccountCollection(accountName), accountName); err != nil {
 		return fmt.Errorf("error updating account status for account %s: %v", accountName, err)
 	}
 
@@ -223,7 +242,7 @@ func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterf
 		return fmt.Errorf("error unmarshaling account %q: %v", accountName, err)
 	}
 
-	// update ATO value
+	// update status
 	acctPub.Status = status
 
 	// marshal back to json
@@ -237,37 +256,11 @@ func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterf
 	}
 
 	// process event
-	return handleUpdateAccountStatusEvent(stub, accountName, status)
-}
-
-func handleUpdateAccountStatusEvent(stub shim.ChaincodeStubInterface, accountName string, status model.Status) error {
-	var f func(shim.ChaincodeStubInterface, string, string) error
-	switch status {
-	case model.PendingApproval:
-		f = events.ProcessSetAccountPending
-	case model.PendingATO:
-		f = events.ProcessSetAccountPending
-	case model.Active:
-		f = events.ProcessSetAccountActive
-	case model.InactiveDenied:
-		f = events.ProcessSetAccountInactive
-	case model.InactiveATO:
-		f = events.ProcessSetAccountInactive
-	case model.InactiveOptOut:
-		f = events.ProcessSetAccountInactive
-	case model.InactiveSecurityRisk:
-		f = events.ProcessSetAccountInactive
-	case model.InactiveROB:
-		f = events.ProcessSetAccountInactive
-	default:
-		return fmt.Errorf("unknown status: %s", status)
-	}
-
-	return f(stub, AccountCollectionName(accountName), accountName)
+	return events.UpdateAccountStatusEvent(stub, accountName, AccountCollection(accountName), status)
 }
 
 func (b *BlossomSmartContract) Accounts(stub shim.ChaincodeStubInterface) ([]*model.AccountPublic, error) {
-	resultsIterator, err := stub.GetStateByRange(string([]byte{model.AccountPrefix}), string([]byte{model.AccountPrefix + 1}))
+	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
 	}
@@ -278,6 +271,10 @@ func (b *BlossomSmartContract) Accounts(stub shim.ChaincodeStubInterface) ([]*mo
 		var queryResponse *queryresult.KV
 		if queryResponse, err = resultsIterator.Next(); err != nil {
 			return nil, err
+		}
+
+		if !strings.HasPrefix(queryResponse.Key, model.AccountPrefix) {
+			continue
 		}
 
 		acctPub := &model.AccountPublic{}
@@ -307,7 +304,7 @@ func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, account
 		return nil, fmt.Errorf("error deserializing account public info: %v", err)
 	}
 
-	if bytes, err = stub.GetPrivateData(AccountCollectionName(accountName), model.AccountKey(accountName)); err != nil {
+	if bytes, err = stub.GetPrivateData(AccountCollection(accountName), model.AccountKey(accountName)); err != nil {
 		// ignore error if a user does not have access to the private data collection of the account
 		// they can still have access to the public info
 		fmt.Printf("error occurred reading pvtdata: %v\n", err)

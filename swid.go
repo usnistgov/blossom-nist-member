@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
 	"github.com/pkg/errors"
@@ -15,13 +16,13 @@ type (
 	SwIDInterface interface {
 		// ReportSwID is used by Accounts to report to Blossom when a software user has installed a piece of software associated
 		// with an asset that account has checked out. This function will invoke NGAC chaincode to add the SwID to the NGAC graph.
-		ReportSwID(stub shim.ChaincodeStubInterface, account, primaryTag, asset, license, xml string) error
+		ReportSwID(stub shim.ChaincodeStubInterface) error
 
 		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
-		GetSwID(stub shim.ChaincodeStubInterface, account, primaryTag string) (*model.SwID, error)
+		GetSwID(stub shim.ChaincodeStubInterface) (*model.SwID, error)
 
 		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset.
-		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account, assetID string) ([]*model.SwID, error)
+		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface) ([]*model.SwID, error)
 	}
 )
 
@@ -30,7 +31,7 @@ func NewSwIDContract() SwIDInterface {
 }
 
 func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, account, primaryTag string) (bool, error) {
-	data, err := stub.GetPrivateData(AccountCollectionName(account), model.SwIDKey(primaryTag))
+	data, err := stub.GetPrivateData(AccountCollection(account), model.SwIDKey(primaryTag))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if SwID with primary tag %q already exists on the ledger", primaryTag)
 	}
@@ -38,25 +39,30 @@ func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, acco
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, account, primaryTag, asset, license, xml string) error {
-	if ok, err := b.swidExists(stub, account, primaryTag); err != nil {
-		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", primaryTag)
-	} else if ok {
-		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", primaryTag)
+func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface) error {
+	transientInput, err := getReportSwIDTransientInput(stub)
+	if err != nil {
+		return fmt.Errorf("error getting transient input: %v", err)
 	}
 
-	collection := AccountCollectionName(account)
+	if ok, err := b.swidExists(stub, transientInput.Account, transientInput.PrimaryTag); err != nil {
+		return errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", transientInput.PrimaryTag)
+	} else if ok {
+		return errors.Errorf("a SwID tag with the primary tag %s has already been reported", transientInput.PrimaryTag)
+	}
+
+	collection := AccountCollection(transientInput.Account)
 
 	// ngac check
-	if err := pdp.CanReportSwID(stub, collection, account); err != nil {
+	if err = pdp.CanReportSwID(stub, collection, transientInput.Account); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
 	swid := &model.SwID{
-		PrimaryTag: primaryTag,
-		XML:        xml,
-		Asset:      asset,
-		License:    license,
+		PrimaryTag: transientInput.PrimaryTag,
+		XML:        transientInput.Xml,
+		Asset:      transientInput.Asset,
+		License:    transientInput.License,
 	}
 
 	swidBytes, err := json.Marshal(swid)
@@ -71,32 +77,38 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface, acco
 	return nil
 }
 
-func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface, account, primaryTag string) (*model.SwID, error) {
-	if ok, err := b.swidExists(stub, account, primaryTag); err != nil {
-		return nil, errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", primaryTag)
-	} else if !ok {
-		return nil, errors.Errorf("a SwID tag with the primary tag %s has not been reported", primaryTag)
+func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface) (*model.SwID, error) {
+	transientInput, err := getGetSwIDTransientInput(stub)
+	if err != nil {
+		return nil, fmt.Errorf("error getting transient input: %v", err)
 	}
 
-	var (
-		swidBytes []byte
-		err       error
-	)
+	if ok, err := b.swidExists(stub, transientInput.Account, transientInput.PrimaryTag); err != nil {
+		return nil, errors.Wrapf(err, "error checking if SwID with primary tag %s already exists", transientInput.PrimaryTag)
+	} else if !ok {
+		return nil, errors.Errorf("a SwID tag with the primary tag %s has not been reported", transientInput.PrimaryTag)
+	}
+	var swidBytes []byte
 
-	if swidBytes, err = stub.GetPrivateData(AccountCollectionName(account), model.SwIDKey(primaryTag)); err != nil {
-		return nil, errors.Wrapf(err, "error getting SwID %s", primaryTag)
+	if swidBytes, err = stub.GetPrivateData(AccountCollection(transientInput.Account), model.SwIDKey(transientInput.PrimaryTag)); err != nil {
+		return nil, errors.Wrapf(err, "error getting SwID %s", transientInput.PrimaryTag)
 	}
 
 	swid := &model.SwID{}
 	if err = json.Unmarshal(swidBytes, swid); err != nil {
-		return nil, errors.Wrapf(err, "error deserializing SwID tag %s", primaryTag)
+		return nil, errors.Wrapf(err, "error deserializing SwID tag %s", transientInput.PrimaryTag)
 	}
 
 	return swid, nil
 }
 
-func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account, asset string) ([]*model.SwID, error) {
-	resultsIterator, err := stub.GetPrivateDataByRange(AccountCollectionName(account), "", "")
+func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface) ([]*model.SwID, error) {
+	transientInput, err := getGetSwIDsAssociatedWithAssetTransientInput(stub)
+	if err != nil {
+		return nil, fmt.Errorf("error getting transient input: %v", err)
+	}
+
+	resultsIterator, err := stub.GetPrivateDataByRange(AccountCollection(transientInput.Account), "", "")
 
 	if err != nil {
 		return nil, err
@@ -121,7 +133,7 @@ func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeSt
 		}
 
 		// continue if the asset associated with this swid tag does not match the given asset ID
-		if swid.Asset != asset {
+		if swid.Asset != transientInput.AssetID {
 			continue
 		}
 

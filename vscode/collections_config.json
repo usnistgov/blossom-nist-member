@@ -1,0 +1,38 @@
+[
+  {
+    "name":"catalog_coll",
+    "policy":"OR('BlossomMSP.member', 'A1MSP.member', 'A2MSP.member')",
+    "requiredPeerCount":0,
+    "maxPeerCount":3,
+    "blockToLive":1000000,
+    "memberOnlyRead":true,
+    "memberOnlyWrite":true
+  },
+  {
+    "name":"licenses_coll",
+    "policy":"OR('BlossomMSP.member')",
+    "requiredPeerCount":0,
+    "maxPeerCount":1,
+    "blockToLive":1000000,
+    "memberOnlyRead":true,
+    "memberOnlyWrite":true
+  },
+  {
+    "name":"A1MSP_account_coll",
+    "policy":"OR('BlossomMSP.member', 'A1MSP.member')",
+    "requiredPeerCount":0,
+    "maxPeerCount":2,
+    "blockToLive":1000000,
+    "memberOnlyRead":true,
+    "memberOnlyWrite":true
+  },
+  {
+    "name":"A2MSP_account_coll",
+    "policy":"OR('BlossomMSP.member', 'A2MSP.member')",
+    "requiredPeerCount":0,
+    "maxPeerCount":2,
+    "blockToLive":1000000,
+    "memberOnlyRead":true,
+    "memberOnlyWrite":true
+  }
+]

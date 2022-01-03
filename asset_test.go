@@ -20,7 +20,7 @@ func TestOnboardAsset(t *testing.T) {
 
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	data, err := stub.GetPrivateData(CatalogCollectionName(), model.AssetKey("123"))
+	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey("123"))
 	require.NoError(t, err)
 
 	assetPub := model.AssetPublic{}
@@ -30,7 +30,7 @@ func TestOnboardAsset(t *testing.T) {
 	require.Equal(t, "myasset", assetPub.Name)
 	require.Equal(t, 2, assetPub.Available)
 
-	data, err = stub.GetPrivateData(LicensesCollectionName(), model.AssetKey("123"))
+	data, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey("123"))
 	require.NoError(t, err)
 
 	assetPvt := model.AssetPrivate{}
@@ -52,11 +52,11 @@ func TestOffboardAsset(t *testing.T) {
 	result := bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status)
 
-	data, err := stub.GetPrivateData(CatalogCollectionName(), model.AssetKey("123"))
+	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey("123"))
 	require.NoError(t, err)
 	require.Nil(t, data)
 
-	data, err = stub.GetPrivateData(LicensesCollectionName(), model.AssetKey("123"))
+	data, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey("123"))
 	require.NoError(t, err)
 	require.Nil(t, data)
 }
@@ -102,12 +102,9 @@ func TestCheckout(t *testing.T) {
 	bcc := BlossomSmartContract{}
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	err := stub.SetUser(mocks.A1SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A1MSP)
 
-	err = stub.SetUser(mocks.Super)
+	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
 	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
@@ -154,6 +151,8 @@ func TestCheckout(t *testing.T) {
 		require.NoError(t, err)
 
 		err = stub.SetUser(mocks.Super)
+		require.NoError(t, err)
+
 		info, err := bcc.AssetInfo(stub, "123")
 		require.NoError(t, err)
 		require.Equal(t, 2, info.TotalAmount)
@@ -162,5 +161,45 @@ func TestCheckout(t *testing.T) {
 		require.Equal(t, []string{"2"}, info.AvailableLicenses)
 		require.Equal(t, 1, info.Available)
 		require.Equal(t, map[string]map[string]model.DateTime{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
+
+		// update account to pending
+		err = bcc.UpdateAccountStatus(stub, A1MSP, "PENDING_ATO")
+		require.NoError(t, err)
+
+		// checkout should fail
+		err = stub.SetUser(mocks.A1SystemAdmin)
+		require.NoError(t, err)
+
+		stub.SetFunctionAndArgs("RequestCheckout")
+		err = stub.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
+		require.NoError(t, err)
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(500), result.Status)
 	})
+}
+
+func TestCheckoutRequests(t *testing.T) {
+	stub := newTestStub(t)
+
+	onboardTestAsset(t, stub, "123", "myasset1", []string{"1", "2"})
+	onboardTestAsset(t, stub, "456", "myasset2", []string{"1", "2"})
+
+	requestTestAccount(t, stub, A1MSP)
+
+	bcc := BlossomSmartContract{}
+	err := stub.SetUser(mocks.A1SystemAdmin)
+	require.NoError(t, err)
+	err = stub.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
+	require.NoError(t, err)
+	err = bcc.RequestCheckout(stub)
+	require.NoError(t, err)
+
+	err = stub.SetTransient("checkout", requestCheckoutTransientInput{"456", 1})
+	require.NoError(t, err)
+	err = bcc.RequestCheckout(stub)
+	require.NoError(t, err)
+
+	result, err := bcc.CheckoutRequests(stub, A1MSP)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(result))
 }

@@ -41,6 +41,24 @@ type (
 		Account string `json:"account,omitempty"`
 		AssetID string `json:"asset_id,omitempty"`
 	}
+
+	reportSwIDTransientInput struct {
+		Account    string `json:"account,omitempty"`
+		PrimaryTag string `json:"primary_tag,omitempty"`
+		Asset      string `json:"asset,omitempty"`
+		License    string `json:"license,omitempty"`
+		Xml        string `json:"xml,omitempty"`
+	}
+
+	getSwIDTransientInput struct {
+		Account    string `json:"account,omitempty"`
+		PrimaryTag string `json:"primary_tag,omitempty"`
+	}
+
+	getSwIDsAssociatedWithAssetTransientInput struct {
+		Account string `json:"account,omitempty"`
+		AssetID string `json:"asset_id,omitempty"`
+	}
 )
 
 func getAccountTransientInput(stub shim.ChaincodeStubInterface) (accountTransientInput, error) {
@@ -217,6 +235,93 @@ func getProcessCheckinTransientInput(stub shim.ChaincodeStubInterface) (processC
 	}
 	if input.AssetID == "" {
 		return processCheckinTransientInput{}, fmt.Errorf("asset id cannot be nil")
+	}
+
+	return input, nil
+}
+
+func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTransientInput, error) {
+	transientMap, err := stub.GetTransient()
+	if err != nil {
+		return reportSwIDTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+	}
+
+	transientAccountJson, ok := transientMap["swid"]
+	if !ok {
+		return reportSwIDTransientInput{}, fmt.Errorf("swid not found in transient map input")
+	}
+
+	var input reportSwIDTransientInput
+	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
+		return reportSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+	}
+
+	if input.Account == "" {
+		return reportSwIDTransientInput{}, fmt.Errorf("account cannot be nil")
+	}
+	if input.PrimaryTag == "" {
+		return reportSwIDTransientInput{}, fmt.Errorf("primary tag cannot be nil")
+	}
+	if input.Asset == "" {
+		return reportSwIDTransientInput{}, fmt.Errorf("asset cannot be nil")
+	}
+	if input.License == "" {
+		return reportSwIDTransientInput{}, fmt.Errorf("license cannot be nil")
+	}
+	if input.Xml == "" {
+		return reportSwIDTransientInput{}, fmt.Errorf("xml cannot be nil")
+	}
+
+	return input, nil
+}
+
+func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (getSwIDTransientInput, error) {
+	transientMap, err := stub.GetTransient()
+	if err != nil {
+		return getSwIDTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+	}
+
+	transientAccountJson, ok := transientMap["swid"]
+	if !ok {
+		return getSwIDTransientInput{}, fmt.Errorf("swid not found in transient map input")
+	}
+
+	var input getSwIDTransientInput
+	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
+		return getSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+	}
+
+	if input.Account == "" {
+		return getSwIDTransientInput{}, fmt.Errorf("account cannot be nil")
+	}
+	if input.PrimaryTag == "" {
+		return getSwIDTransientInput{}, fmt.Errorf("primary tag cannot be nil")
+	}
+
+	return input, nil
+}
+
+func getGetSwIDsAssociatedWithAssetTransientInput(stub shim.ChaincodeStubInterface) (getSwIDsAssociatedWithAssetTransientInput, error) {
+	transientMap, err := stub.GetTransient()
+	if err != nil {
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+	}
+
+	transientAccountJson, ok := transientMap["swid"]
+	if !ok {
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("swid not found in transient map input")
+	}
+
+	var input getSwIDsAssociatedWithAssetTransientInput
+	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+	}
+
+	if input.Account == "" {
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("account cannot be nil")
+	}
+	if input.AssetID == "" {
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("asset id cannot be nil")
 	}
 
 	return input, nil

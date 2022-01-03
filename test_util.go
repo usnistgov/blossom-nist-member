@@ -11,25 +11,27 @@ const A1MSP = "A1MSP"
 const A2MSP = "A2MSP"
 const BlossomMSP = "BlossomMSP"
 
-var A1Collection = AccountCollectionName(A1MSP)
-var A2Collection = AccountCollectionName(A1MSP)
+var A1Collection = AccountCollection(A1MSP)
+var A2Collection = AccountCollection(A1MSP)
 
 func newTestStub(t *testing.T) *mocks.MemChaincodeStub {
 	stub := mocks.NewMemCCStub()
-	stub.CreateCollection(CatalogCollectionName(),
+	stub.CreateCollection(CatalogCollection(),
 		[]string{A1MSP, A2MSP, BlossomMSP},
 		[]string{BlossomMSP})
-	stub.CreateCollection(AccountCollectionName(A1MSP),
+	stub.CreateCollection(AccountCollection(A1MSP),
 		[]string{A1MSP, BlossomMSP},
 		[]string{A1MSP, BlossomMSP})
-	stub.CreateCollection(AccountCollectionName(A2MSP),
+	stub.CreateCollection(AccountCollection(A2MSP),
 		[]string{A2MSP, BlossomMSP},
 		[]string{A2MSP, BlossomMSP})
-	stub.CreateCollection(LicensesCollectionName(),
+	stub.CreateCollection(LicensesCollection(),
 		[]string{BlossomMSP},
 		[]string{BlossomMSP})
 
 	bcc := BlossomSmartContract{}
+	stub.SetFunctionAndArgs("", "BlossomMSP")
+	bcc.Init(stub)
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 	err = bcc.handleInitNGAC(stub)
@@ -42,13 +44,28 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 	bcc := BlossomSmartContract{}
 	stub.SetFunctionAndArgs("RequestAccount")
 	if account == A1MSP {
-		err := stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec", "my ato"})
+		err := stub.SetUser(mocks.A1SystemOwner)
+		require.NoError(t, err)
+		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec", "my ato"})
 		require.NoError(t, err)
 	} else {
-		err := stub.SetTransient("account", accountTransientInput{"a2_system_owner", "a2_system_admin", "a2_acq_spec", "my ato"})
+		err := stub.SetUser(mocks.A2SystemOwner)
+		require.NoError(t, err)
+		err = stub.SetTransient("account", accountTransientInput{"a2_system_owner", "a2_system_admin", "a2_acq_spec", "my ato"})
 		require.NoError(t, err)
 	}
 	result := bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
+
+	err := stub.SetUser(mocks.Super)
+	require.NoError(t, err)
+
+	stub.SetFunctionAndArgs("ApproveAccount", account)
+	result = bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
+
+	stub.SetFunctionAndArgs("UpdateAccountStatus", account, "ACTIVE")
+	result = bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status)
 }
 

@@ -2,8 +2,8 @@ package common
 
 import (
 	"fmt"
-	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
@@ -33,8 +33,8 @@ func GetUser(stub shim.ChaincodeStubInterface) (string, error) {
 	return FormatUsername(cert.Subject.CommonName, mspid), nil
 }
 
-func GetPvtCollFunctionalEntity(stub shim.ChaincodeStubInterface, pvtCollName string) (ngac.FunctionalEntity, error) {
-	pip := memory.NewPIP()
+func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string) (policy.Store, error) {
+	pip := memory.NewPolicyStore()
 
 	// get graph
 	bytes, err := stub.GetPrivateData(pvtCollName, GraphKey)
@@ -73,9 +73,9 @@ func GetPvtCollFunctionalEntity(stub shim.ChaincodeStubInterface, pvtCollName st
 	return pip, nil
 }
 
-func PutPvtCollFunctionalEntity(stub shim.ChaincodeStubInterface, pvtCollName string, fe ngac.FunctionalEntity) error {
+func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string, policyStore policy.Store) error {
 	// put graph
-	bytes, err := fe.Graph().MarshalJSON()
+	bytes, err := policyStore.Graph().MarshalJSON()
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling graph for collection %s", pvtCollName)
 	}
@@ -85,7 +85,7 @@ func PutPvtCollFunctionalEntity(stub shim.ChaincodeStubInterface, pvtCollName st
 	}
 
 	// put prohibitions
-	bytes, err = fe.Prohibitions().MarshalJSON()
+	bytes, err = policyStore.Prohibitions().MarshalJSON()
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling graph for collection %s", pvtCollName)
 	}
@@ -95,7 +95,7 @@ func PutPvtCollFunctionalEntity(stub shim.ChaincodeStubInterface, pvtCollName st
 	}
 
 	// put obligations
-	bytes, err = fe.Obligations().MarshalJSON()
+	bytes, err = policyStore.Obligations().MarshalJSON()
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling obligations for collection %s", pvtCollName)
 	}

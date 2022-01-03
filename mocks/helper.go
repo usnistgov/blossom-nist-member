@@ -1,7 +1,6 @@
 package mocks
 
 import (
-	"github.com/PM-Master/policy-machine-go/ngac"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric/protos/msp"
 	"github.com/pkg/errors"
@@ -74,13 +73,4 @@ func A2SystemAdmin() (string, string) {
 func A2AcqSpec() (string, string) {
 	str := "-----BEGIN CERTIFICATE-----\nMIICBzCCAa2gAwIBAgIUZ3ebIFQkSTANq88XLbWsSfCcSyMwCgYIKoZIzj0EAwIw\nEDEOMAwGA1UEAxMFQTIgQ0EwHhcNMjEwNjA4MTYzNzAwWhcNMjIwNjA4MTY0MjAw\nWjAnMQ8wDQYDVQQLEwZjbGllbnQxFDASBgNVBAMMC2EyX2FjcV9zcGVjMFkwEwYH\nKoZIzj0CAQYIKoZIzj0DAQcDQgAEcr3+DQjStE3crMULpQ6o1ceU/YpJqHfKENdA\nFOW9dbVkQBn8c/F+fWxnA99rpVHO040S//gqsjlv2fuyhIwD4aOBzTCByjAOBgNV\nHQ8BAf8EBAMCB4AwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUVPfcn69S91oSML1Z\n6IyOja+Df68wKwYDVR0jBCQwIoAgv3tAjkvjpOUhC4F2b8138AgbtFHzDlGCc4LU\nPwMFZOQwXgYIKgMEBQYHCAEEUnsiYXR0cnMiOnsiaGYuQWZmaWxpYXRpb24iOiIi\nLCJoZi5FbnJvbGxtZW50SUQiOiJhMl9hY3Ffc3BlYyIsImhmLlR5cGUiOiJjbGll\nbnQifX0wCgYIKoZIzj0EAwIDSAAwRQIhAMl2cmrf3BULNjr+E6czXqD5Md+j6UNC\npQ3kc5K5wo/cAiBZ9yVWGCIE53WECDMMqFZvkfsyL4ChaFZvSb0PQzZC2A==\n-----END CERTIFICATE-----"
 	return str, "A2MSP"
-}
-
-func (c *Mock) SetNGACState(fe ngac.FunctionalEntity) {
-	graphBytes, err := fe.Graph().MarshalJSON()
-	if err != nil {
-		panic(err)
-	}
-
-	c.Stub.GetStateReturns(graphBytes, nil)
 }

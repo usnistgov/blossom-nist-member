@@ -2,14 +2,14 @@ package main
 
 import "fmt"
 
-func AccountCollectionName(account string) string {
+func AccountCollection(account string) string {
 	return fmt.Sprintf("%s_account_coll", account)
 }
 
-func CatalogCollectionName() string {
+func CatalogCollection() string {
 	return fmt.Sprintf("catalog_coll")
 }
 
-func LicensesCollectionName() string {
+func LicensesCollection() string {
 	return fmt.Sprintf("licenses_coll")
 }

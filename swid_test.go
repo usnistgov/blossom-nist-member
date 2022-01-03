@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -20,13 +21,7 @@ func TestSwID(t *testing.T) {
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 	require.NoError(t, err)
 
-	err = stub.SetUser(mocks.A1SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A1MSP)
-
-	err = stub.SetUser(mocks.Super)
-	require.NoError(t, err)
 
 	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
 	require.NoError(t, err)
@@ -52,11 +47,29 @@ func TestSwID(t *testing.T) {
 	err = stub.SetUser(mocks.A1SystemAdmin)
 	require.NoError(t, err)
 
-	err = bcc.ReportSwID(stub, A1MSP, "primary_tag_1", "myasset1", "1", "swid_xml")
+	stub.SetFunctionAndArgs("ReportSwID")
+	err = stub.SetTransient("swid", reportSwIDTransientInput{
+		Account:    A1MSP,
+		PrimaryTag: "primary_tag_1",
+		Asset:      "myasset1",
+		License:    "1",
+		Xml:        "swid_xml",
+	})
 	require.NoError(t, err)
+	result = bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
 
 	// check swid in collection
-	swid, err := bcc.GetSwID(stub, A1MSP, "primary_tag_1")
+	stub.SetFunctionAndArgs("GetSwID")
+	err = stub.SetTransient("swid", getSwIDTransientInput{
+		Account:    A1MSP,
+		PrimaryTag: "primary_tag_1",
+	})
+	require.NoError(t, err)
+	result = bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
+	swid := &model.SwID{}
+	err = json.Unmarshal(result.Payload, swid)
 	require.NoError(t, err)
 	require.Equal(t, &model.SwID{
 		PrimaryTag: "primary_tag_1",
@@ -65,7 +78,16 @@ func TestSwID(t *testing.T) {
 		License:    "1",
 	}, swid)
 
-	swids, err := bcc.GetSwIDsAssociatedWithAsset(stub, A1MSP, "myasset1")
+	stub.SetFunctionAndArgs("GetSwIDsAssociatedWithAsset")
+	err = stub.SetTransient("swid", getSwIDsAssociatedWithAssetTransientInput{
+		Account: A1MSP,
+		AssetID: "myasset1",
+	})
+	require.NoError(t, err)
+	result = bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status)
+	swids := make([]*model.SwID, 0)
+	err = json.Unmarshal(result.Payload, &swids)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(swids))
 	require.Equal(t, &model.SwID{
@@ -75,58 +97,3 @@ func TestSwID(t *testing.T) {
 		License:    "1",
 	}, swids[0])
 }
-
-/*func TestGetSwIDsAssociatedWithLicense(t *testing.T) {
-	mock := mocks.New()
-
-	swidBytes := make([][]byte, 0)
-	swid := model.SwID{
-		PrimaryTag:      "pt1",
-		XML:             "xml",
-		Asset:           "test-asset",
-		License:         "test-asset:1",
-		LeaseExpiration: "",
-	}
-	b, err := json.Marshal(swid)
-	require.NoError(t, err)
-	swidBytes = append(swidBytes, b)
-
-	swid = model.SwID{
-		PrimaryTag:      "pt2",
-		XML:             "xml",
-		Asset:           "test-asset",
-		License:         "test-asset:2",
-		LeaseExpiration: "",
-	}
-	b, err = json.Marshal(swid)
-	require.NoError(t, err)
-	swidBytes = append(swidBytes, b)
-
-	swid = model.SwID{
-		PrimaryTag:      "pt3",
-		XML:             "xml",
-		Asset:           "other-asset",
-		License:         "other-asset:1",
-		LeaseExpiration: "",
-	}
-	b, err = json.Marshal(swid)
-	require.NoError(t, err)
-	swidBytes = append(swidBytes, b)
-
-	iterator := &mocks.StateQueryIterator{}
-	iterator.HasNextReturnsOnCall(0, true)
-	iterator.HasNextReturnsOnCall(1, true)
-	iterator.HasNextReturnsOnCall(2, true)
-	iterator.HasNextReturnsOnCall(3, false)
-	iterator.NextReturnsOnCall(0, &queryresult.KV{Key: model.SwIDKey("pt1"), Value: swidBytes[0]}, nil)
-	iterator.NextReturnsOnCall(1, &queryresult.KV{Key: model.SwIDKey("pt2"), Value: swidBytes[1]}, nil)
-	iterator.NextReturnsOnCall(2, &queryresult.KV{Key: model.SwIDKey("pt3"), Value: swidBytes[2]}, nil)
-
-	mock.Stub.GetStateByRangeReturns(iterator, nil)
-
-	cc := BlossomSmartContract{}
-	swids, err := cc.GetSwIDsAssociatedWithAsset(mock.Stub, "test-asset")
-	require.NoError(t, err)
-	require.Equal(t, 2, len(swids))
-}
-*/

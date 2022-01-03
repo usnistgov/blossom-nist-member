@@ -63,7 +63,7 @@ const (
 	InactiveSecurityRisk Status = "Inactive: security risk"
 	InactiveROB          Status = "Inactive: breach in rules of behavior"
 
-	AccountPrefix = 'a'
+	AccountPrefix = "account:"
 )
 
 func GetStatusUpdate(s string) (Status, error) {
@@ -77,5 +77,5 @@ func GetStatusUpdate(s string) (Status, error) {
 
 // AccountKey returns the key for an account on the ledger.  Accounts are stored with the format: "account:<account_name>".
 func AccountKey(name string) string {
-	return fmt.Sprintf("%s%s", string(AccountPrefix), name)
+	return fmt.Sprintf("%s%s", AccountPrefix, name)
 }

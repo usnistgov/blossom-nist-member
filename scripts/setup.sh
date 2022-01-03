@@ -1,0 +1,1 @@
+find ../ngac/pap -name "policy.go" -exec sed -i '' -e "s|BlossomMSP|$1|g" {} \;

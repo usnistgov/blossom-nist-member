@@ -12,9 +12,6 @@ func TestRequestAccount(t *testing.T) {
 	t.Run("test with ato", func(t *testing.T) {
 		stub := newTestStub(t)
 
-		err := stub.SetUser(mocks.A1SystemOwner)
-		require.NoError(t, err)
-
 		requestTestAccount(t, stub, A1MSP)
 
 		bytes, err := stub.GetState(model.AccountKey("A1MSP"))
@@ -25,7 +22,7 @@ func TestRequestAccount(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, A1MSP, acctPub.Name)
 		require.Equal(t, A1MSP, acctPub.MSPID)
-		require.Equal(t, model.PendingApproval, acctPub.Status)
+		require.Equal(t, model.Active, acctPub.Status)
 
 		bytes, err = stub.GetPrivateData(A1Collection, model.AccountKey("A1MSP"))
 		require.NoError(t, err)
@@ -61,7 +58,7 @@ func TestRequestAccount(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, A1MSP, acctPub.Name)
 		require.Equal(t, A1MSP, acctPub.MSPID)
-		require.Equal(t, model.PendingATO, acctPub.Status)
+		require.Equal(t, model.PendingApproval, acctPub.Status)
 
 		bytes, err = stub.GetPrivateData(A1Collection, model.AccountKey(A1MSP))
 		require.NoError(t, err)
@@ -80,21 +77,18 @@ func TestRequestAccount(t *testing.T) {
 
 func TestUploadATO(t *testing.T) {
 	stub := newTestStub(t)
+
+	requestTestAccount(t, stub, A1MSP)
+
 	err := stub.SetUser(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	stub.SetFunctionAndArgs("RequestAccount")
-	err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec", ""})
-	require.NoError(t, err)
-	result := bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
-
 	stub.SetFunctionAndArgs("UploadATO")
 	err = stub.SetTransient("ato", uploadATOTransientInput{"my ato"})
 	require.NoError(t, err)
-	result = bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
+	result := bcc.Invoke(stub)
+	require.Equal(t, int32(200), result.Status, result.Message)
 
 	account, err := bcc.Account(stub, A1MSP)
 	require.NoError(t, err)
@@ -107,16 +101,16 @@ func TestUploadATO(t *testing.T) {
 	require.NoError(t, err)
 	result = bcc.Invoke(stub)
 	require.Equal(t, int32(500), result.Status)
-	require.Equal(t, "error uploading ATO for account A1MSP: user a1_acq_spec:A1MSP does not have permission upload_ato on A1MSP_object", result.Message)
+	require.Equal(t, "error uploading ATO for account A1MSP: user \"a1_acq_spec:A1MSP\" does not have permission \"upload_ato\" on \"A1MSP_object\"", result.Message)
 }
 
 func TestUpdateAccountStatus(t *testing.T) {
 	stub := newTestStub(t)
 
+	requestTestAccount(t, stub, A1MSP)
+
 	err := stub.SetUser(mocks.A1SystemOwner)
 	require.NoError(t, err)
-
-	requestTestAccount(t, stub, A1Collection)
 
 	bcc := BlossomSmartContract{}
 	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
@@ -132,15 +126,11 @@ func TestUpdateAccountStatus(t *testing.T) {
 func TestAccounts(t *testing.T) {
 	stub := newTestStub(t)
 
-	err := stub.SetUser(mocks.A1SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A1MSP)
-
-	err = stub.SetUser(mocks.A2SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A2MSP)
+
+	err := stub.SetUser(mocks.A2SystemOwner)
+	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
 	accounts, err := bcc.Accounts(stub)
@@ -152,22 +142,18 @@ func TestAccounts(t *testing.T) {
 func TestAccount(t *testing.T) {
 	stub := newTestStub(t)
 
-	err := stub.SetUser(mocks.A1SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A1MSP)
-
-	err = stub.SetUser(mocks.A2SystemOwner)
-	require.NoError(t, err)
-
 	requestTestAccount(t, stub, A2MSP)
+
+	err := stub.SetUser(mocks.A2SystemOwner)
+	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
 	acct, err := bcc.Account(stub, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, A1MSP, acct.Name)
 	require.Equal(t, A1MSP, acct.MSPID)
-	require.Equal(t, model.PendingApproval, acct.Status)
+	require.Equal(t, model.Active, acct.Status)
 	require.Equal(t, "", acct.ATO)
 	require.Equal(t, model.Users{}, acct.Users)
 	require.Empty(t, acct.Assets)
@@ -176,7 +162,7 @@ func TestAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, A2MSP, acct.Name)
 	require.Equal(t, A2MSP, acct.MSPID)
-	require.Equal(t, model.PendingApproval, acct.Status)
+	require.Equal(t, model.Active, acct.Status)
 	require.Equal(t, "my ato", acct.ATO)
 	require.Equal(t, model.Users{
 		SystemOwner:           "a2_system_owner",

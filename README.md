@@ -1,6 +1,14 @@
 # Blossom Smart Contracts
 This package contains the code for the Blossom Smart Contracts.
 
+## Table of Contents
+- [Local Testing](#local-testing)
+- [Deployment Steps](#chaincode-deployment-steps)
+- [Upgrading Chaincode](#upgrading-chaincode)
+- [NGAC](#ngac)
+- [Smart Contract Usage](#usage)
+- [Private Data Collection Design Doc](docs/pdc-design.pdf)
+
 ## Local Testing
 
 To deploy the chaincode locally for testing, you can use the `IBM Blockchain Extension` for VS Code.
@@ -31,31 +39,35 @@ From there you can deploy the test environment using the following steps:
 3. Hit `+ Deploy smart contract` from the `my channel` dropdown
 4. Select `chaincode (open project)`, give it a name and a version number, and hit follow the prompts.
 
-## Deployment Steps
+## Chaincode Deployment Steps
 In the below commands to deploy the chaincode, `blossom-1` is the name of the channel and `blossomcc` is the name of the chaincode.
 
-0. Make sure the Blossom project is cloned on the peer machine.  The path provided in the following `install` command
+1. Make sure the Blossom project is cloned on the peer machine.  The path provided in the following `install` command
    assumes the chaincode is located in `$GOPATH`.
-   
-1. Install chaincode on the peer
+
+2. Install chaincode on the peer
    
    ```
    docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode
    ```
 
-2. Instantiate chaincode the chaincode on the channel `blossom-1`
+
+3. Instantiate chaincode the chaincode on the channel `blossom-1`
    
    ```
-   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init", "<ADMIN_MSP>"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
    ```
+   
+    - **IMPORTANT:** Replace <ADMIN_MSP> with the MSPID of the administrative member of the network
 
-3. Check chaincode instantiation
+
+4. Check chaincode instantiation
 
    ```
    docker exec cli peer chaincode list --instantiated -o $ORDERER -C blossom-1 --cafile /opt/home/managedblockchain-tls-chain.pem --tls
    ```
 
-4. Invoke chaincode
+5. Invoke chaincode
 
    ```
    docker exec cli peer chaincode invoke -C blossom-1 -n blossomcc -c  '{"Args":["test", "awesome blossom"]}' -o $ORDERER --cafile /opt/home/managedblockchain-tls-chain.pem --tls
@@ -79,138 +91,126 @@ From the chaincode root directory run `go build`.
   - SwID: Report SwID tags.
 
 ## NGAC
-There is a NGAC Policy Enforcement Point (PEP) controlling access to each API function.  The user sending the request must
-have the necessary permissions to carry out the request or an error will occur. The NGAC access control policies are 
-administered manually using the [policy-machine-go](https://github.com/PM-Master/policy-machine-go) library.
-The **pap** package contains the code to build the initial NGAC graph configuration and to update the graph in response 
-to API functions being called.
+### Administrative Users and Graph Initialization
+- The user that calls `InitNGAC` must be in the Administrative MSP defined when the chaincode was instantiated.
 
-### Super User
-NGAC requires a super user to create the initial configuration. This user will be responsible for accepting Blossom account 
-requests and managing assets. Users in NGAC are defined using their username and Membership Service Provider (MSP) ID in the format:
-`<username>:<mspid>`.  
+- The user that calls `ApproveAccount` will be the admin user for that account. They also must be in the MSP defined during instantiation.
 
-- The Blossom super user is defined as: `super:BlossomMSP`.
+### Policy Definition
+There are two NGAC policies to be used in the smart contracts found in [ngac/pap/policy.go](ngac/pap/policy.go).  
+The first is the `Catalog policy`, which is initialized in the `InitNGAC` smart contract function. This policy allows the super
+user to Onboard and Offboard assets in the catalog and gives them administrative control over the graph, allowing them to
+delegate to other users.  This policy is stored in the **Catalog PDC**.
 
-On initial start up the super user must call the InitBlossom chaincode function.  This function initializes the NGAC graph
-which is needed for any subsequent chaincode calls.
+The second policy is the `Account policy`.  This policy is created each time a new account is created and saved in the
+Account's PDC, meaning each account has its own graph that decisions are executed on.  Users do not have access to graphs
+that belong to other accounts.  This policy is loaded when a user calls the RequestAccount function.  This policy grants the super user
+full administrative permissions on the account.  It also creates a series of Obligations which define responses to certain
+events that can happen. For example, before an Account's status is set to "Active" the System Admin does not have the 
+necessary permissions to check out asset licenses.  Setting the Account's status to "Active" is defined as an event, and 
+in response to that event, the System Admin is granted these permissions.
 
-### Initialize NGAC
-To initialize the NGAC component the **super user** must call the chaincode function `InitNGAC`.  This function
-will initialize the NGAC graph on the blockchain.
+### Policy Decisions
+NGAC policy decisions are made in the PDP located in [ngac/pdp/pdp.go](ngac/pdp/pdp.go). The functions available in this
+package serve as helper functions to call the NGAC decision algorithm on nodes in the NGAC graphs described above.
+
+### Events
+NGAC event processing is done in the EPP located in [ngac/epp/epp.go](ngac/epp/epp.go). These functions also serve as helpers
+to process events in the underlying NGAC implementation. 
 
 ## Usage
 
-#### 0. Prerequisites
+### Initialization
+- InitNGAC
+   - user: any user in blossom admin MSP set during instantiation
 
-- A Fabric org called `Blossom` and a user with the name `super` in that org.
-- A Fabric org called `A1` with three users: `a1_system_owner`, `a1_acq_spec`, `a1_system_admin`
+### Onboarding an asset
+- OnboardAsset
+   - user: super (BlossomMSP)
+   - args: `["101","asset1","01/01/2025"]`
+   - transient data: 
+      ```json
+      {
+        "asset":"{\"licenses\":[\"asset1-license-1\", \"asset1-license-2\", \"asset1-license-3\", \"asset1-license-4\", \"asset1-license-5\"]}"
+      }
+      ```
 
-#### 1. Initialize the NGAC graph
-
-   - Function: InitNGAC
-   - Username: super
-   - Args: none
-
-
-#### 2. Onboard a sample asset
-
-   - Function: OnboardAsset
-   - Username: super
-   - Args:
-      - `
-        {
-           "id": "test-asset-id",
-           "name": "test-asset",
-           "total_amount": 10,
-           "available": 10,
-           "cost": 100.00,
-           "onboarding_date": "",
-           "expiration": "2025-01-01",
-           "licenses": [
-            "test-asset-1",
-            "test-asset-2",
-            "test-asset-3",
-            "test-asset-4",
-            "test-asset-5",
-            "test-asset-6",
-            "test-asset-7",
-            "test-asset-8",
-            "test-asset-9",
-            "test-asset-10"
-           ],
-           "available_licenses": [],
-           "checked_out": {}
-        }
-        `
+### Creating an account and checking out an asset
+1. **RequestAccount**
+    - user: a1_system_owner (A1MSP)
+    - args: `[]`
+    - transient data:
+      ```json
+      {
+        "account":"{\"system_owner\":\"a1_system_owner\",\"system_admin\":\"a1_system_admin\",\"acquisition_specialist\": \"a1_acq_spec\",\"ato\": \"a1 test ato\"}"
+      }
+      ```
    
-#### 3. Request a blossom account
 
-   - Function: RequestAccount
-   - Username: a1_system_owner
-   - Args:
-      - `
+2. **ApproveAccount**
+   - super (BlossomMSP)
+   - args: `["A1MSP"]`
+
+
+2. **UpdateAccountStatus**
+    - user: super (BlossomMSP)
+    - args: `["A1MSP","ACTIVE"]`
+    
+
+3. **Add new account to collections config**
+
+    1. Add account to the catalog collection
+        ```json
         {
-          "name": "Agency1",
-          "ato": "this is a test ato",
-          "mspid": "A1MSP",
-          "users": {
-            "system_owner": "a1_system_owner",
-            "acquisition_specialist": "a1_acq_spec",
-            "system_administrator": "a1_system_admin"
-          },
-          "status": "",
-          "assets": {}
+            "name":"catalog_coll",
+            "policy":"OR('BlossomMSP.member', 'A1MSP.member', 'A2MSP.member')",
+            "requiredPeerCount":0,
+            "maxPeerCount":3,
+            "blockToLive":1000000,
+            "memberOnlyRead":true,
+            "memberOnlyWrite":true
         }
-        `
-
-
-#### 4. Update Agency1 account status to 'Approved'
-
-   - Function: UpdateAccountStatus
-   - Username: super
-   - Args:
-      - `"Agency1"`
-      - `"Approved"`
-
-
-#### 5. View available assets
-
-   - Function: Assets
-   - Username: a1_system_admin
-   - Args: none
-
-
-#### 6. Agency1 checks out 2 licenses of the sample asset
-
-   - Function: Checkout
-   - Username: a1_system_admin
-   - Args:
-      - `"test-asset-id"`
-      - `"Agency1"`
-      - `2`
-
-
-#### 7. Agency1 reports a SwID tag for a license
-
-   - Function: ReportSwID
-   - Username: a1_system_admin
-   - Args:
-      - `
+        ```
+    2. Add account's own PDC
+        ```json
         {
-            "primary_tag": "swid-1",
-            "xml": "<swid>test</swid>",
-            "asset": "test-asset-id",
-            "license": "test-asset-1",
-            "lease_expiration": "01-01-2022"
-        }
-        `
-      - `"Agency1"`
+            "name":"A1MSP_account_coll",
+            "policy":"OR('BlossomMSP.member', 'A1MSP.member')",
+            "requiredPeerCount":0,
+            "maxPeerCount":2,
+            "blockToLive":1000000,
+            "memberOnlyRead":true,
+            "memberOnlyWrite":true
+        } 
+        ```
 
+4. **Install and upgrade chaincode on channel**
+    ```
+    docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode  
+    docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+    ```
 
-#### 8. Get SwIDs that are associated with the sample asset
+4. **RequestCheckout**
+    - user: a1_system_admin (A1MSP)
+    - args: `[]`
+    - transient data:
+      ```json
+      {
+        "checkout": "{\"asset_id\":\"101\",\"amount\":2}"
+      }
+      ```
+      
+5. **ApproveCheckout**
+    - user: super (BlossomMSP)
+   - args: `[]`
+   - transient data:
+     ```json
+     {
+        "checkout": "{\"account\":\"A1MSP\",\"asset_id\":\"101\"}"
+     }
+     ```
+     
+### More examples
 
-   - Function: GetSwIDsAssociatedWithAsset
-   - Username: a1_system_admin
-   - Args:
-      - `"test-asset-id"`
+- See the [vscode](vscode) directory for how to use the smart contracts using the IBM Blockchain Platform for VSCode.
+- See [blossom-transactions.txdata](vscode/transaction_data/blossom-transactions.txdata) for example smart contract function calls.

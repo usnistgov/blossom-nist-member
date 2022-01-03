@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"encoding/json"
-	"github.com/PM-Master/policy-machine-go/ngac"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -57,8 +57,8 @@ func NewMemCCStub() *MemChaincodeStub {
 	}
 }
 
-func (m *MemChaincodeStub) PutNGAC(collection string, fe ngac.FunctionalEntity) error {
-	bytes, err := fe.Graph().MarshalJSON()
+func (m *MemChaincodeStub) PutNGAC(collection string, policyStore policy.Store) error {
+	bytes, err := policyStore.Graph().MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (m *MemChaincodeStub) PutNGAC(collection string, fe ngac.FunctionalEntity) 
 		return err
 	}
 
-	bytes, err = fe.Prohibitions().MarshalJSON()
+	bytes, err = policyStore.Prohibitions().MarshalJSON()
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func (m *MemChaincodeStub) PutNGAC(collection string, fe ngac.FunctionalEntity) 
 		return err
 	}
 
-	bytes, err = fe.Obligations().MarshalJSON()
+	bytes, err = policyStore.Obligations().MarshalJSON()
 	if err != nil {
 		return err
 	}

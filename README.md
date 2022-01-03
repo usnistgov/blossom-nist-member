@@ -55,7 +55,7 @@ In the below commands to deploy the chaincode, `blossom-1` is the name of the ch
 3. Instantiate chaincode the chaincode on the channel `blossom-1`
    
    ```
-   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init", "<ADMIN_MSP>"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+   docker exec cli peer chaincode instantiate -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init", "<ADMIN_MSP>"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls --collections-config /opt/gopath/github.com/usnistgov/blossom/chaincode/collections_config.json
    ```
    
     - **IMPORTANT:** Replace <ADMIN_MSP> with the MSPID of the administrative member of the network
@@ -78,7 +78,7 @@ To upgrade the chaincode, run the following commands
 
 ```
 docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode  
-docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
+docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls --collections-config /opt/gopath/github.com/usnistgov/blossom/chaincode/collections_config.json
 ```
 
 ## Building

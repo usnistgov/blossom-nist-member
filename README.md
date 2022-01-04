@@ -5,6 +5,7 @@ This package contains the code for the Blossom Smart Contracts.
 - [Local Testing](#local-testing)
 - [Deployment Steps](#chaincode-deployment-steps)
 - [Upgrading Chaincode](#upgrading-chaincode)
+- [Adding an Organization](#adding-an-organization) 
 - [NGAC](#ngac)
 - [Smart Contract Usage](#usage)
 - [Private Data Collection Design Doc](docs/pdc-design.pdf)
@@ -73,13 +74,62 @@ In the below commands to deploy the chaincode, `blossom-1` is the name of the ch
    docker exec cli peer chaincode invoke -C blossom-1 -n blossomcc -c  '{"Args":["test", "awesome blossom"]}' -o $ORDERER --cafile /opt/home/managedblockchain-tls-chain.pem --tls
    ```
 
-## Upgrading Chaincode
-To upgrade the chaincode, run the following commands
+## Adding an Organization
+Once a new member is added to the network, we must update the chaincode definition to create a Private Data Collection 
+for the new member. There are two changes that must be made to the collections_config.json file:
 
-```
+1. Add the org's MSPID to the `catalog_coll` and increase the max peer count.  For example, if adding Org2 the change would look like:
+    
+    - original:
+        ```json
+        {
+          "name":"catalog_coll",
+          "policy":"OR('BlossomMSP.member', 'Org1MSP.member')",
+          "requiredPeerCount":0,
+          "maxPeerCount":2,
+          "blockToLive":1000000,
+          "memberOnlyRead":true,
+          "memberOnlyWrite":true
+        }
+        ```
+    - updated:
+        ```json
+        {
+          "name":"catalog_coll",
+          "policy":"OR('BlossomMSP.member', 'Org1MSP.member', 'Org2MSP.member')",
+          "requiredPeerCount":0,
+          "maxPeerCount":3,
+          "blockToLive":1000000,
+          "memberOnlyRead":true,
+          "memberOnlyWrite":true
+        }
+        ```
+      
+2. Create a new PDC for the new organization.  This can be appended to the end of the array. The name of the 
+collection MUST be <MSPID>_coll.  If not, the chaincode will fail. Only two orgs should be in the PDC policy:
+   The administrative org (in this case BlossomMSP) and the new org.  This will prevent other orgs from viewing sensitive data.
+
+    ```json
+    {
+      "name":"Org2MSP_coll",
+      "policy":"OR('BlossomMSP.member', 'Org2MSP.member')",
+      "requiredPeerCount":0,
+      "maxPeerCount":2,
+      "blockToLive":1000000,
+      "memberOnlyRead":true,
+      "memberOnlyWrite":true
+    }
+    ```
+
+## Upgrading Chaincode
+Once these changes have been made, upgrade the chaincode using the following commands:
+
+```bash
 docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode  
-docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls --collections-config /opt/gopath/github.com/usnistgov/blossom/chaincode/collections_config.json
+docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init", <ADMIN_MSPID>]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls --collections-config /opt/gopath/github.com/usnistgov/blossom/chaincode/collections_config.json
 ```
+
+**Note: The updated chaincode must be installed and upgraded on all peers.**
 
 ## Building
 From the chaincode root directory run `go build`.

@@ -87,7 +87,7 @@ Having their own PDC will allow them to upload an ATO, and in the future, checko
 Once a new member is added to the network, we must update the chaincode definition to create a Private Data Collection 
 for the new member. Use the below JSON as a template for creating a new PDC for the account in `collections_config.json`.
    
-**IMPORTANT: This can be done at anytime during the enrollment process.**
+**IMPORTANT: This should be done during the enrollment process, before `RequestAccount` is called.**
 
   ```json
   {

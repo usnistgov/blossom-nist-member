@@ -62,7 +62,7 @@
         "transactionLabel": "UpdateAccountStatus for A1MSP",
         "arguments": [
             "A1MSP",
-            "ACTIVE"
+            "AUTHORIZED"
         ]
     },
     {
@@ -70,7 +70,7 @@
         "transactionLabel": "UpdateAccountStatus for A2MSP",
         "arguments": [
             "A2MSP",
-            "ACTIVE"
+            "AUTHORIZED"
         ]
     },
     {

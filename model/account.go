@@ -42,26 +42,26 @@ type (
 
 var (
 	statusUpdates = map[string]Status{
-		"PENDING_APPROVAL":       PendingApproval,
-		"PENDING_ATO":            PendingATO,
-		"ACTIVE":                 Active,
-		"INACTIVE_DENIED":        InactiveDenied,
-		"INACTIVE_ATO":           InactiveATO,
-		"INACTIVE_OPTOUT":        InactiveOptOut,
-		"INACTIVE_SECURITY_RISK": InactiveSecurityRisk,
-		"INACTIVE_ROB":           InactiveROB,
+		"PENDING_APPROVAL":           PendingApproval,
+		"PENDING_ATO":                PendingATO,
+		"AUTHORIZED":                 Authorized,
+		"UNAUTHORIZED_DENIED":        UnauthorizedDenied,
+		"UNAUTHORIZED_ATO":           UnauthorizedATO,
+		"UNAUTHORIZED_OPTOUT":        UnauthorizedOptOut,
+		"UNAUTHORIZED_SECURITY_RISK": UnauthorizedSecurityRisk,
+		"UNAUTHORIZED_ROB":           UnauthorizedROB,
 	}
 )
 
 const (
-	PendingApproval      Status = "Pending: waiting for approval"
-	PendingATO           Status = "Pending: waiting for ATO"
-	Active               Status = "Active"
-	InactiveDenied       Status = "Inactive: request denied"
-	InactiveATO          Status = "Inactive: waiting for ATO renewal"
-	InactiveOptOut       Status = "Inactive: opted out"
-	InactiveSecurityRisk Status = "Inactive: security risk"
-	InactiveROB          Status = "Inactive: breach in rules of behavior"
+	PendingApproval          Status = "Pending: waiting for approval"
+	PendingATO               Status = "Pending: waiting for ATO"
+	Authorized               Status = "Authorized"
+	UnauthorizedDenied       Status = "Unauthorized: request denied"
+	UnauthorizedATO          Status = "Unauthorized: waiting for ATO renewal"
+	UnauthorizedOptOut       Status = "Unauthorized: opted out"
+	UnauthorizedSecurityRisk Status = "Unauthorized: security risk"
+	UnauthorizedROB          Status = "Unauthorized: breach in rules of behavior"
 
 	AccountPrefix = "account:"
 )

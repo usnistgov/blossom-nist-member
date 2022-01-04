@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/mocks"
+	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
 	"time"
 )
@@ -46,12 +47,12 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 	if account == A1MSP {
 		err := stub.SetUser(mocks.A1SystemOwner)
 		require.NoError(t, err)
-		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec", "my ato"})
+		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec"})
 		require.NoError(t, err)
 	} else {
 		err := stub.SetUser(mocks.A2SystemOwner)
 		require.NoError(t, err)
-		err = stub.SetTransient("account", accountTransientInput{"a2_system_owner", "a2_system_admin", "a2_acq_spec", "my ato"})
+		err = stub.SetTransient("account", accountTransientInput{"a2_system_owner", "a2_system_admin", "a2_acq_spec"})
 		require.NoError(t, err)
 	}
 	result := bcc.Invoke(stub)
@@ -64,9 +65,26 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 	result = bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status)
 
-	stub.SetFunctionAndArgs("UpdateAccountStatus", account, "ACTIVE")
+	acct, err := bcc.Account(stub, account)
+	require.NoError(t, err)
+	require.Equal(t, model.PendingATO, acct.Status)
+
+	err = stub.SetUser(mocks.A1SystemOwner)
+	require.NoError(t, err)
+
+	err = stub.SetTransient("ato", uploadATOTransientInput{ATO: "test ato"})
+	require.NoError(t, err)
+	err = bcc.UploadATO(stub)
+	require.NoError(t, err)
+	require.Equal(t, model.PendingATO, acct.Status)
+
+	// udpate account status to authorized as super user
+	err = stub.SetUser(mocks.Super)
+	require.NoError(t, err)
+
+	stub.SetFunctionAndArgs("UpdateAccountStatus", account, "AUTHORIZED")
 	result = bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
+	require.Equal(t, int32(200), result.Status, result.Message)
 }
 
 func onboardTestAsset(t *testing.T, stub *mocks.MemChaincodeStub, id, name string, licenses []string) {

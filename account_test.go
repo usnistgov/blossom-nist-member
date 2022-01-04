@@ -22,7 +22,7 @@ func TestRequestAccount(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, A1MSP, acctPub.Name)
 		require.Equal(t, A1MSP, acctPub.MSPID)
-		require.Equal(t, model.Active, acctPub.Status)
+		require.Equal(t, model.Authorized, acctPub.Status)
 
 		bytes, err = stub.GetPrivateData(A1Collection, model.AccountKey("A1MSP"))
 		require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestRequestAccount(t *testing.T) {
 
 		bcc := BlossomSmartContract{}
 		stub.SetFunctionAndArgs("RequestAccount")
-		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec", ""})
+		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec"})
 		require.NoError(t, err)
 		result := bcc.Invoke(stub)
 		require.Equal(t, int32(200), result.Status)
@@ -113,13 +113,13 @@ func TestUpdateAccountStatus(t *testing.T) {
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
 	require.Error(t, err)
 
 	err = stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
 	require.NoError(t, err)
 }
 
@@ -153,7 +153,7 @@ func TestAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, A1MSP, acct.Name)
 	require.Equal(t, A1MSP, acct.MSPID)
-	require.Equal(t, model.Active, acct.Status)
+	require.Equal(t, model.Authorized, acct.Status)
 	require.Equal(t, "", acct.ATO)
 	require.Equal(t, model.Users{}, acct.Users)
 	require.Empty(t, acct.Assets)
@@ -162,8 +162,7 @@ func TestAccount(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, A2MSP, acct.Name)
 	require.Equal(t, A2MSP, acct.MSPID)
-	require.Equal(t, model.Active, acct.Status)
-	require.Equal(t, "my ato", acct.ATO)
+	require.Equal(t, model.Authorized, acct.Status)
 	require.Equal(t, model.Users{
 		SystemOwner:           "a2_system_owner",
 		AcquisitionSpecialist: "a2_acq_spec",

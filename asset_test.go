@@ -107,7 +107,7 @@ func TestCheckout(t *testing.T) {
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
 	require.NoError(t, err)
 
 	t.Run("error unauthorized to request checkout", func(t *testing.T) {

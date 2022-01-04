@@ -52,17 +52,17 @@ func UpdateAccountStatusEvent(stub shim.ChaincodeStubInterface, accountName, pvt
 		f = ProcessSetAccountPending
 	case model.PendingATO:
 		f = ProcessSetAccountPending
-	case model.Active:
+	case model.Authorized:
 		f = ProcessSetAccountActive
-	case model.InactiveDenied:
+	case model.UnauthorizedDenied:
 		f = ProcessSetAccountInactive
-	case model.InactiveATO:
+	case model.UnauthorizedATO:
 		f = ProcessSetAccountInactive
-	case model.InactiveOptOut:
+	case model.UnauthorizedOptOut:
 		f = ProcessSetAccountInactive
-	case model.InactiveSecurityRisk:
+	case model.UnauthorizedSecurityRisk:
 		f = ProcessSetAccountInactive
-	case model.InactiveROB:
+	case model.UnauthorizedROB:
 		f = ProcessSetAccountInactive
 	default:
 		return fmt.Errorf("unknown status: %s", status)

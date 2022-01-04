@@ -23,7 +23,7 @@ func TestSwID(t *testing.T) {
 
 	requestTestAccount(t, stub, A1MSP)
 
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "ACTIVE")
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
 	require.NoError(t, err)
 
 	err = stub.SetUser(mocks.A1SystemAdmin)

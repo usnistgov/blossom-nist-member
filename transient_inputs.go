@@ -11,7 +11,6 @@ type (
 		SystemOwner           string `json:"system_owner,omitempty"`
 		SystemAdmin           string `json:"system_admin,omitempty"`
 		AcquisitionSpecialist string `json:"acquisition_specialist,omitempty"`
-		ATO                   string `json:"ato"`
 	}
 
 	uploadATOTransientInput struct {

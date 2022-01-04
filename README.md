@@ -79,7 +79,7 @@ In the below commands to deploy the chaincode, `blossom-1` is the name of the ch
 When a new organization is added to the network, two things must happen:
 
 1. They must have their own PDC.
-2. They must be added to the `catalog_coll` PDC, ONLY when the account status is `Active`. 
+2. They must be added to the `catalog_coll` PDC, ONLY when the account status is `AUTHORIZED`. 
 
 Having their own PDC will allow them to upload an ATO, and in the future, checkout licenses.  Having access to the `catalog_coll`, will allow them to view the software assets available for lease.
 
@@ -107,7 +107,7 @@ Once this collection is created, and the chaincode is upgraded, the account will
 Add the org's MSPID to the `catalog_coll` and increase the max peer count. Use the template below to update the `catalog_coll`
 collection to include the new member.
    
-**IMPORTANT: This should only be done when the account status is set to `ACTIVE` via the chaincode function `UpdateAccountStatus`. If an account is set to a status other than `ACTIVE`, the account MSPID should be removed from this collection definition, and the chaincode upgraded.**
+**IMPORTANT: This should only be done when the account status is set to `AUTHORIZED` via the chaincode function `UpdateAccountStatus`. If an account is set to a status other than `AUTHORIZED`, the account MSPID should be removed from this collection definition, and the chaincode upgraded.**
         
   ```json
   {
@@ -129,11 +129,11 @@ There are three situations to upgrade chaincode:
    
    - Use Organization Collection template [above](#organization-collection), and add to `collections_config.json`.
    
-2. Account status set to `ACTIVE`
+2. Account status set to `AUTHORIZED`
 
    - Add Organization MSPID to `catalog_coll` as shown [above](#catalog-collection).
 
-3. Account status set to NOT `ACTIVE`
+3. Account status set to NOT `AUTHORIZED`
 
    - Remove ORganization MSPID from `catalog_coll`.
    
@@ -172,8 +172,8 @@ The second policy is the `Account policy`.  This policy is created each time a n
 Account's PDC, meaning each account has its own graph that decisions are executed on.  Users do not have access to graphs
 that belong to other accounts.  This policy is loaded when a user calls the RequestAccount function.  This policy grants the super user
 full administrative permissions on the account.  It also creates a series of Obligations which define responses to certain
-events that can happen. For example, before an Account's status is set to "Active" the System Admin does not have the 
-necessary permissions to check out asset licenses.  Setting the Account's status to "Active" is defined as an event, and 
+events that can happen. For example, before an Account's status is set to "AUTHORIZED" the System Admin does not have the 
+necessary permissions to check out asset licenses.  Setting the Account's status to "AUTHORIZED" is defined as an event, and 
 in response to that event, the System Admin is granted these permissions.
 
 ### Policy Decisions
@@ -220,7 +220,7 @@ to process events in the underlying NGAC implementation.
 
 2. **UpdateAccountStatus**
     - user: super (BlossomMSP)
-    - args: `["A1MSP","ACTIVE"]`
+    - args: `["A1MSP","AUTHORIZED"]`
     
 
 3. **Add new account to collections config**

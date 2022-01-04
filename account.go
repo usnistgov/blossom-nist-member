@@ -36,13 +36,13 @@ type (
 		// UpdateAccountStatus updates the status of an account in Blossom. The status is one of:
 		//		"PENDING_APPROVAL",
 		//		"PENDING_ATO",
-		//		"ACTIVE",
-		//		"INACTIVE_DENIED",
-		//		"INACTIVE_ATO",
-		//		"INACTIVE_OPTOUT",
-		//		"INACTIVE_SECURITY_RISK",
-		//		"INACTIVE_ROB"
-		// Updating the status to Active allows the account to read and write to blossom.
+		//		"AUTHORIZED",
+		//		"UNAUTHORIZED_DENIED",
+		//		"UNAUTHORIZED_ATO",
+		//		"UNAUTHORIZED_OPTOUT",
+		//		"UNAUTHORIZED_SECURITY_RISK",
+		//		"UNAUTHORIZED_ROB"
+		// Updating the status to Authorized allows the account to read and write to blossom.
 		// Updating the status to Pending allows the account to read write only account related information such as ATOs.
 		// Updating the status to Inactive provides the same NGAC consequences as Pending
 		UpdateAccountStatus(stub shim.ChaincodeStubInterface, account string, status string) error
@@ -108,7 +108,7 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) 
 
 	// account private goes on private data collection for the msp
 	acctPvt := model.AccountPrivate{
-		ATO: transientInput.ATO,
+		ATO: "",
 		Users: model.Users{
 			SystemOwner:           transientInput.SystemOwner,
 			SystemAdministrator:   transientInput.SystemAdmin,
@@ -160,6 +160,14 @@ func (b *BlossomSmartContract) ApproveAccount(stub shim.ChaincodeStubInterface, 
 
 	if err = decider.InitAccountNGAC(stub, AccountCollection(account), account, acctPvt); err != nil {
 		return fmt.Errorf("error approving account in NGAC: %v", err)
+	}
+
+	if err = decider.CanUpdateAccountStatus(stub, AccountCollection(account), account); err != nil {
+		return fmt.Errorf("ngac check failed: %v", err)
+	}
+
+	if err := b.UpdateAccountStatus(stub, account, "PENDING_ATO"); err != nil {
+		return fmt.Errorf("error updating account status to PENDING_ATO: %v", err)
 	}
 
 	return nil

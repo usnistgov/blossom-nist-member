@@ -10,12 +10,8 @@ import (
 
 func TestOnboardAsset(t *testing.T) {
 	stub := newTestStub(t)
-	bcc := BlossomSmartContract{}
 
 	err := stub.SetUser(mocks.Super)
-	require.NoError(t, err)
-
-	err = bcc.handleInitNGAC(stub)
 	require.NoError(t, err)
 
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
@@ -80,9 +76,6 @@ func TestAssetInfo(t *testing.T) {
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	err = bcc.handleInitNGAC(stub)
-	require.NoError(t, err)
-
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
 	asset, err := bcc.AssetInfo(stub, "123")
@@ -142,7 +135,7 @@ func TestCheckout(t *testing.T) {
 		err = stub.SetUser(mocks.A1SystemAdmin)
 		require.NoError(t, err)
 
-		stub.SetFunctionAndArgs("Licenses", A1MSP, "123")
+		stub.SetFunctionAndArgs("Licenses", "123")
 		result = bcc.Invoke(stub)
 		require.Equal(t, int32(200), result.Status)
 

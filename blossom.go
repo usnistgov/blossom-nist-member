@@ -26,13 +26,25 @@ func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Respo
 		return shim.Error(fmt.Sprintf("Init function expected 1 arg, received %d", len(args)))
 	}
 
+	// check if already set
+	if bytes, err := stub.GetState(pap.AdminMSPKey); err != nil {
+		return shim.Error(fmt.Sprintf("error getting admin mspid: %v", err))
+	} else if bytes != nil {
+		return shim.Error(fmt.Sprintf("admin mspid already set to %s", string(bytes)))
+	}
+
 	adminMSP := args[0]
 
 	if err := stub.PutState(pap.AdminMSPKey, []byte(adminMSP)); err != nil {
 		return shim.Error(err.Error())
 	}
 
-	return shim.Success(nil)
+	// initialize NGAC with user as admin
+	if err := pdp.InitCatalogNGAC(stub, CatalogCollection()); err != nil {
+		return shim.Error(err.Error())
+	}
+
+	return shim.Success([]byte(adminMSP))
 }
 
 func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
@@ -44,8 +56,6 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	)
 
 	switch fn {
-	case "InitNGAC":
-		err = b.handleInitNGAC(stub)
 	case "RequestAccount":
 		err = b.handleRequestAccount(stub)
 	case "ApproveAccount":
@@ -80,10 +90,12 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		err = b.handleProcessCheckin(stub)
 	case "ReportSwID":
 		err = b.handleReportSwID(stub)
+	case "DeleteSwID":
+		err = b.handleDeleteSwID(stub)
 	case "GetSwID":
 		result, err = b.handleGetSwID(stub)
 	case "GetSwIDsAssociatedWithAsset":
-		result, err = b.handleGetSwIDsAssociatedWithAsset(stub)
+		result, err = b.handleGetSwIDsAssociatedWithAsset(stub, args)
 	case "test":
 		result = []byte(args[0])
 	case "GetHistory":
@@ -95,10 +107,6 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	}
 
 	return shim.Success(result)
-}
-
-func (b *BlossomSmartContract) handleInitNGAC(stub shim.ChaincodeStubInterface) error {
-	return pdp.InitCatalogNGAC(stub, CatalogCollection())
 }
 
 func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
@@ -209,10 +217,9 @@ func (b *BlossomSmartContract) handleApproveCheckout(stub shim.ChaincodeStubInte
 }
 
 func (b *BlossomSmartContract) handleLicenses(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	accountName := args[0]
-	assetID := args[1]
+	assetID := args[0]
 
-	result, err := b.Licenses(stub, accountName, assetID)
+	result, err := b.Licenses(stub, assetID)
 	if err != nil {
 		return nil, err
 	}
@@ -232,6 +239,10 @@ func (b *BlossomSmartContract) handleReportSwID(stub shim.ChaincodeStubInterface
 	return b.ReportSwID(stub)
 }
 
+func (b *BlossomSmartContract) handleDeleteSwID(stub shim.ChaincodeStubInterface) error {
+	return b.DeleteSwID(stub)
+}
+
 func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface) ([]byte, error) {
 	swid, err := b.GetSwID(stub)
 	if err != nil {
@@ -241,8 +252,11 @@ func (b *BlossomSmartContract) handleGetSwID(stub shim.ChaincodeStubInterface) (
 	return json.Marshal(swid)
 }
 
-func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface) ([]byte, error) {
-	swids, err := b.GetSwIDsAssociatedWithAsset(stub)
+func (b *BlossomSmartContract) handleGetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	account := args[0]
+	assetID := args[1]
+
+	swids, err := b.GetSwIDsAssociatedWithAsset(stub, account, assetID)
 	if err != nil {
 		return nil, err
 	}

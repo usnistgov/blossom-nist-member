@@ -11,7 +11,7 @@ type (
 		PrimaryTag string `json:"primary_tag"`
 		// XML is the contents of the SwID document in xml format
 		XML string `json:"xml"`
-		// Asset is the ID of the associated license
+		// Asset is the ID of the associated asset
 		Asset string `json:"asset"`
 		// License is the ID of the associated license
 		License string `json:"license"`

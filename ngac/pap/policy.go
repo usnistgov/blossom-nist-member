@@ -110,7 +110,7 @@ func LoadAccountPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 
 				grant.UserAttribute("SystemOwner").Permissions("upload_ato").On("Account_OA"),
 				grant.UserAttribute("SystemAdministrator").
-					Permissions("check_out", "initiate_check_in", "report_swid").
+					Permissions("check_out", "initiate_check_in", "report_swid", "delete_swid").
 					On("Account_OA"),
 				grant.UserAttribute("Approvers").
 					Permissions("approve_checkout", "process_check_in").

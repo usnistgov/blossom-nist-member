@@ -42,14 +42,13 @@ type (
 	}
 
 	reportSwIDTransientInput struct {
-		Account    string `json:"account,omitempty"`
 		PrimaryTag string `json:"primary_tag,omitempty"`
 		Asset      string `json:"asset,omitempty"`
 		License    string `json:"license,omitempty"`
 		Xml        string `json:"xml,omitempty"`
 	}
 
-	getSwIDTransientInput struct {
+	swidTransientInput struct {
 		Account    string `json:"account,omitempty"`
 		PrimaryTag string `json:"primary_tag,omitempty"`
 	}
@@ -255,9 +254,6 @@ func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTr
 		return reportSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
 	}
 
-	if input.Account == "" {
-		return reportSwIDTransientInput{}, fmt.Errorf("account cannot be nil")
-	}
 	if input.PrimaryTag == "" {
 		return reportSwIDTransientInput{}, fmt.Errorf("primary tag cannot be nil")
 	}
@@ -274,27 +270,27 @@ func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTr
 	return input, nil
 }
 
-func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (getSwIDTransientInput, error) {
+func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (swidTransientInput, error) {
 	transientMap, err := stub.GetTransient()
 	if err != nil {
-		return getSwIDTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return swidTransientInput{}, fmt.Errorf("error getting transient: %v", err)
 	}
 
 	transientAccountJson, ok := transientMap["swid"]
 	if !ok {
-		return getSwIDTransientInput{}, fmt.Errorf("swid not found in transient map input")
+		return swidTransientInput{}, fmt.Errorf("swid not found in transient map input")
 	}
 
-	var input getSwIDTransientInput
+	var input swidTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return getSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return swidTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
 	}
 
 	if input.Account == "" {
-		return getSwIDTransientInput{}, fmt.Errorf("account cannot be nil")
+		return swidTransientInput{}, fmt.Errorf("account cannot be nil")
 	}
 	if input.PrimaryTag == "" {
-		return getSwIDTransientInput{}, fmt.Errorf("primary tag cannot be nil")
+		return swidTransientInput{}, fmt.Errorf("primary tag cannot be nil")
 	}
 
 	return input, nil

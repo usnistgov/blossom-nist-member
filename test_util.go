@@ -31,12 +31,11 @@ func newTestStub(t *testing.T) *mocks.MemChaincodeStub {
 		[]string{BlossomMSP})
 
 	bcc := BlossomSmartContract{}
-	stub.SetFunctionAndArgs("", "BlossomMSP")
-	bcc.Init(stub)
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
-	err = bcc.handleInitNGAC(stub)
-	require.NoError(t, err)
+	stub.SetFunctionAndArgs("", "BlossomMSP")
+	result := bcc.Init(stub)
+	require.Equal(t, int32(200), result.Status, result.Message)
 
 	return stub
 }

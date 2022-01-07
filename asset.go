@@ -41,6 +41,7 @@ type (
 		// (i.e. System Administrator). The amount parameter is the amount of software licenses the account is requesting.
 		// This number is subtracted from the total available for the asset. Returns the set of licenses that are now assigned to
 		// the account.
+		// TRANSIENT MAP: export CHECKOUT=$(echo -n "{\"asset_id\":\"\", \"amount\":}" | base64 | tr -d \\n)
 		RequestCheckout(stub shim.ChaincodeStubInterface) error
 
 		CheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error)
@@ -48,10 +49,12 @@ type (
 		// ApproveCheckout approves a checkout request made by an account.  The requested licenses for the asset will be
 		// added to the account's private data collection. A user on the account can then call Licenses to get the approved
 		// license keys.
+		// TRANSIENT MAP: export CHECKOUT=$(echo -n "{\"account\":\"\", \"asset_id\":\"\"}" | base64 | tr -d \\n)
 		ApproveCheckout(stub shim.ChaincodeStubInterface) error
 
-		// Licenses get the license keys for an asset that an account has access to in their private data collection
-		Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]model.DateTime, error)
+		// Licenses get the license keys for an asset that an account has access to in their private data collection.
+		// The account is extracted from the requesting identity.
+		Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]model.DateTime, error)
 
 		// InitiateCheckin starts the process of returning licenses to Blossom. This is serves as a request to the blossom
 		// admin to process the return of the licenses. This is because only the blossom admin can write to the licenses
@@ -439,7 +442,12 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 	return nil
 }
 
-func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]model.DateTime, error) {
+func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]model.DateTime, error) {
+	account, err := accountName(stub)
+	if err != nil {
+		return nil, fmt.Errorf("error getting account name: %v", err)
+	}
+
 	bytes, err := stub.GetPrivateData(AccountCollection(account), model.AccountKey(account))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading account private data")

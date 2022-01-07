@@ -122,6 +122,10 @@ func CanReportSwID(stub shim.ChaincodeStubInterface, pvtCollName, account string
 	return check(stub, pvtCollName, pap.AccountObjectName(account), "report_swid")
 }
 
+func CanDeleteSwID(stub shim.ChaincodeStubInterface, pvtCollName, account string) error {
+	return check(stub, pvtCollName, pap.AccountObjectName(account), "delete_swid")
+}
+
 func CanOnboardAsset(stub shim.ChaincodeStubInterface, pvtCollName string) error {
 	return check(stub, pvtCollName, "assets", "onboard_asset")
 }

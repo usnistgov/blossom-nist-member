@@ -7,38 +7,30 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/common"
 	events "github.com/usnistgov/blossom/chaincode/ngac/epp"
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 )
 
-func getAdminMSP(stub shim.ChaincodeStubInterface) (string, error) {
-	// get the admin MSP that was passed to Init
-	msp, err := stub.GetState(pap.AdminMSPKey)
-	if err != nil {
-		return "", err
-	} else if msp == nil {
-		return "", fmt.Errorf("admin MSP was not set in Init")
-	}
-
-	return string(msp), nil
+func IsNGACInitialized(stub shim.ChaincodeStubInterface, collName string) (bool, error) {
+	return common.IsNGACInitialized(stub, collName)
 }
 
 func InitCatalogNGAC(stub shim.ChaincodeStubInterface, collection string) error {
+	// check if this has already been called.  An error is thrown if this has not been called before
+	if _, err := common.GetPvtCollPolicyStore(stub, collection); err == nil {
+		return fmt.Errorf("ngac initialization function has already been called")
+	}
+
 	mspid, err := cid.GetMSPID(stub)
 	if err != nil {
 		return err
 	}
 
-	// get the admin MSP that was passed to Init
-	adminMSP, err := getAdminMSP(stub)
-	if err != nil {
-		return err
-	}
-
 	// only member of the predefined AdminMSP can initialize the Catalog ngac store
-	if mspid != adminMSP {
+	if mspid != adminmsp.AdminMSP {
 		return fmt.Errorf("users in MSP %s do not have pemrission to initialize ngac graphs", mspid)
 	}
 
@@ -48,7 +40,7 @@ func InitCatalogNGAC(stub shim.ChaincodeStubInterface, collection string) error 
 		return err
 	}
 
-	policyStore, err := pap.LoadCatalogPolicy(adminUser, adminMSP)
+	policyStore, err := pap.LoadCatalogPolicy(adminUser, adminmsp.AdminMSP)
 	if err != nil {
 		return errors.Wrap(err, "error loading catalog policy")
 	}
@@ -62,14 +54,8 @@ func InitAccountNGAC(stub shim.ChaincodeStubInterface, collection, account strin
 		return err
 	}
 
-	// get the admin MSP that was passed to Init
-	adminMSP, err := getAdminMSP(stub)
-	if err != nil {
-		return err
-	}
-
 	// only member of the predefined AdminMSP can initialize the account ngac store
-	if mspid != adminMSP {
+	if mspid != adminmsp.AdminMSP {
 		return fmt.Errorf("users in MSP %s do not have pemrission to initialize ngac graphs", mspid)
 	}
 
@@ -80,7 +66,7 @@ func InitAccountNGAC(stub shim.ChaincodeStubInterface, collection, account strin
 	}
 
 	// load the policy into memory
-	policyStore, err := pap.LoadAccountPolicy(adminUser, adminMSP)
+	policyStore, err := pap.LoadAccountPolicy(adminUser, adminmsp.AdminMSP)
 	if err != nil {
 		return errors.Wrap(err, "error loading account policy")
 	}

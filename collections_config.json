@@ -2,7 +2,7 @@
   {
     "name":"catalog_coll",
     "policy":"OR('BlossomMSP.member')",
-    "requiredPeerCount":0,
+    "requiredPeerCount":1,
     "maxPeerCount":1,
     "blockToLive":1000000,
     "memberOnlyRead":true,
@@ -11,7 +11,7 @@
   {
     "name":"licenses_coll",
     "policy":"OR('BlossomMSP.member')",
-    "requiredPeerCount":0,
+    "requiredPeerCount":1,
     "maxPeerCount":1,
     "blockToLive":1000000,
     "memberOnlyRead":true,

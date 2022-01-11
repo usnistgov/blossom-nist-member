@@ -2,12 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/peer"
-	"github.com/usnistgov/blossom/chaincode/model"
-	"github.com/usnistgov/blossom/chaincode/ngac/pap"
+	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 )
 
@@ -20,31 +18,8 @@ func main() {
 	}
 }
 
-func (b *BlossomSmartContract) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	_, args := stub.GetFunctionAndParameters()
-	if len(args) != 1 {
-		return shim.Error(fmt.Sprintf("Init function expected 1 arg, received %d", len(args)))
-	}
-
-	// check if already set
-	if bytes, err := stub.GetState(pap.AdminMSPKey); err != nil {
-		return shim.Error(fmt.Sprintf("error getting admin mspid: %v", err))
-	} else if bytes != nil {
-		return shim.Error(fmt.Sprintf("admin mspid already set to %s", string(bytes)))
-	}
-
-	adminMSP := args[0]
-
-	if err := stub.PutState(pap.AdminMSPKey, []byte(adminMSP)); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	// initialize NGAC with user as admin
-	if err := pdp.InitCatalogNGAC(stub, CatalogCollection()); err != nil {
-		return shim.Error(err.Error())
-	}
-
-	return shim.Success([]byte(adminMSP))
+func (b *BlossomSmartContract) Init(_ shim.ChaincodeStubInterface) peer.Response {
+	return shim.Success([]byte(fmt.Sprintf("Admin MSPID is %s. ", adminmsp.AdminMSP)))
 }
 
 func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Response {
@@ -56,6 +31,8 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	)
 
 	switch fn {
+	case "InitNGAC":
+		err = b.handleInitNGAC(stub)
 	case "RequestAccount":
 		err = b.handleRequestAccount(stub)
 	case "ApproveAccount":
@@ -109,9 +86,13 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 	return shim.Success(result)
 }
 
+func (b *BlossomSmartContract) handleInitNGAC(stub shim.ChaincodeStubInterface) error {
+	return pdp.InitCatalogNGAC(stub, CatalogCollection())
+}
+
 func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) < 1 {
-		return nil, errors.New("incorrect number of arguments, expecting 1")
+		return nil, fmt.Errorf("incorrect number of arguments, expecting 1")
 	}
 
 	accountName := args[0]
@@ -167,9 +148,10 @@ func (b *BlossomSmartContract) handleAccount(stub shim.ChaincodeStubInterface, a
 func (b *BlossomSmartContract) handleOnboardAsset(stub shim.ChaincodeStubInterface, args []string) error {
 	id := args[0]
 	name := args[1]
-	exp := args[2]
+	onboardDate := args[2]
+	exp := args[3]
 
-	return b.OnboardAsset(stub, id, name, model.DateTime(exp))
+	return b.OnboardAsset(stub, id, name, onboardDate, exp)
 }
 
 func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterface, args []string) error {

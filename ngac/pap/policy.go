@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	AdminMSPKey   = "admin_msp"
 	BlossomObject = "blossom_object"
 	BlossomOA     = "Blossom_OA"
 )

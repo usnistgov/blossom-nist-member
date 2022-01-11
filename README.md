@@ -4,7 +4,9 @@ This package contains the code for the Blossom Smart Contracts.
 ## Table of Contents
 - [Local Testing](#local-testing)
 - [Deployment Steps](#chaincode-deployment-steps)
-- [Upgrading Chaincode](#upgrading-chaincode)
+   - [Fabric 2.2](#fabric-22)
+   - [Updating Chaincode](#updating-chaincode)
+   - [Fabric 1.4](#fabric-14)
 - [Adding an Organization](#adding-an-organization) 
 - [NGAC](#ngac)
 - [Smart Contract Usage](#usage)
@@ -41,7 +43,118 @@ From there you can deploy the test environment using the following steps:
 4. Select `chaincode (open project)`, give it a name and a version number, and hit follow the prompts.
 
 ## Chaincode Deployment Steps
-In the below commands to deploy the chaincode, `blossom-1` is the name of the channel and `blossomcc` is the name of the chaincode.
+
+### Setting Admin Membership Service Provider ID (MSPID)
+The first step before doing anything else is to set the Administrative MSPID in the code.  This will ensure
+all peers that install the chaincode will have the same Admin MSPID set.  If two peers have different values for the Admin MSPID, 
+their packages will have different hashes and will fail the commit stage for approving two different packages.
+
+1. In [adminmsp/adminmsp.go](/adminmsp/adminmsp.go) set the value of `AdminMSP` to the Admin MSP of the deployment. 
+
+   **Example:** `const AdminMSP = "SAMS-MSPID"`
+
+### Lifecycle Endorsement Policy
+
+In the `configtx.yaml` used to create the channel.  Modify the `Application > Policies > LifecycleEndorsement` policy to:
+
+```yaml
+LifecycleEndorsement:
+  Type: Signature
+  Rule: “AND('SAMS-MSPID.member', OutOf(2, 'NIST-MSPID.member', 'DHS-MSPID.member'))"
+```
+
+The `OutOf` function will need to be updated everytime an organization is added to the network.  The new organization should 
+be added to the list (i.e. `OutOf(2, 'NIST-MSPID.member', 'DHS-MSPID.member', NewOrg-MSPID.member)`) and the `2` should be updated
+to ensure it is a majority of the members in the list.
+
+### Fabric 2.2
+
+1. Package chaincode on each peer.
+   
+   ```shell
+   peer lifecycle chaincode package blossomcc.tar.gz --path <path to chaincode directory> --lang golang --label blossomcc_1.0
+   ```   
+   
+   This will package the chaincode into a file called `blossomcc.tar.gz`.
+   
+
+2. Install chaincode on each peer.
+   
+   ```shell
+   peer lifecycle chaincode install blossomcc.tar.gz
+   ```
+
+3. Get chaincode package ID.
+
+   ```shell
+   peer lifecycle chaincode queryinstalled
+   ```
+   
+   - Look for the label that matches the label set in step 1.
+   
+
+4. Approve chaincode definition.
+
+   ```shell
+   lifecycle chaincode approveformyorg \
+    -o $ORDERER \
+    --tls --cafile $ORDERER_CA \
+    --channelID $CHANNEL --name blossomcc --package-id $PACKAGE_ID \
+    --collections-config <path to collections_config.json> \
+    --version 2.0 --sequence 2
+   ```
+   
+   - This command will need to be executed by enough organizations to satisfy the [policy](#lifecycle-endorsement-policy) defined in the channel's `configtx.yaml`.
+   
+
+5. Check commit readiness
+
+   ```shell
+   peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL --name blossomcc --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json
+   ```
+   
+   - This command will show which organizations on the channel have approved the chaincode and which ones haven't.
+
+
+6. Commit chaincode.
+
+   ```shell
+   peer lifecycle chaincode commit \
+    -o $ORDERER \
+    --tls --cafile $ORDERER_CA \
+    --channelID $CHANNEL --name blossomcc \
+    --peerAddresses <PEER_ADDRESS> --tlsRootCertFiles <path to peer's tls ca cert> \
+    --version 1.0 --sequence 1 --collections-config <path to collections_config.json>
+   ```
+
+   - `--peerAddresses`
+      - 1 or more peers that have approved the chaincode to target for commit.
+
+   - This is when the [lifecycle endorsement policy](#lifecycle-endorsement-policy) will be checked. An endorsement policy error
+   will be returned if not enough organizations have approved the chaincode to satisfy the policy.
+
+
+5. Invoke.
+
+   ```shell
+   peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
+    --tls --cafile $ORDERER_CA \
+    -C $CHANNEL -n blossomcc \
+    --peerAddresses <PEER_ADDRESS> --tlsRootCertFiles <path to peer's tls ca cert> \
+    -c '{"function":"test","Args":["hello world"]}'
+   ```
+   
+   - `--peerAddresses`
+     - 1 or more peers that have approved the chaincode to target for invoke.
+   - If an org did not approve the chaincode in step 3,  they will need to target a org that did or else an error will occur.
+   - If an org did approve the chaincode, they do not need to target another peer.
+
+
+#### Updating Chaincode
+
+Repeat steps 3 and 4 above incrementing the sequence and version flags.
+
+### Fabric 1.4
 
 1. Make sure the Blossom project is cloned on the peer machine.  The path provided in the following `install` command
    assumes the chaincode is located in `$GOPATH`.

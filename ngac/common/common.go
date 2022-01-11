@@ -40,11 +40,12 @@ func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string)
 	bytes, err := stub.GetPrivateData(pvtCollName, GraphKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
+	} else if bytes == nil {
+		return nil, fmt.Errorf("catalog collection NGAC graph has not been initialized with InitNGAC")
 	}
-	if bytes != nil {
-		if err = pip.Graph().UnmarshalJSON(bytes); err != nil {
-			return nil, errors.Wrap(err, "error unmarshaling graph bytes")
-		}
+
+	if err = pip.Graph().UnmarshalJSON(bytes); err != nil {
+		return nil, errors.Wrap(err, "error unmarshaling graph bytes")
 	}
 
 	// get prohibitions
@@ -105,4 +106,13 @@ func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string,
 	}
 
 	return nil
+}
+
+func IsNGACInitialized(stub shim.ChaincodeStubInterface, collName string) (bool, error) {
+	bytes, err := stub.GetPrivateData(collName, GraphKey)
+	if err != nil {
+		return false, errors.Wrapf(err, "error reading graph of collection %s", collName)
+	}
+
+	return bytes != nil, nil
 }

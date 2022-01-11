@@ -114,7 +114,7 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) 
 			SystemAdministrator:   transientInput.SystemAdmin,
 			AcquisitionSpecialist: transientInput.AcquisitionSpecialist,
 		},
-		Assets: make(map[string]map[string]model.DateTime),
+		Assets: make(map[string]map[string]string),
 	}
 
 	// add account public to world state

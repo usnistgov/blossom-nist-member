@@ -33,8 +33,8 @@ func TestOnboardAsset(t *testing.T) {
 	err = json.Unmarshal(data, &assetPvt)
 	require.NoError(t, err)
 	require.Equal(t, 2, assetPvt.TotalAmount)
-	require.Equal(t, []string{"1", "2"}, assetPvt.Licenses)
-	require.Equal(t, []string{"1", "2"}, assetPvt.AvailableLicenses)
+	require.Equal(t, map[string]string{"1": "exp", "2": "exp"}, assetPvt.Licenses)
+	require.Equal(t, 2, len(assetPvt.AvailableLicenses))
 	require.Empty(t, assetPvt.CheckedOut)
 }
 
@@ -46,7 +46,7 @@ func TestOffboardAsset(t *testing.T) {
 
 	stub.SetFunctionAndArgs("OffboardAsset", "123")
 	result := bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
+	require.Equal(t, int32(200), result.Status, result.Message)
 
 	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey("123"))
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestAssetInfo(t *testing.T) {
 	require.Equal(t, 2, asset.TotalAmount)
 	require.Equal(t, 2, asset.Available)
 	require.Equal(t, []string{"1", "2"}, asset.AvailableLicenses)
-	require.Equal(t, []string{"1", "2"}, asset.Licenses)
+	require.Equal(t, map[string]string{"1": "exp", "2": "exp"}, asset.Licenses)
 	require.Empty(t, asset.CheckedOut)
 }
 
@@ -139,7 +139,7 @@ func TestCheckout(t *testing.T) {
 		result = bcc.Invoke(stub)
 		require.Equal(t, int32(200), result.Status)
 
-		licenses := make(map[string]model.DateTime, 0)
+		licenses := make(map[string]string, 0)
 		err = json.Unmarshal(result.Payload, &licenses)
 		require.NoError(t, err)
 
@@ -153,7 +153,7 @@ func TestCheckout(t *testing.T) {
 		require.Equal(t, "myasset", info.Name)
 		require.Equal(t, []string{"2"}, info.AvailableLicenses)
 		require.Equal(t, 1, info.Available)
-		require.Equal(t, map[string]map[string]model.DateTime{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
+		require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
 
 		// update account to pending
 		err = bcc.UpdateAccountStatus(stub, A1MSP, "PENDING_ATO")

@@ -5,12 +5,10 @@ import (
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
-	"time"
 )
 
 const A1MSP = "A1MSP"
 const A2MSP = "A2MSP"
-const BlossomMSP = "BlossomMSP"
 
 var A1Collection = AccountCollection(A1MSP)
 var A2Collection = AccountCollection(A1MSP)
@@ -18,23 +16,23 @@ var A2Collection = AccountCollection(A1MSP)
 func newTestStub(t *testing.T) *mocks.MemChaincodeStub {
 	stub := mocks.NewMemCCStub()
 	stub.CreateCollection(CatalogCollection(),
-		[]string{A1MSP, A2MSP, BlossomMSP},
-		[]string{BlossomMSP})
+		[]string{A1MSP, A2MSP, "BlossomMSP"},
+		[]string{"BlossomMSP"})
 	stub.CreateCollection(AccountCollection(A1MSP),
-		[]string{A1MSP, BlossomMSP},
-		[]string{A1MSP, BlossomMSP})
+		[]string{A1MSP, "BlossomMSP"},
+		[]string{A1MSP, "BlossomMSP"})
 	stub.CreateCollection(AccountCollection(A2MSP),
-		[]string{A2MSP, BlossomMSP},
-		[]string{A2MSP, BlossomMSP})
+		[]string{A2MSP, "BlossomMSP"},
+		[]string{A2MSP, "BlossomMSP"})
 	stub.CreateCollection(LicensesCollection(),
-		[]string{BlossomMSP},
-		[]string{BlossomMSP})
+		[]string{"BlossomMSP"},
+		[]string{"BlossomMSP"})
 
 	bcc := BlossomSmartContract{}
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
-	stub.SetFunctionAndArgs("", "BlossomMSP")
-	result := bcc.Init(stub)
+	stub.SetFunctionAndArgs("InitNGAC")
+	result := bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status, result.Message)
 
 	return stub
@@ -87,10 +85,15 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 }
 
 func onboardTestAsset(t *testing.T, stub *mocks.MemChaincodeStub, id, name string, licenses []string) {
+	licensesMap := make(map[string]string)
+	for _, l := range licenses {
+		licensesMap[l] = "exp"
+	}
+
 	bcc := BlossomSmartContract{}
-	stub.SetFunctionAndArgs("OnboardAsset", id, name, time.Now().AddDate(5, 0, 0).String())
-	err := stub.SetTransient("asset", onboardAssetTransientInput{Licenses: licenses})
+	stub.SetFunctionAndArgs("OnboardAsset", id, name, "onboard-date", "expiration-date")
+	err := stub.SetTransient("asset", onboardAssetTransientInput{Licenses: licensesMap})
 	require.NoError(t, err)
 	result := bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
+	require.Equal(t, int32(200), result.Status, result.Message)
 }

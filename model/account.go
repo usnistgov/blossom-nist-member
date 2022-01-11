@@ -6,9 +6,9 @@ import (
 
 type (
 	AccountPrivate struct {
-		ATO    string                         `json:"ato"`
-		Users  Users                          `json:"users"`
-		Assets map[string]map[string]DateTime `json:"assets" json:"assets"`
+		ATO    string                       `json:"ato"`
+		Users  Users                        `json:"users"`
+		Assets map[string]map[string]string `json:"assets" json:"assets"`
 	}
 
 	AccountPublic struct {
@@ -18,12 +18,12 @@ type (
 	}
 
 	Account struct {
-		Name   string                         `json:"name"`
-		MSPID  string                         `json:"mspid"`
-		Status Status                         `json:"status"`
-		ATO    string                         `json:"ato"`
-		Users  Users                          `json:"users"`
-		Assets map[string]map[string]DateTime `json:"assets" json:"assets"`
+		Name   string                       `json:"name"`
+		MSPID  string                       `json:"mspid"`
+		Status Status                       `json:"status"`
+		ATO    string                       `json:"ato"`
+		Users  Users                        `json:"users"`
+		Assets map[string]map[string]string `json:"assets" json:"assets"`
 	}
 
 	// Status represents the status of an account within the blossom system

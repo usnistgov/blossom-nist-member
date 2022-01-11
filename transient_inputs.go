@@ -18,7 +18,7 @@ type (
 	}
 
 	onboardAssetTransientInput struct {
-		Licenses []string `json:"licenses,omitempty"`
+		Licenses map[string]string `json:"licenses,omitempty"`
 	}
 
 	requestCheckoutTransientInput struct {

@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	events "github.com/usnistgov/blossom/chaincode/ngac/epp"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	decider "github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	"strings"
-	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
@@ -23,7 +23,7 @@ type (
 		// have permission to add an asset to the ledger. The asset will be an object attribute in NGAC and the
 		// asset licenses will be objects that are assigned to the asset.
 		// TRANSIENT MAP: export ATO=$(echo -n "{\"licenses\":\"\"}" | base64 | tr -d \\n)
-		OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, expiration model.DateTime) error
+		OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, onboardDate string, expiration string) error
 
 		// OffboardAsset removes an existing asset in Blossom.  This will remove the license from the ledger
 		// and from NGAC. An error will be returned if there are any accounts that have checked out the asset
@@ -54,7 +54,7 @@ type (
 
 		// Licenses get the license keys for an asset that an account has access to in their private data collection.
 		// The account is extracted from the requesting identity.
-		Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]model.DateTime, error)
+		Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]string, error)
 
 		// InitiateCheckin starts the process of returning licenses to Blossom. This is serves as a request to the blossom
 		// admin to process the return of the licenses. This is because only the blossom admin can write to the licenses
@@ -90,7 +90,7 @@ func (b *BlossomSmartContract) assetExists(stub shim.ChaincodeStubInterface, id 
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, expiration model.DateTime) error {
+func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, onboardDate string, expiration string) error {
 	if ok, err := b.assetExists(stub, id); err != nil {
 		return errors.Wrapf(err, "error checking if asset already exists")
 	} else if ok {
@@ -116,7 +116,7 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 		ID:             id,
 		Name:           name,
 		Available:      len(assetInput.Licenses),
-		OnboardingDate: model.DateTime(time.Now().String()),
+		OnboardingDate: onboardDate,
 		Expiration:     expiration,
 	}
 
@@ -130,11 +130,16 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 		return errors.Wrap(err, "error adding asset to catalog private data collection")
 	}
 
+	licenses := make([]string, 0)
+	for license := range assetInput.Licenses {
+		licenses = append(licenses, license)
+	}
+
 	assetPvt := model.AssetPrivate{
 		TotalAmount:       len(assetInput.Licenses),
 		Licenses:          assetInput.Licenses,
-		AvailableLicenses: assetInput.Licenses,
-		CheckedOut:        make(map[string]map[string]model.DateTime),
+		AvailableLicenses: licenses,
+		CheckedOut:        make(map[string]map[string]string),
 	}
 
 	if bytes, err = json.Marshal(assetPvt); err != nil {
@@ -147,7 +152,7 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	// ngac event
-	return events.ProcessOnboardAsset(stub, LicensesCollection(), id)
+	return events.ProcessOnboardAsset(stub, CatalogCollection(), id)
 }
 
 func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, assetID string) error {
@@ -172,7 +177,7 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 	}
 
 	// check that all licenses have been returned
-	if len(asset.CheckedOut) != 0 {
+	if asset.Available != len(asset.Licenses) {
 		return errors.Errorf("asset %s still has licenses checked out", assetID)
 	}
 
@@ -245,7 +250,8 @@ func (b *BlossomSmartContract) AssetInfo(stub shim.ChaincodeStubInterface, id st
 	if bytes, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey(id)); err != nil {
 		// ignore error if a user does not have access to the private data collection of the asset
 		// they can still have access to the public info
-		fmt.Printf("error occurred reading pvtdata: %v\n", err)
+		mspid, _ := cid.GetMSPID(stub)
+		fmt.Printf("error occurred reading pvtdata for user in org %s: %v\n", mspid, err)
 	} else {
 		if err = json.Unmarshal(bytes, assetPvt); err != nil {
 			return nil, errors.Wrapf(err, "error deserializing account private info")
@@ -409,40 +415,37 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 	// update available licenses
 	assetPvt.AvailableLicenses = assetPvt.AvailableLicenses[amount:]
 
-	// create the array of licenses that are checked out including expiration dates
-	retCheckedOutLicenses := make(map[string]model.DateTime)
-	expiration := model.DateTime(time.Now().AddDate(1, 0, 0).String())
+	// create the set of licenses that are checked out including expiration dates
+	retCheckedOutLicenses := make(map[string]string)
 	for _, license := range fromAvailable {
-		// set the expiration of the license to one year from now
-		retCheckedOutLicenses[license] = expiration
+		retCheckedOutLicenses[license] = assetPvt.Licenses[license]
 	}
 
 	// update the account assets
 	// add to existing asset if they are checking out more of a software asset
 	allCheckedOutAssets, ok := acctPvt.Assets[assetPub.ID]
-	if ok {
-		allCheckedOutAssets = retCheckedOutLicenses
-	} else {
-		allCheckedOutAssets = make(map[string]model.DateTime)
-		for license, exp := range retCheckedOutLicenses {
-			allCheckedOutAssets[license] = exp
-		}
+	if !ok {
+		allCheckedOutAssets = make(map[string]string)
+	}
+
+	for license, exp := range retCheckedOutLicenses {
+		allCheckedOutAssets[license] = exp
 	}
 
 	// update asset in the account
 	acctPvt.Assets[assetPub.ID] = allCheckedOutAssets
 
 	// update the asset's account tracker
-	accountCheckedOut := make(map[string]model.DateTime)
-	for k, t := range allCheckedOutAssets {
-		accountCheckedOut[k] = t
+	accountCheckedOut := make(map[string]string)
+	for license, exp := range allCheckedOutAssets {
+		accountCheckedOut[license] = exp
 	}
 	assetPvt.CheckedOut[acctPub.Name] = accountCheckedOut
 
 	return nil
 }
 
-func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]model.DateTime, error) {
+func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]string, error) {
 	account, err := accountName(stub)
 	if err != nil {
 		return nil, fmt.Errorf("error getting account name: %v", err)

@@ -9,12 +9,12 @@ type (
 		// TotalAmount is the total number of licenses available to Blossom
 		TotalAmount int `json:"total_amount"`
 		// Licenses is the complete set of licenses associated with this asset
-		Licenses []string `json:"licenses"`
+		Licenses map[string]string `json:"licenses"`
 		// AvailableLicenses is the set of licenses that are available to be checked out
 		AvailableLicenses []string `json:"available_licenses"`
 		// CheckedOut stores the accounts that have checked out this asset, which licenses they have leased and the
 		// expiration for each license
-		CheckedOut map[string]map[string]DateTime `json:"checked_out"`
+		CheckedOut map[string]map[string]string `json:"checked_out"`
 	}
 
 	// AssetPublic represents the public info for software asset on the ledger.
@@ -26,9 +26,9 @@ type (
 		// Available is the number of licenses that are currently available to be checked out
 		Available int `json:"available"`
 		// OnboardingDate is the date in which the asset was added to Blossom
-		OnboardingDate DateTime `json:"onboarding_date"`
+		OnboardingDate string `json:"onboarding_date"`
 		// Expiration is the date in which the asset will expire from Blossom
-		Expiration DateTime `json:"expiration"`
+		Expiration string `json:"expiration"`
 	}
 
 	Asset struct {
@@ -39,21 +39,19 @@ type (
 		// Available is the number of licenses that are currently available to be checked out
 		Available int `json:"available"`
 		// OnboardingDate is the date in which the asset was added to Blossom
-		OnboardingDate DateTime `json:"onboarding_date"`
+		OnboardingDate string `json:"onboarding_date"`
 		// Expiration is the date in which the asset will expire from Blossom
-		Expiration DateTime `json:"expiration"`
+		Expiration string `json:"expiration"`
 		// TotalAmount is the total number of licenses available to Blossom
 		TotalAmount int `json:"total_amount"`
 		// Licenses is the complete set of licenses associated with this asset
-		Licenses []string `json:"licenses"`
+		Licenses map[string]string `json:"licenses"`
 		// AvailableLicenses is the set of licenses that are available to be checked out
 		AvailableLicenses []string `json:"available_licenses"`
 		// CheckedOut stores the accounts that have checked out this asset, which licenses they have leased and the
 		// expiration for each license
-		CheckedOut map[string]map[string]DateTime `json:"checked_out"`
+		CheckedOut map[string]map[string]string `json:"checked_out"`
 	}
-
-	DateTime string
 )
 
 const AssetPrefix = "asset:"

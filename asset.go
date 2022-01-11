@@ -44,6 +44,7 @@ type (
 		// TRANSIENT MAP: export CHECKOUT=$(echo -n "{\"asset_id\":\"\", \"amount\":}" | base64 | tr -d \\n)
 		RequestCheckout(stub shim.ChaincodeStubInterface) error
 
+		// CheckoutRequests returns an array of checkout requests made by the account.
 		CheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error)
 
 		// ApproveCheckout approves a checkout request made by an account.  The requested licenses for the asset will be
@@ -54,7 +55,7 @@ type (
 
 		// Licenses get the license keys for an asset that an account has access to in their private data collection.
 		// The account is extracted from the requesting identity.
-		Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]string, error)
+		Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error)
 
 		// InitiateCheckin starts the process of returning licenses to Blossom. This is serves as a request to the blossom
 		// admin to process the return of the licenses. This is because only the blossom admin can write to the licenses
@@ -445,12 +446,7 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 	return nil
 }
 
-func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, assetID string) (map[string]string, error) {
-	account, err := accountName(stub)
-	if err != nil {
-		return nil, fmt.Errorf("error getting account name: %v", err)
-	}
-
+func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error) {
 	bytes, err := stub.GetPrivateData(AccountCollection(account), model.AccountKey(account))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading account private data")

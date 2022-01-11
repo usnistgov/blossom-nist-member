@@ -84,7 +84,7 @@ func TestAssetInfo(t *testing.T) {
 	require.Equal(t, "myasset", asset.Name)
 	require.Equal(t, 2, asset.TotalAmount)
 	require.Equal(t, 2, asset.Available)
-	require.Equal(t, []string{"1", "2"}, asset.AvailableLicenses)
+	require.Equal(t, 2, len(asset.AvailableLicenses))
 	require.Equal(t, map[string]string{"1": "exp", "2": "exp"}, asset.Licenses)
 	require.Empty(t, asset.CheckedOut)
 }
@@ -135,7 +135,7 @@ func TestCheckout(t *testing.T) {
 		err = stub.SetUser(mocks.A1SystemAdmin)
 		require.NoError(t, err)
 
-		stub.SetFunctionAndArgs("Licenses", "123")
+		stub.SetFunctionAndArgs("Licenses", A1MSP, "123")
 		result = bcc.Invoke(stub)
 		require.Equal(t, int32(200), result.Status)
 
@@ -151,7 +151,7 @@ func TestCheckout(t *testing.T) {
 		require.Equal(t, 2, info.TotalAmount)
 		require.Equal(t, "123", info.ID)
 		require.Equal(t, "myasset", info.Name)
-		require.Equal(t, []string{"2"}, info.AvailableLicenses)
+		require.Equal(t, 1, len(info.AvailableLicenses))
 		require.Equal(t, 1, info.Available)
 		require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
 

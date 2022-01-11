@@ -67,7 +67,7 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface) erro
 	collection := AccountCollection(account)
 
 	// check if this account did indeed checkout the license in the request
-	licenses, err := b.Licenses(stub, transientInput.Asset)
+	licenses, err := b.Licenses(stub, account, transientInput.Asset)
 	if err != nil {
 		return err
 	}

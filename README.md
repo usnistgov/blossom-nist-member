@@ -5,7 +5,7 @@ This package contains the code for the Blossom Smart Contracts.
 - [Local Testing](#local-testing)
 - [Deployment Steps](#chaincode-deployment-steps)
    - [Fabric 2.2](#fabric-22)
-   - [Updating Chaincode](#updating-chaincode)
+     - [Updating Chaincode](#updating-chaincode)
    - [Fabric 1.4](#fabric-14)
 - [Adding an Organization](#adding-an-organization) 
 - [NGAC](#ngac)

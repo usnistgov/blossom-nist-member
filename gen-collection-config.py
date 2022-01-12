@@ -12,7 +12,7 @@ def gen_single_collection_config(name: str, participants: 'list[str]'):
     return {
         'name': name,
         'policy': gen_or_signature_policy(participants),
-        'requiredPeerCount': 0,
+        'requiredPeerCount': 1 if len(participants) > 1 else 0,
         'maxPeerCount': len(participants) - 1,
         'blocksToLive': BLOCKS_TO_LIVE,
         'memberOnlyRead': True,

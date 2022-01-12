@@ -101,7 +101,7 @@ to ensure it is a majority of the members in the list.
     --tls --cafile $ORDERER_CA \
     --channelID $CHANNEL --name blossomcc --package-id $PACKAGE_ID \
     --collections-config <path to collections_config.json> \
-    --version 2.0 --sequence 2
+    --version 1.0 --sequence 1
    ```
    
    - This command will need to be executed by enough organizations to satisfy the [policy](#lifecycle-endorsement-policy) defined in the channel's `configtx.yaml`.

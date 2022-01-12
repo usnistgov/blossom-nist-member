@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Generate a blossom collection config
 
-BLOCK_TO_LIVE = 1000000
+BLOCKS_TO_LIVE = 1000000
 
 def gen_or_signature_policy(members: 'list[str]')->str:
     if len(members) == 0:
@@ -14,7 +14,7 @@ def gen_single_collection_config(name: str, participants: 'list[str]'):
         'policy': gen_or_signature_policy(participants),
         'requiredPeerCount': 0,
         'maxPeerCount': len(participants) - 1,
-        'blocksToLive': BLOCK_TO_LIVE,
+        'blocksToLive': BLOCKS_TO_LIVE,
         'memberOnlyRead': True,
         'memberOnlyWrite': True
     }
@@ -22,7 +22,7 @@ def gen_single_collection_config(name: str, participants: 'list[str]'):
 def gen_collection_config(admin: str, approved: 'list[str]', unapproved: 'list[str]'):
     return [
         gen_single_collection_config('catalog_coll', [admin, *approved]),
-        gen_single_collection_config('licenses_coll', [admin, *approved]),
+        gen_single_collection_config('licenses_coll', [admin]),
         *[
             gen_single_collection_config(f'{member}_account_coll', [admin, member])
             for member in [*approved, *unapproved]

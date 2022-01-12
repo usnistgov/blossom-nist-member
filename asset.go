@@ -126,19 +126,23 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 		return errors.Wrapf(err, "error marshaling asset %q", name)
 	}
 
+	fmt.Println("HELLO:", assetInput.Licenses)
+
 	// put in catalog pdc
 	if err = stub.PutPrivateData(CatalogCollection(), model.AssetKey(id), bytes); err != nil {
 		return errors.Wrap(err, "error adding asset to catalog private data collection")
 	}
 
 	licenses := make([]string, 0)
-	for license := range assetInput.Licenses {
-		licenses = append(licenses, license)
+	licenseMap := make(map[string]string)
+	for _, license := range assetInput.Licenses {
+		licenses = append(licenses, license.LicenseID)
+		licenseMap[license.LicenseID] = license.Expiration
 	}
 
 	assetPvt := model.AssetPrivate{
 		TotalAmount:       len(assetInput.Licenses),
-		Licenses:          assetInput.Licenses,
+		Licenses:          licenseMap,
 		AvailableLicenses: licenses,
 		CheckedOut:        make(map[string]map[string]string),
 	}

@@ -85,9 +85,12 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 }
 
 func onboardTestAsset(t *testing.T, stub *mocks.MemChaincodeStub, id, name string, licenses []string) {
-	licensesMap := make(map[string]string)
+	licensesMap := make([]model.License, 0)
 	for _, l := range licenses {
-		licensesMap[l] = "exp"
+		licensesMap = append(licensesMap, model.License{
+			LicenseID:  l,
+			Expiration: "exp",
+		})
 	}
 
 	bcc := BlossomSmartContract{}

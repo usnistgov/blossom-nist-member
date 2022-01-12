@@ -1,3 +1,3 @@
 package adminmsp
 
-const AdminMSP = "BlossomMSP"
+const AdminMSP = "Org1MSP"

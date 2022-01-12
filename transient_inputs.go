@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/usnistgov/blossom/chaincode/model"
 )
 
 type (
@@ -18,7 +19,7 @@ type (
 	}
 
 	onboardAssetTransientInput struct {
-		Licenses map[string]string `json:"licenses,omitempty"`
+		Licenses []model.License `json:"licenses,omitempty"`
 	}
 
 	requestCheckoutTransientInput struct {

@@ -5,6 +5,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/stretchr/testify/require"
 	"github.com/usnistgov/blossom/chaincode/mocks"
+	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
 )
 
@@ -35,7 +36,9 @@ func TestInitNGAC(t *testing.T) {
 
 		require.NoError(t, mock.SetUser(mocks.Super))
 		mock.SetFunctionAndArgs("OnboardAsset", "123", "asset1", "onboard-date", "expiration-date")
-		err := mock.SetTransient("asset", onboardAssetTransientInput{Licenses: map[string]string{"1": "exp1", "2": "exp2"}})
+		err := mock.SetTransient("asset", onboardAssetTransientInput{Licenses: []model.License{
+			{"1", "exp1"}, {"2", "exp2"},
+		}})
 		require.NoError(t, err)
 		result = bcc.Invoke(mock)
 		require.Equal(t, int32(500), result.Status, result.Message)

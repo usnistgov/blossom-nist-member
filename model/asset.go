@@ -52,6 +52,11 @@ type (
 		// expiration for each license
 		CheckedOut map[string]map[string]string `json:"checked_out"`
 	}
+
+	License struct {
+		LicenseID  string `json:"license_id,omitempty"`
+		Expiration string `json:"expiration,omitempty"`
+	}
 )
 
 const AssetPrefix = "asset:"

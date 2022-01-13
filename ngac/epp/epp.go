@@ -20,7 +20,7 @@ func process(stub shim.ChaincodeStubInterface, collection string, evtCtx epp.Eve
 	return common.PutPvtCollPolicyStore(stub, collection, policyStore)
 }
 
-func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, account string, acctPvt *model.AccountPrivate, store policy.Store) error {
+func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, account string, acctPvt model.AccountPrivate, store policy.Store) error {
 	user, err := common.GetUser(stub)
 	if err != nil {
 		return err

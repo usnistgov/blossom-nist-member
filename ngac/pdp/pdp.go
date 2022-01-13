@@ -48,7 +48,7 @@ func InitCatalogNGAC(stub shim.ChaincodeStubInterface, collection string) error 
 	return common.PutPvtCollPolicyStore(stub, collection, policyStore)
 }
 
-func InitAccountNGAC(stub shim.ChaincodeStubInterface, collection, account string, acctPvt *model.AccountPrivate) error {
+func InitAccountNGAC(stub shim.ChaincodeStubInterface, collection, account string, acctPvt model.AccountPrivate) error {
 	mspid, err := cid.GetMSPID(stub)
 	if err != nil {
 		return err

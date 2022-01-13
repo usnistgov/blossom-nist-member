@@ -77,6 +77,16 @@ func accountName(stub shim.ChaincodeStubInterface) (string, error) {
 }
 
 func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) error {
+	attr, _, err := cid.GetAttributeValue(stub, "hf.Type")
+	if err != nil {
+		return err
+	}
+
+	// check if requesting user is an admin
+	if attr != "admin" {
+		return fmt.Errorf("only org admins can request accounts")
+	}
+
 	transientInput, err := getAccountTransientInput(stub)
 	if err != nil {
 		return fmt.Errorf("error getting transient input: %v", err)
@@ -144,7 +154,7 @@ func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) 
 
 func (b *BlossomSmartContract) ApproveAccount(stub shim.ChaincodeStubInterface, account string) error {
 	var (
-		acctPvt *model.AccountPrivate
+		acctPvt model.AccountPrivate
 		bytes   []byte
 		err     error
 	)
@@ -323,6 +333,12 @@ func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, account
 		bytes   []byte
 		err     error
 	)
+
+	if ok, err := accountExists(stub, accountName); err != nil {
+		return nil, fmt.Errorf("error checking if account %q exists: %v", accountName, err)
+	} else if !ok {
+		return nil, fmt.Errorf("an account with the name %q does not exist", accountName)
+	}
 
 	if bytes, err = stub.GetState(model.AccountKey(accountName)); err != nil {
 		return nil, fmt.Errorf("error getting account public info from ledger: %v", err)

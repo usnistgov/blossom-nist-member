@@ -60,10 +60,14 @@ type (
 		// InitiateCheckin starts the process of returning licenses to Blossom. This is serves as a request to the blossom
 		// admin to process the return of the licenses. This is because only the blossom admin can write to the licenses
 		// private data collection to return the licenses to the available pool.
+		// TRANSIENT MAP: export CHECKIN=$(echo -n "{\"asset_id\":\"\", \"licenses\":[]}" | base64 | tr -d \\n)
 		InitiateCheckin(stub shim.ChaincodeStubInterface) error
+
+		InitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error)
 
 		// ProcessCheckin processes an account's checkin request (from InitiateCheckin) and returns the licenses to the
 		// available pool in the licenses private data collection.
+		// TRANSIENT MAP: export CHECKIN=$(echo -n "{\"asset_id\":\"\", \"account\":\"\"}" | base64 | tr -d \\n)
 		ProcessCheckin(stub shim.ChaincodeStubInterface) error
 	}
 
@@ -72,7 +76,7 @@ type (
 		Amount int    `json:"amount,omitempty"`
 	}
 
-	checkinRequest struct {
+	CheckinRequest struct {
 		Asset    string   `json:"asset,omitempty"`
 		Licenses []string `json:"licenses,omitempty"`
 	}
@@ -125,8 +129,6 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	if err != nil {
 		return errors.Wrapf(err, "error marshaling asset %q", name)
 	}
-
-	fmt.Println("HELLO:", assetInput.Licenses)
 
 	// put in catalog pdc
 	if err = stub.PutPrivateData(CatalogCollection(), model.AssetKey(id), bytes); err != nil {
@@ -487,6 +489,26 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 		bytes []byte
 	)
 
+	// check if the licenses in the request are really checked out by the account
+	if bytes, err = stub.GetPrivateData(AccountCollection(account), model.AccountKey(account)); err != nil {
+		return fmt.Errorf("error getting account private info from private data: %v", err)
+	}
+
+	acctPvt := &model.AccountPrivate{}
+	if err = json.Unmarshal(bytes, &acctPvt); err != nil {
+		return fmt.Errorf("error unmarshaling account private info: %v", err)
+	}
+
+	checkedOut := acctPvt.Assets[transientInput.AssetID]
+	for _, returnedKey := range transientInput.Licenses {
+		// check that the returned license is leased to the account
+		if _, ok := checkedOut[returnedKey]; !ok {
+			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, account)
+		}
+
+		delete(checkedOut, returnedKey)
+	}
+
 	// check if request has already been made and not approved
 	if bytes, err = stub.GetPrivateData(collection, key); err != nil {
 		return err
@@ -494,7 +516,7 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 		return fmt.Errorf("request to checkin %s has already been initiated for account %s and has not been processed yet", transientInput.AssetID, account)
 	}
 
-	req := checkinRequest{
+	req := CheckinRequest{
 		Asset:    transientInput.AssetID,
 		Licenses: transientInput.Licenses,
 	}
@@ -506,20 +528,44 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 	return stub.PutPrivateData(collection, key, bytes)
 }
 
+func (b *BlossomSmartContract) InitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error) {
+	collection := AccountCollection(account)
+
+	key := checkinRequestKey(account, "")
+
+	iter, err := stub.GetPrivateDataByRange(collection, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	reqs := make([]CheckinRequest, 0)
+	for iter.HasNext() {
+		next, err := iter.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		if !strings.HasPrefix(next.Key, key) {
+			continue
+		}
+
+		req := CheckinRequest{}
+		if err = json.Unmarshal(next.Value, &req); err != nil {
+			return nil, err
+		}
+
+		reqs = append(reqs, req)
+	}
+
+	return reqs, nil
+}
+
 func checkinRequestKey(account, assetID string) string {
 	return fmt.Sprintf("checkin=%s:%s", account, assetID)
 }
 
 func checkin(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub *model.AccountPublic, acctPvt *model.AccountPrivate, licenses []string) error {
 	checkedOut := acctPvt.Assets[assetPub.ID]
-	for _, returnedKey := range licenses {
-		// check that the returned license is leased to the account
-		if _, ok := checkedOut[returnedKey]; !ok {
-			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, acctPub.Name)
-		}
-
-		delete(checkedOut, returnedKey)
-	}
 
 	// if all licenses were returned remove asset from account's checked out
 	if len(checkedOut) == 0 {
@@ -566,7 +612,7 @@ func (b *BlossomSmartContract) ProcessCheckin(stub shim.ChaincodeStubInterface) 
 
 	var (
 		acctColl = AccountCollection(transientInput.Account)
-		key      = checkoutRequestKey(transientInput.Account, transientInput.AssetID)
+		key      = checkinRequestKey(transientInput.Account, transientInput.AssetID)
 		bytes    []byte
 	)
 
@@ -587,7 +633,7 @@ func (b *BlossomSmartContract) ProcessCheckin(stub shim.ChaincodeStubInterface) 
 		return errors.Wrapf(err, "error deleting request")
 	}
 
-	req := &checkinRequest{}
+	req := &CheckinRequest{}
 	if err = json.Unmarshal(bytes, req); err != nil {
 		return errors.Wrapf(err, "error unmarshaling request")
 	}
@@ -675,7 +721,7 @@ func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) 
 
 	// get account private info from account collection to update available
 	if bytes, err = stub.GetPrivateData(AccountCollection(account), model.AccountKey(account)); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error getting account pruvate info from private data")
+		return nil, nil, nil, nil, errors.Wrapf(err, "error getting account private info from private data")
 	}
 
 	acctPvt := &model.AccountPrivate{}

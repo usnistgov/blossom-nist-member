@@ -110,7 +110,7 @@ to ensure it is a majority of the members in the list.
 5. Check commit readiness
 
    ```shell
-   peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL --name blossomcc --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json
+   peer lifecycle chaincode checkcommitreadiness --channelID $CHANNEL --name blossomcc --version 1.0 --sequence 1 --tls --cafile $ORDERER_CA --output json --collections-config <path to collections_config.json>
    ```
    
    - This command will show which organizations on the channel have approved the chaincode and which ones haven't.
@@ -146,6 +146,7 @@ to ensure it is a majority of the members in the list.
    
    - `--peerAddresses`
      - 1 or more peers that have approved the chaincode to target for invoke.
+     - This is only needed if more than one peer is needed for endorsement.
    - If an org did not approve the chaincode in step 3,  they will need to target a org that did or else an error will occur.
    - If an org did approve the chaincode, they do not need to target another peer.
 

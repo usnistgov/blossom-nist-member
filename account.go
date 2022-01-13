@@ -162,14 +162,34 @@ func (b *BlossomSmartContract) ApproveAccount(stub shim.ChaincodeStubInterface, 
 		return fmt.Errorf("error approving account in NGAC: %v", err)
 	}
 
-	if err = decider.CanUpdateAccountStatus(stub, AccountCollection(account), account); err != nil {
-		return fmt.Errorf("ngac check failed: %v", err)
+	// update account status
+	status := model.PendingATO
+	bytes, err = stub.GetState(model.AccountKey(account))
+	if err != nil {
+		return fmt.Errorf("error getting account %q from world state: %v", account, err)
 	}
 
-	if err := b.UpdateAccountStatus(stub, account, "PENDING_ATO"); err != nil {
-		return fmt.Errorf("error updating account status to PENDING_ATO: %v", err)
+	acctPub := &model.AccountPublic{}
+	if err = json.Unmarshal(bytes, acctPub); err != nil {
+		return fmt.Errorf("error unmarshaling account %q: %v", account, err)
 	}
 
+	// update status
+	acctPub.Status = status
+
+	// marshal back to json
+	if bytes, err = json.Marshal(acctPub); err != nil {
+		return fmt.Errorf("error marshaling account %q: %v", account, err)
+	}
+
+	// update world state
+	if err = stub.PutState(model.AccountKey(account), bytes); err != nil {
+		return fmt.Errorf("error updating status of account %q: %v", account, err)
+	}
+
+	// process event
+	// dont process event yet, the default is pending anyways
+	// return events.UpdateAccountStatusEvent(stub, account, AccountCollection(account), status)
 	return nil
 }
 
@@ -307,6 +327,8 @@ func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, account
 	if bytes, err = stub.GetState(model.AccountKey(accountName)); err != nil {
 		return nil, fmt.Errorf("error getting account public info from ledger: %v", err)
 	}
+
+	fmt.Println("Account ", accountName, string(bytes))
 
 	if err = json.Unmarshal(bytes, acctPub); err != nil {
 		return nil, fmt.Errorf("error deserializing account public info: %v", err)

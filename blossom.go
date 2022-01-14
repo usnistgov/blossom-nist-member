@@ -41,29 +41,29 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		err = b.handleUploadATO(stub)
 	case "UpdateAccountStatus":
 		err = b.handleUpdateAccountStatus(stub, args)
-	case "Accounts":
-		result, err = b.handleAccounts(stub)
-	case "Account":
-		result, err = b.handleAccount(stub, args)
+	case "GetAccounts":
+		result, err = b.handleGetAccounts(stub)
+	case "GetAccount":
+		result, err = b.handleGetAccount(stub, args)
 	case "OnboardAsset":
 		err = b.handleOnboardAsset(stub, args)
 	case "OffboardAsset":
 		err = b.handleOffboardAsset(stub, args)
-	case "Assets":
-		result, err = b.handleAssets(stub)
-	case "AssetInfo":
-		result, err = b.handleAssetInfo(stub, args)
+	case "GetAssets":
+		result, err = b.handleGetAssets(stub)
+	case "GetAsset":
+		result, err = b.handleGetAsset(stub, args)
 	case "RequestCheckout":
 		err = b.handleRequestCheckout(stub)
-	case "CheckoutRequests":
-		result, err = b.handleCheckoutRequests(stub, args)
+	case "GetCheckoutRequests":
+		result, err = b.handleGetCheckoutRequests(stub, args)
 	case "ApproveCheckout":
 		err = b.handleApproveCheckout(stub)
-	case "Licenses":
-		result, err = b.handleLicenses(stub, args)
+	case "GetLicenses":
+		result, err = b.handleGetLicenses(stub, args)
 	case "InitiateCheckin":
 		err = b.handleInitiateCheckin(stub)
-	case "InitiatedCheckins":
+	case "GetInitiatedCheckins":
 		result, err = b.handleInitiatedCheckins(stub, args)
 	case "ProcessCheckin":
 		err = b.handleProcessCheckin(stub)
@@ -79,6 +79,8 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 		result = []byte(args[0])
 	case "GetHistory":
 		result, err = b.handleGetHistory(stub, args)
+	default:
+		err = fmt.Errorf("unknown function %s", fn)
 	}
 
 	if err != nil {
@@ -135,8 +137,8 @@ func (b *BlossomSmartContract) handleUpdateAccountStatus(stub shim.ChaincodeStub
 	return b.UpdateAccountStatus(stub, accountName, status)
 }
 
-func (b *BlossomSmartContract) handleAccounts(stub shim.ChaincodeStubInterface) ([]byte, error) {
-	accounts, err := b.Accounts(stub)
+func (b *BlossomSmartContract) handleGetAccounts(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	accounts, err := b.GetAccounts(stub)
 	if err != nil {
 		return nil, err
 	}
@@ -144,14 +146,14 @@ func (b *BlossomSmartContract) handleAccounts(stub shim.ChaincodeStubInterface) 
 	return json.Marshal(accounts)
 }
 
-func (b *BlossomSmartContract) handleAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetAccount(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("expected one arg: account(string)")
 	}
 
 	accountName := args[0]
 
-	account, err := b.Account(stub, accountName)
+	account, err := b.GetAccount(stub, accountName)
 	if err != nil {
 		return nil, err
 	}
@@ -181,8 +183,8 @@ func (b *BlossomSmartContract) handleOffboardAsset(stub shim.ChaincodeStubInterf
 	return b.OffboardAsset(stub, assetID)
 }
 
-func (b *BlossomSmartContract) handleAssets(stub shim.ChaincodeStubInterface) ([]byte, error) {
-	assets, err := b.Assets(stub)
+func (b *BlossomSmartContract) handleGetAssets(stub shim.ChaincodeStubInterface) ([]byte, error) {
+	assets, err := b.GetAssets(stub)
 	if err != nil {
 		return nil, err
 	}
@@ -190,14 +192,14 @@ func (b *BlossomSmartContract) handleAssets(stub shim.ChaincodeStubInterface) ([
 	return json.Marshal(assets)
 }
 
-func (b *BlossomSmartContract) handleAssetInfo(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetAsset(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("expected one arg: assetID(string)")
 	}
 
 	assetID := args[0]
 
-	asset, err := b.AssetInfo(stub, assetID)
+	asset, err := b.GetAsset(stub, assetID)
 	if err != nil {
 		return nil, err
 	}
@@ -209,14 +211,14 @@ func (b *BlossomSmartContract) handleRequestCheckout(stub shim.ChaincodeStubInte
 	return b.RequestCheckout(stub)
 }
 
-func (b *BlossomSmartContract) handleCheckoutRequests(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetCheckoutRequests(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
 		return nil, fmt.Errorf("expected one arg: account(string)")
 	}
 
 	account := args[0]
 
-	requests, err := b.CheckoutRequests(stub, account)
+	requests, err := b.GetCheckoutRequests(stub, account)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +230,7 @@ func (b *BlossomSmartContract) handleApproveCheckout(stub shim.ChaincodeStubInte
 	return b.ApproveCheckout(stub)
 }
 
-func (b *BlossomSmartContract) handleLicenses(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (b *BlossomSmartContract) handleGetLicenses(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 2 {
 		return nil, fmt.Errorf("expected two args: account(string), assetID(string)")
 	}
@@ -236,7 +238,7 @@ func (b *BlossomSmartContract) handleLicenses(stub shim.ChaincodeStubInterface, 
 	account := args[0]
 	assetID := args[1]
 
-	result, err := b.Licenses(stub, account, assetID)
+	result, err := b.GetLicenses(stub, account, assetID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +257,7 @@ func (b *BlossomSmartContract) handleInitiatedCheckins(stub shim.ChaincodeStubIn
 
 	account := args[0]
 
-	checkins, err := b.InitiatedCheckins(stub, account)
+	checkins, err := b.GetInitiatedCheckins(stub, account)
 	if err != nil {
 		return nil, err
 	}

@@ -90,7 +90,7 @@ func TestUploadATO(t *testing.T) {
 	result := bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status, result.Message)
 
-	account, err := bcc.Account(stub, A1MSP)
+	account, err := bcc.GetAccount(stub, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, "my ato", account.ATO)
 
@@ -133,7 +133,7 @@ func TestAccounts(t *testing.T) {
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	accounts, err := bcc.Accounts(stub)
+	accounts, err := bcc.GetAccounts(stub)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(accounts))
@@ -149,7 +149,7 @@ func TestAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	acct, err := bcc.Account(stub, A1MSP)
+	acct, err := bcc.GetAccount(stub, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, A1MSP, acct.Name)
 	require.Equal(t, A1MSP, acct.MSPID)
@@ -158,7 +158,7 @@ func TestAccount(t *testing.T) {
 	require.Equal(t, model.Users{}, acct.Users)
 	require.Empty(t, acct.Assets)
 
-	acct, err = bcc.Account(stub, A2MSP)
+	acct, err = bcc.GetAccount(stub, A2MSP)
 	require.NoError(t, err)
 	require.Equal(t, A2MSP, acct.Name)
 	require.Equal(t, A2MSP, acct.MSPID)

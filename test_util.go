@@ -62,7 +62,7 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 	result = bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status)
 
-	acct, err := bcc.Account(stub, account)
+	acct, err := bcc.GetAccount(stub, account)
 	require.NoError(t, err)
 	require.Equal(t, model.PendingATO, acct.Status)
 

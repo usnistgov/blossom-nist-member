@@ -16,61 +16,6 @@ import (
 )
 
 type (
-	// AssetsInterface provides the functions to interact with Assets in fabric.
-	AssetsInterface interface {
-		// OnboardAsset adds a new software asset to Blossom.  This will create a new asset object on the ledger and in the
-		// NGAC graph. Assets are identified by the ID field. The user performing the request will need to
-		// have permission to add an asset to the ledger. The asset will be an object attribute in NGAC and the
-		// asset licenses will be objects that are assigned to the asset.
-		// TRANSIENT MAP: export ATO=$(echo -n "{\"licenses\":\"\"}" | base64 | tr -d \\n)
-		OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, onboardDate string, expiration string) error
-
-		// OffboardAsset removes an existing asset in Blossom.  This will remove the license from the ledger
-		// and from NGAC. An error will be returned if there are any accounts that have checked out the asset
-		// and the licenses are not returned
-		OffboardAsset(stub shim.ChaincodeStubInterface, id string) error
-
-		// Assets returns all software assets in Blossom. This information includes which accounts have licenses for each
-		// asset.
-		Assets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error)
-
-		// AssetInfo returns the info for the asset with the given asset ID.
-		AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error)
-
-		// RequestCheckout requests software licenses for an account.  The requesting user must have permission to request
-		// (i.e. System Administrator). The amount parameter is the amount of software licenses the account is requesting.
-		// This number is subtracted from the total available for the asset. Returns the set of licenses that are now assigned to
-		// the account.
-		// TRANSIENT MAP: export CHECKOUT=$(echo -n "{\"asset_id\":\"\", \"amount\":}" | base64 | tr -d \\n)
-		RequestCheckout(stub shim.ChaincodeStubInterface) error
-
-		// CheckoutRequests returns an array of checkout requests made by the account.
-		CheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error)
-
-		// ApproveCheckout approves a checkout request made by an account.  The requested licenses for the asset will be
-		// added to the account's private data collection. A user on the account can then call Licenses to get the approved
-		// license keys.
-		// TRANSIENT MAP: export CHECKOUT=$(echo -n "{\"account\":\"\", \"asset_id\":\"\"}" | base64 | tr -d \\n)
-		ApproveCheckout(stub shim.ChaincodeStubInterface) error
-
-		// Licenses get the license keys for an asset that an account has access to in their private data collection.
-		// The account is extracted from the requesting identity.
-		Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error)
-
-		// InitiateCheckin starts the process of returning licenses to Blossom. This is serves as a request to the blossom
-		// admin to process the return of the licenses. This is because only the blossom admin can write to the licenses
-		// private data collection to return the licenses to the available pool.
-		// TRANSIENT MAP: export CHECKIN=$(echo -n "{\"asset_id\":\"\", \"licenses\":[]}" | base64 | tr -d \\n)
-		InitiateCheckin(stub shim.ChaincodeStubInterface) error
-
-		InitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error)
-
-		// ProcessCheckin processes an account's checkin request (from InitiateCheckin) and returns the licenses to the
-		// available pool in the licenses private data collection.
-		// TRANSIENT MAP: export CHECKIN=$(echo -n "{\"asset_id\":\"\", \"account\":\"\"}" | base64 | tr -d \\n)
-		ProcessCheckin(stub shim.ChaincodeStubInterface) error
-	}
-
 	CheckoutRequest struct {
 		Asset  string `json:"asset,omitempty"`
 		Amount int    `json:"amount,omitempty"`
@@ -179,7 +124,7 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
-	if asset, err = b.AssetInfo(stub, assetID); err != nil {
+	if asset, err = b.GetAsset(stub, assetID); err != nil {
 		return errors.Wrapf(err, "error getting asset info")
 	}
 
@@ -202,7 +147,7 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 	return events.ProcessOffboardAsset(stub, CatalogCollection(), assetID)
 }
 
-func (b *BlossomSmartContract) Assets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error) {
+func (b *BlossomSmartContract) GetAssets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error) {
 	resultsIterator, err := stub.GetPrivateDataByRange(CatalogCollection(), "", "")
 	if err != nil {
 		return nil, err
@@ -232,7 +177,7 @@ func (b *BlossomSmartContract) Assets(stub shim.ChaincodeStubInterface) ([]*mode
 	return assets, nil
 }
 
-func (b *BlossomSmartContract) AssetInfo(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
+func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
 	if ok, err := b.assetExists(stub, id); err != nil {
 		return nil, errors.Wrapf(err, "error checking if asset exists")
 	} else if !ok {
@@ -329,7 +274,7 @@ func checkoutRequestKey(account, assetID string) string {
 	return fmt.Sprintf("checkout=%s:%s", account, assetID)
 }
 
-func (b *BlossomSmartContract) CheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error) {
+func (b *BlossomSmartContract) GetCheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error) {
 	collection := AccountCollection(account)
 
 	key := checkoutRequestKey(account, "")
@@ -452,7 +397,7 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 	return nil
 }
 
-func (b *BlossomSmartContract) Licenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error) {
+func (b *BlossomSmartContract) GetLicenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error) {
 	bytes, err := stub.GetPrivateData(AccountCollection(account), model.AccountKey(account))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading account private data")
@@ -528,7 +473,7 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 	return stub.PutPrivateData(collection, key, bytes)
 }
 
-func (b *BlossomSmartContract) InitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error) {
+func (b *BlossomSmartContract) GetInitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error) {
 	collection := AccountCollection(account)
 
 	key := checkinRequestKey(account, "")

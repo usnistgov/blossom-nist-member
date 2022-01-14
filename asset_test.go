@@ -57,19 +57,19 @@ func TestOffboardAsset(t *testing.T) {
 	require.Nil(t, data)
 }
 
-func TestAssets(t *testing.T) {
+func TestGetAssets(t *testing.T) {
 	stub := newTestStub(t)
 	bcc := BlossomSmartContract{}
 
 	onboardTestAsset(t, stub, "123", "myasset1", []string{"1", "2"})
 	onboardTestAsset(t, stub, "321", "myasset2", []string{"1", "2"})
 
-	assets, err := bcc.Assets(stub)
+	assets, err := bcc.GetAssets(stub)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(assets))
 }
 
-func TestAssetInfo(t *testing.T) {
+func TestGetAsset(t *testing.T) {
 	stub := newTestStub(t)
 	bcc := BlossomSmartContract{}
 
@@ -78,7 +78,7 @@ func TestAssetInfo(t *testing.T) {
 
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	asset, err := bcc.AssetInfo(stub, "123")
+	asset, err := bcc.GetAsset(stub, "123")
 	require.NoError(t, err)
 	require.Equal(t, "123", asset.ID)
 	require.Equal(t, "myasset", asset.Name)
@@ -135,7 +135,7 @@ func TestCheckout(t *testing.T) {
 		err = stub.SetUser(mocks.A1SystemAdmin)
 		require.NoError(t, err)
 
-		stub.SetFunctionAndArgs("Licenses", A1MSP, "123")
+		stub.SetFunctionAndArgs("GetLicenses", A1MSP, "123")
 		result = bcc.Invoke(stub)
 		require.Equal(t, int32(200), result.Status)
 
@@ -146,7 +146,7 @@ func TestCheckout(t *testing.T) {
 		err = stub.SetUser(mocks.Super)
 		require.NoError(t, err)
 
-		info, err := bcc.AssetInfo(stub, "123")
+		info, err := bcc.GetAsset(stub, "123")
 		require.NoError(t, err)
 		require.Equal(t, 2, info.TotalAmount)
 		require.Equal(t, "123", info.ID)
@@ -192,7 +192,7 @@ func TestCheckoutRequests(t *testing.T) {
 	err = bcc.RequestCheckout(stub)
 	require.NoError(t, err)
 
-	result, err := bcc.CheckoutRequests(stub, A1MSP)
+	result, err := bcc.GetCheckoutRequests(stub, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(result))
 }

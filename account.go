@@ -14,51 +14,6 @@ import (
 	"github.com/usnistgov/blossom/chaincode/model"
 )
 
-type (
-	// AccountInterface provides the functions to interact with Accounts in blossom.
-	AccountInterface interface {
-		// RequestAccount allows accounts to request an account in the Blossom system. The systemOwner, systemAdmin, and
-		// acqSpec will be added as users to the NGAC graph, and given the appropriate permissions on the account. The
-		// ato can be empty and uploaded via UploadATO later. The name of the acount is the MSPID of the requesting
-		// user's member.
-		// TRANSIENT MAP: export ACCOUNT=$(echo -n "{\"system_owner\":\"\",\"system_admin\":\"\",\"acquisition_specialist\":\"\",\"ato\":\"\"}" | base64 | tr -d \\n)
-		RequestAccount(stub shim.ChaincodeStubInterface) error
-
-		// ApproveAccount initializes the account's NGAC graph in the account's PDC, with the user invoking this function
-		// being the admin in the graph.  The status of the account will be Pending after execution.  The admin user can
-		// call UpdateAccountStatus to update the status of the account.
-		ApproveAccount(stub shim.ChaincodeStubInterface, account string) error
-
-		// UploadATO updates the ATO field of the Account with the given name.
-		// TRANSIENT MAP: export ATO=$(echo -n "{\"ato\":\"\"}" | base64 | tr -d \\n)
-		UploadATO(stub shim.ChaincodeStubInterface) error
-
-		// UpdateAccountStatus updates the status of an account in Blossom. The status is one of:
-		//		"PENDING_APPROVAL",
-		//		"PENDING_ATO",
-		//		"AUTHORIZED",
-		//		"UNAUTHORIZED_DENIED",
-		//		"UNAUTHORIZED_ATO",
-		//		"UNAUTHORIZED_OPTOUT",
-		//		"UNAUTHORIZED_SECURITY_RISK",
-		//		"UNAUTHORIZED_ROB"
-		// Updating the status to Authorized allows the account to read and write to blossom.
-		// Updating the status to Pending allows the account to read write only account related information such as ATOs.
-		// Updating the status to Inactive provides the same NGAC consequences as Pending
-		UpdateAccountStatus(stub shim.ChaincodeStubInterface, account string, status string) error
-
-		// Accounts returns the public info of all accounts that are registered with Blossom.
-		Accounts(stub shim.ChaincodeStubInterface) ([]*model.AccountPublic, error)
-
-		// Account returns the account information of the account with the provided name.  Any fields of any account the user
-		// does not have access to will not be returned.
-		Account(stub shim.ChaincodeStubInterface, account string) (*model.Account, error)
-
-		// GetHistory returns the transaction history of the account.
-		GetHistory(stub shim.ChaincodeStubInterface, account string) ([]model.HistorySnapshot, error)
-	}
-)
-
 func NewAccountContract() AccountInterface {
 	return &BlossomSmartContract{}
 }
@@ -299,7 +254,7 @@ func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterf
 	return events.UpdateAccountStatusEvent(stub, accountName, AccountCollection(accountName), status)
 }
 
-func (b *BlossomSmartContract) Accounts(stub shim.ChaincodeStubInterface) ([]*model.AccountPublic, error) {
+func (b *BlossomSmartContract) GetAccounts(stub shim.ChaincodeStubInterface) ([]*model.AccountPublic, error) {
 	resultsIterator, err := stub.GetStateByRange("", "")
 	if err != nil {
 		return nil, err
@@ -328,7 +283,7 @@ func (b *BlossomSmartContract) Accounts(stub shim.ChaincodeStubInterface) ([]*mo
 	return accounts, nil
 }
 
-func (b *BlossomSmartContract) Account(stub shim.ChaincodeStubInterface, accountName string) (*model.Account, error) {
+func (b *BlossomSmartContract) GetAccount(stub shim.ChaincodeStubInterface, accountName string) (*model.Account, error) {
 	var (
 		acctPub = &model.AccountPublic{}
 		acctPvt = &model.AccountPrivate{}

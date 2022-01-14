@@ -10,30 +10,6 @@ import (
 	"strings"
 )
 
-type (
-	// SwIDInterface provides the functions to interact with SwID tags in fabric.
-	SwIDInterface interface {
-		// ReportSwID is used by Accounts to report to Blossom when a software user has installed a piece of software associated
-		// with an asset that account has checked out. The account is extracted from the requesting identity.  The account
-		// must have checked out the defined license or this function will fail.
-		// TRANSIENT MAP: export ATO=$(echo -n "{\"primary_tag\":\"123\",\"asset\":\"101\",\"license\":\"asset1-license-1\",\"xml\":\"<swid></swid>\"}" | base64 | tr -d \\n)
-		ReportSwID(stub shim.ChaincodeStubInterface) error
-
-		// DeleteSwID deletes a swid from the ledger. This would happen in the case of an organziation returning licenses,
-		// and the swid no longer being valid.  The requesting user will need to have the correct permissions in NGAC
-		// to do so.  The user with pemrission is the system_owner as defined in the account info.
-		// TRANSIENT MAP: export swid=$(echo -n "{\"primary_tag\":\"\",\"account\":\"\"}" | base64 | tr -d \\n)
-		DeleteSwID(stub shim.ChaincodeStubInterface) error
-
-		// GetSwID returns the SwID object including the XML that matches the provided primaryTag parameter.
-		// TRANSIENT MAP: export swid=$(echo -n "{\"primary_tag\":\"\",\"account\":\"\"}" | base64 | tr -d \\n)
-		GetSwID(stub shim.ChaincodeStubInterface) (*model.SwID, error)
-
-		// GetSwIDsAssociatedWithAsset returns the SwIDs that are associated with the given asset for an account.
-		GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account string, assetID string) ([]*model.SwID, error)
-	}
-)
-
 func NewSwIDContract() SwIDInterface {
 	return &BlossomSmartContract{}
 }
@@ -67,7 +43,7 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface) erro
 	collection := AccountCollection(account)
 
 	// check if this account did indeed checkout the license in the request
-	licenses, err := b.Licenses(stub, account, transientInput.Asset)
+	licenses, err := b.GetLicenses(stub, account, transientInput.Asset)
 	if err != nil {
 		return err
 	}

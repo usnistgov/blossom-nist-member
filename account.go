@@ -77,15 +77,17 @@ func accountName(stub shim.ChaincodeStubInterface) (string, error) {
 }
 
 func (b *BlossomSmartContract) RequestAccount(stub shim.ChaincodeStubInterface) error {
-	attr, _, err := cid.GetAttributeValue(stub, "hf.Type")
-	if err != nil {
-		return err
-	}
+	/*
+		removing for now until it's clear users can have the admin attribute
+		attr, _, err := cid.GetAttributeValue(stub, "hf.Type")
+		if err != nil {
+			return err
+		}
 
-	// check if requesting user is an admin
-	if attr != "admin" {
-		return fmt.Errorf("only org admins can request accounts")
-	}
+		// check if requesting user is an admin
+		if attr != "admin" {
+			return fmt.Errorf("only org admins can request accounts")
+		}*/
 
 	transientInput, err := getAccountTransientInput(stub)
 	if err != nil {

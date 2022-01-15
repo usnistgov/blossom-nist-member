@@ -33,7 +33,7 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
     import json
 
-    parser = ArgumentParser('gen_collection_config.py',
+    parser = ArgumentParser('gen-collection-config.py',
         description='Generate a collection config')
     parser.add_argument('--admin', type=str, required=True,
         help="The NGAC admin member's ID")

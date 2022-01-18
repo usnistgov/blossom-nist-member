@@ -155,6 +155,34 @@ func TestCheckout(t *testing.T) {
 		require.Equal(t, 1, info.Available)
 		require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
 
+		// check in
+		require.NoError(t, stub.SetUser(mocks.A1SystemAdmin))
+		stub.SetFunctionAndArgs("InitiateCheckin")
+		require.NoError(t, stub.SetTransient("checkin", initiateCheckinTransientInput{
+			AssetID:  "123",
+			Licenses: []string{"1"},
+		}))
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status, result.Message)
+
+		require.NoError(t, stub.SetUser(mocks.Super))
+		stub.SetFunctionAndArgs("ProcessCheckin")
+		require.NoError(t, stub.SetTransient("checkin", processCheckinTransientInput{
+			Account: A1MSP,
+			AssetID: "123",
+		}))
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status, result.Message)
+
+		stub.SetFunctionAndArgs("GetLicenses", A1MSP, "123")
+		result = bcc.Invoke(stub)
+		require.Equal(t, int32(200), result.Status)
+
+		licenses = make(map[string]string, 0)
+		err = json.Unmarshal(result.Payload, &licenses)
+		require.NoError(t, err)
+		require.Equal(t, 0, len(licenses))
+
 		// update account to pending
 		err = bcc.UpdateAccountStatus(stub, A1MSP, "PENDING_ATO")
 		require.NoError(t, err)

@@ -450,8 +450,6 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 		if _, ok := checkedOut[returnedKey]; !ok {
 			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, account)
 		}
-
-		delete(checkedOut, returnedKey)
 	}
 
 	// check if request has already been made and not approved
@@ -511,12 +509,14 @@ func checkinRequestKey(account, assetID string) string {
 
 func checkin(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub *model.AccountPublic, acctPvt *model.AccountPrivate, licenses []string) error {
 	checkedOut := acctPvt.Assets[assetPub.ID]
+	for _, license := range licenses {
+		delete(checkedOut, license)
+	}
 
 	// if all licenses were returned remove asset from account's checked out
 	if len(checkedOut) == 0 {
 		delete(acctPvt.Assets, assetPub.ID)
 	} else {
-		// update account licenses
 		acctPvt.Assets[assetPub.ID] = checkedOut
 	}
 

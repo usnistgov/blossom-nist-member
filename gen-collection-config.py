@@ -36,11 +36,11 @@ if __name__ == '__main__':
     parser = ArgumentParser('gen-collection-config.py',
         description='Generate a collection config')
     parser.add_argument('--admin', type=str, required=True,
-        help="The NGAC admin member's ID")
+        help="The NGAC admin member's ID (usually starts with m-...)")
     parser.add_argument('--approved', default=[], nargs="*",
-        help='IDs of members who have an account')
+        help='IDs of members who have an account (usually starts with m-...)')
     parser.add_argument('--unapproved', default=[], nargs="*",
-        help='IDs of members who do not have an account yet')
+        help='IDs of members who do not have an account yet (usually starts with m-...)')
     parser.add_argument('--blocksToLive', default=0,
         help='How many blocks data should live in a collection (0 for forever)')
     args = parser.parse_args()

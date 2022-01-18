@@ -124,7 +124,7 @@ if __name__ == '__main__':
     parser = ArgumentParser('gen-connection-profile.py',
         description='Generate a connection profile')
     parser.add_argument('--network_id', type=str, required=True,
-        help="The network id (starts with n_...)")
+        help="The network id (starts with n-...)")
     parser.add_argument('--channels', default=[], nargs="*",
         help='Channels to include in the profile')
     parser.add_argument('--tlsCaCertPath',

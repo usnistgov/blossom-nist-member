@@ -4,8 +4,6 @@
 import boto3
 from itertools import chain
 
-TLS_CA_CERT_PATH = '/tmp/managedblockchain-tls-chain.pem'
-
 def gen_channels(channels: 'list', orderer_name: str, peers_dict: 'dict'):
     # flatten dict of lists into list
     peers = list(chain(*(peers_dict.values())))
@@ -26,7 +24,7 @@ def gen_channels(channels: 'list', orderer_name: str, peers_dict: 'dict'):
         for channel in channels
     }
 
-def gen_orderers(network):
+def gen_orderers(network, tlsCaCertPath: str):
     # looks like orderer.(...).amazon.com:300xx
     endpoint = network['FrameworkAttributes']['Fabric']['OrderingServiceEndpoint']
 
@@ -38,7 +36,7 @@ def gen_orderers(network):
                 'ssl-target-name-override': endpoint.split(':')[0],
             },
             'tlsCACerts': {
-                'path': TLS_CA_CERT_PATH
+                'path': tlsCaCertPath
             }
         }
     }
@@ -56,7 +54,7 @@ def gen_organizations(members, peers_dict):
         for member in members
     }
 
-def gen_peers(peers_dict):
+def gen_peers(peers_dict, tlsCaCertPath: str):
     return {
         peer['Id']: {
             'url': f'grpcs://{peer["FrameworkAttributes"]["Fabric"]["PeerEndpoint"]}',
@@ -65,13 +63,13 @@ def gen_peers(peers_dict):
                 'ssl-target-name-override': peer["FrameworkAttributes"]["Fabric"]["PeerEndpoint"].split(':')[0]
             },
             'tlsCACerts': {
-                'path': TLS_CA_CERT_PATH
+                'path': tlsCaCertPath
             }
         }
         for peer in list(chain(*(peers_dict.values())))
     }
 
-def gen_certificate_authorities(members):
+def gen_certificate_authorities(members, tlsCaCertPath: str):
     return {
         f'ca-{member["Id"]}': {
             'url': member['FrameworkAttributes']['Fabric']['CaEndpoint'],
@@ -79,14 +77,14 @@ def gen_certificate_authorities(members):
                 'verify': False
             },
             'tlsCACerts': {
-                'path': TLS_CA_CERT_PATH
+                'path': tlsCaCertPath
             },
             'caName': member['Id']
         }
         for member in members
     }
 
-def gen_connection_profile(network_id: str, channels: 'list[str]'):
+def gen_connection_profile(network_id: str, channels: 'list[str]', tlsCaCertPath: str):
     client = boto3.client('managedblockchain')
     
     network = client.get_network(NetworkId=network_id)['Network']
@@ -113,10 +111,10 @@ def gen_connection_profile(network_id: str, channels: 'list[str]'):
         'description': f'Generated connecction profile',
         'version': '1.0',
         'channels': gen_channels(channels, orderer_name, nodes),
-        'orderers': gen_orderers(network),
+        'orderers': gen_orderers(network, tlsCaCertPath),
         'organizations': gen_organizations(members, nodes),
-        'peers': gen_peers(nodes),
-        'certificateAuthorities': gen_certificate_authorities(members),
+        'peers': gen_peers(nodes, tlsCaCertPath),
+        'certificateAuthorities': gen_certificate_authorities(members, tlsCaCertPath),
     }
 
 if __name__ == '__main__':
@@ -129,6 +127,9 @@ if __name__ == '__main__':
         help="The network id (starts with n_...)")
     parser.add_argument('--channels', default=[], nargs="*",
         help='Channels to include in the profile')
+    parser.add_argument('--tlsCaCertPath',
+        default='/home/ec2-user/managedblockchain-tls-chain.pem',
+        help='The location from which TLS cert will be loaded by clients')
     args = parser.parse_args()
 
     connection_profile = gen_connection_profile(**args.__dict__)

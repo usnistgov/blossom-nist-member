@@ -8,23 +8,23 @@ def gen_or_signature_policy(members: 'list[str]')->str:
         raise Exception('Invalid policy produced with no member access')
     return f"OR('{', '.join([f'{member}.member' for member in members])}')"
 
-def gen_single_collection_config(name: str, participants: 'list[str]'):
+def gen_single_collection_config(name: str, participants: 'list[str]', blocksToLive: int):
     return {
         'name': name,
         'policy': gen_or_signature_policy(participants),
         'requiredPeerCount': 1 if len(participants) > 1 else 0,
         'maxPeerCount': len(participants) - 1,
-        'blocksToLive': BLOCKS_TO_LIVE,
+        'blocksToLive': blocksToLive,
         'memberOnlyRead': True,
         'memberOnlyWrite': True
     }
 
-def gen_collection_config(admin: str, approved: 'list[str]', unapproved: 'list[str]'):
+def gen_collection_config(admin: str, approved: 'list[str]', unapproved: 'list[str]', blocksToLive: int):
     return [
-        gen_single_collection_config('catalog_coll', [admin, *approved]),
-        gen_single_collection_config('licenses_coll', [admin]),
+        gen_single_collection_config('catalog_coll', [admin, *approved], blocksToLive),
+        gen_single_collection_config('licenses_coll', [admin], blocksToLive),
         *[
-            gen_single_collection_config(f'{member}_account_coll', [admin, member])
+            gen_single_collection_config(f'{member}_account_coll', [admin, member], blocksToLive)
             for member in [*approved, *unapproved]
         ]
     ]
@@ -41,6 +41,8 @@ if __name__ == '__main__':
         help='IDs of members who have an account')
     parser.add_argument('--unapproved', default=[], nargs="*",
         help='IDs of members who do not have an account yet')
+    parser.add_argument('--blocksToLive', default=0,
+        help='How many blocks data should live in a collection (0 for forever)')
     args = parser.parse_args()
 
     collection_config = gen_collection_config(**args.__dict__)

@@ -365,12 +365,8 @@ to process events in the underlying NGAC implementation.
         ```
 
 4. **Install and upgrade chaincode on channel**
-    ```
-    docker exec cli peer chaincode install -n blossomcc -v {VERSION} -p github.com/usnistgov/blossom/chaincode  
-    docker exec cli peer chaincode upgrade -o $ORDERER -C blossom-1 -n blossomcc -v {VERSION} -c '{"Args":["init"]}' --cafile /opt/home/managedblockchain-tls-chain.pem --tls
-    ```
 
-4. **RequestCheckout**
+5. **RequestCheckout**
     - user: a1_system_admin (A1MSP)
     - args: `[]`
     - transient data:
@@ -380,7 +376,7 @@ to process events in the underlying NGAC implementation.
       }
       ```
       
-5. **ApproveCheckout**
+6. **ApproveCheckout**
     - user: super (BlossomMSP)
    - args: `[]`
    - transient data:

@@ -301,8 +301,6 @@ func (b *BlossomSmartContract) GetAccount(stub shim.ChaincodeStubInterface, acco
 		return nil, fmt.Errorf("error getting account public info from ledger: %v", err)
 	}
 
-	fmt.Println("Account ", accountName, string(bytes))
-
 	if err = json.Unmarshal(bytes, acctPub); err != nil {
 		return nil, fmt.Errorf("error deserializing account public info: %v", err)
 	}

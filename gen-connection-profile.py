@@ -71,7 +71,7 @@ def gen_peers(peers_dict, tlsCaCertPath: str):
 
 def gen_certificate_authorities(members, tlsCaCertPath: str):
     return {
-        f'ca-{member["Id"]}': {
+        f'ca-{member["Name"]}': {
             'url': member['FrameworkAttributes']['Fabric']['CaEndpoint'],
             'httpOptions': {
                 'verify': False
@@ -120,6 +120,7 @@ def gen_connection_profile(network_id: str, channels: 'list[str]', tlsCaCertPath
 if __name__ == '__main__':
     from argparse import ArgumentParser
     import json
+    from sys import stderr
     
     parser = ArgumentParser('gen-connection-profile.py',
         description='Generate a connection profile')
@@ -134,3 +135,6 @@ if __name__ == '__main__':
 
     connection_profile = gen_connection_profile(**args.__dict__)
     print(json.dumps(connection_profile, indent=4))
+
+    if len(args.channels) == 0:
+        print("WARNING: no channels were specified", file=stderr)

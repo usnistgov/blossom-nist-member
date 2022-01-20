@@ -149,6 +149,11 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 }
 
 func (b *BlossomSmartContract) GetAssets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error) {
+	// ngac check
+	if err := pdp.CanViewAssets(stub); err != nil {
+		return nil, errors.Wrapf(err, "ngac check failed")
+	}
+
 	resultsIterator, err := stub.GetPrivateDataByRange(collections.Catalog(), "", "")
 	if err != nil {
 		return nil, err
@@ -196,13 +201,21 @@ func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id str
 		return nil, errors.Wrapf(err, "error getting asset from private data")
 	}
 
-	if err = json.Unmarshal(bytes, assetPub); err != nil {
-		return nil, errors.Wrapf(err, "error deserializing license")
+	// ngac check
+	if err = pdp.CanViewAssetPublic(stub); err != nil {
+		return nil, fmt.Errorf("ngac check on asset public failed: %v", err)
 	}
 
+	if err = json.Unmarshal(bytes, assetPub); err != nil {
+		return nil, fmt.Errorf("error unmarshaling asset public info: %v", err)
+	}
+
+	/*	if err = pdp.CanViewAssetPrivate(stub); err != nil {
+		mspid, _ := cid.GetMSPID(stub)
+		fmt.Printf("error occurred reading pvtdata for user in org %s: %v\n", mspid, err)
+	}*/
+
 	if bytes, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey(id)); err != nil {
-		// ignore error if a user does not have access to the private data collection of the asset
-		// they can still have access to the public info
 		mspid, _ := cid.GetMSPID(stub)
 		fmt.Printf("error occurred reading pvtdata for user in org %s: %v\n", mspid, err)
 	} else {

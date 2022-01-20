@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pdp"
+	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
@@ -88,6 +89,18 @@ func CanOffboardAsset(stub shim.ChaincodeStubInterface) error {
 	return check(stub, "assets", "offboard_asset")
 }
 
+func CanViewAssetPrivate(stub shim.ChaincodeStubInterface) error {
+	return check(stub, "all_assets", "view_asset_private")
+}
+
+func CanViewAssetPublic(stub shim.ChaincodeStubInterface) error {
+	return check(stub, "all_assets", "view_asset_public")
+}
+
+func CanViewAssets(stub shim.ChaincodeStubInterface) error {
+	return check(stub, "all_assets", "view_assets")
+}
+
 func check(stub shim.ChaincodeStubInterface, target, permission string) error {
 	user, err := common.GetUsername(stub)
 	if err != nil {
@@ -112,11 +125,8 @@ func check(stub shim.ChaincodeStubInterface, target, permission string) error {
 		}
 
 		// assign the user to the account and role
-		if err = policyStore.Graph().Assign(user, pap.AccountUA(account)); err != nil {
+		if _, err = policyStore.Graph().CreateNode(user, policy.User, nil, pap.AccountUA(account), role); err != nil {
 			return fmt.Errorf("error assigning user %s to account UA %s: %v", user, account, err)
-		}
-		if err = policyStore.Graph().Assign(user, role); err != nil {
-			return fmt.Errorf("error assigning user %s to role UA %s: %v", user, role, err)
 		}
 	} else {
 		user = common.FormatUsername(user, account)
@@ -126,7 +136,7 @@ func check(stub shim.ChaincodeStubInterface, target, permission string) error {
 	if ok, err := decider.HasPermissions(user, target, permission); err != nil {
 		return errors.Wrapf(err, "error checking if user %s can %s on %s", user, permission, target)
 	} else if !ok {
-		return fmt.Errorf("user %q does not have permission %q on %q", user, permission, target)
+		return fmt.Errorf("user %s does not have permission %s on %s", user, permission, target)
 	}
 
 	return nil
@@ -148,9 +158,9 @@ func getRole(stub shim.ChaincodeStubInterface, user, account string) (role strin
 
 	if acctPvt.Users.SystemOwner == user {
 		role = "SystemOwner"
-	} else if acctPvt.Users.SystemOwner == user {
+	} else if acctPvt.Users.SystemAdministrator == user {
 		role = "SystemAdministrator"
-	} else if acctPvt.Users.SystemOwner == user {
+	} else if acctPvt.Users.AcquisitionSpecialist == user {
 		role = "AcquisitionSpecialist"
 	} else {
 		return "", fmt.Errorf("user %s is not registered with the account %s", user, account)

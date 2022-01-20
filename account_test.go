@@ -101,7 +101,7 @@ func TestUploadATO(t *testing.T) {
 	require.NoError(t, err)
 	result = bcc.Invoke(stub)
 	require.Equal(t, int32(500), result.Status)
-	require.Equal(t, "error uploading ATO for account A1MSP: user \"a1_acq_spec:A1MSP\" does not have permission \"upload_ato\" on \"A1MSP_object\"", result.Message)
+	require.Equal(t, "error uploading ATO for account A1MSP: user a1_acq_spec does not have permission upload_ato on A1MSP_object", result.Message)
 }
 
 func TestUpdateAccountStatus(t *testing.T) {

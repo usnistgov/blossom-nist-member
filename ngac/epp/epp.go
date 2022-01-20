@@ -6,11 +6,12 @@ import (
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/common"
 )
 
-func process(stub shim.ChaincodeStubInterface, collection string, evtCtx epp.EventContext, policyStore policy.Store) error {
+func process(stub shim.ChaincodeStubInterface, evtCtx epp.EventContext, policyStore policy.Store) error {
 	eventProcessor := epp.NewEPP(policyStore)
 
 	if err := eventProcessor.ProcessEvent(evtCtx); err != nil {
@@ -20,8 +21,13 @@ func process(stub shim.ChaincodeStubInterface, collection string, evtCtx epp.Eve
 	return common.PutPvtCollPolicyStore(stub, policyStore)
 }
 
-func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, account string, acctPvt model.AccountPrivate, store policy.Store) error {
+func ProcessApproveAccount(stub shim.ChaincodeStubInterface, account string) error {
 	user, err := common.GetUser(stub)
+	if err != nil {
+		return err
+	}
+
+	store, err := common.GetPvtCollPolicyStore(stub, collections.Catalog())
 	if err != nil {
 		return err
 	}
@@ -34,11 +40,11 @@ func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, accoun
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, store)
+	return process(stub, evtCtx, store)
 }
 
 func UpdateAccountStatusEvent(stub shim.ChaincodeStubInterface, accountName, pvtColl string, status model.Status) error {
-	store, err := common.GetPvtCollPolicyStore(stub, pvtColl)
+	store, err := common.GetPvtCollPolicyStore(stub, collections.Catalog())
 	if err != nil {
 		return err
 	}
@@ -82,7 +88,7 @@ func ProcessSetAccountActive(stub shim.ChaincodeStubInterface, pvtCollName, acco
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, store)
+	return process(stub, evtCtx, store)
 }
 
 func ProcessSetAccountPending(stub shim.ChaincodeStubInterface, pvtCollName, account string, store policy.Store) error {
@@ -104,7 +110,7 @@ func ProcessSetAccountPending(stub shim.ChaincodeStubInterface, pvtCollName, acc
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, policyStore)
+	return process(stub, evtCtx, policyStore)
 }
 
 func ProcessSetAccountInactive(stub shim.ChaincodeStubInterface, pvtCollName, account string, store policy.Store) error {
@@ -126,7 +132,7 @@ func ProcessSetAccountInactive(stub shim.ChaincodeStubInterface, pvtCollName, ac
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, policyStore)
+	return process(stub, evtCtx, policyStore)
 }
 
 func ProcessOnboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID string) error {
@@ -148,7 +154,7 @@ func ProcessOnboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID 
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, policyStore)
+	return process(stub, evtCtx, policyStore)
 }
 
 func ProcessOffboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID string) error {
@@ -170,5 +176,5 @@ func ProcessOffboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID
 		},
 	}
 
-	return process(stub, pvtCollName, evtCtx, policyStore)
+	return process(stub, evtCtx, policyStore)
 }

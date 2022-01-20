@@ -155,7 +155,7 @@ func (b *BlossomSmartContract) ApproveAccount(stub shim.ChaincodeStubInterface, 
 		return fmt.Errorf("error updating status of account %q: %v", account, err)
 	}
 
-	return nil
+	return events.ProcessApproveAccount(stub, account)
 }
 
 func (b *BlossomSmartContract) UploadATO(stub shim.ChaincodeStubInterface) error {
@@ -249,7 +249,7 @@ func (b *BlossomSmartContract) UpdateAccountStatus(stub shim.ChaincodeStubInterf
 	}
 
 	// process event
-	return events.UpdateAccountStatusEvent(stub, accountName, collections.Account(accountName), status)
+	return events.UpdateAccountStatusEvent(stub, accountName, collections.Catalog(), status)
 }
 
 func (b *BlossomSmartContract) GetAccounts(stub shim.ChaincodeStubInterface) ([]*model.AccountPublic, error) {

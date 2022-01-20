@@ -225,3 +225,35 @@ func TestCheckoutRequests(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(result))
 }
+
+func TestViewAssetPermissions(t *testing.T) {
+	stub := newTestStub(t)
+	requestTestAccount(t, stub, A1MSP)
+	requestTestAccount(t, stub, A2MSP)
+	require.NoError(t, stub.SetUser(mocks.Super))
+	onboardTestAsset(t, stub, "123", "myasset1", []string{"1", "2"})
+	onboardTestAsset(t, stub, "456", "myasset2", []string{"1", "2"})
+
+	bcc := BlossomSmartContract{}
+	assets, err := bcc.GetAssets(stub)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(assets))
+
+	require.NoError(t, stub.SetUser(mocks.A1SystemAdmin))
+	assets, err = bcc.GetAssets(stub)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(assets))
+
+	// update account status
+	require.NoError(t, stub.SetUser(mocks.Super))
+	err = bcc.UpdateAccountStatus(stub, A1MSP, "UNAUTHORIZED_DENIED")
+	require.NoError(t, err)
+
+	require.NoError(t, stub.SetUser(mocks.A1SystemAdmin))
+	assets, err = bcc.GetAssets(stub)
+	require.Error(t, err)
+
+	require.NoError(t, stub.SetUser(mocks.A1SystemAdmin))
+	_, err = bcc.GetAsset(stub, "123")
+	require.Error(t, err)
+}

@@ -56,17 +56,15 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		create.UserAttribute("SystemAdministrator").In("RBAC_UA"),
 		create.UserAttribute("AcquisitionSpecialist").In("RBAC_UA"),
 
-		create.ObjectAttribute("accounts.RBAC_PC").In("RBAC_OA"),
+		create.ObjectAttribute("accounts_OA.RBAC_PC").In("RBAC_OA"),
+		create.UserAttribute("accounts_UA.RBAC_PC").In("RBAC_UA"),
 
 		grant.UserAttribute("SystemOwner").
 			Permissions("upload_ato").
-			On("accounts.RBAC_PC"),
+			On("accounts_OA.RBAC_PC"),
 		grant.UserAttribute("SystemAdministrator").
 			Permissions("check_out", "initiate_check_in", "report_swid", "delete_swid").
-			On("accounts.RBAC_PC"),
-		/*grant.UserAttribute("Approvers").
-		Permissions("approve_checkout", "process_check_in").
-		On("accounts.RBAC_PC"),*/
+			On("accounts_OA.RBAC_PC"),
 
 		// assets policy
 		create.PolicyClass("Assets_PC"),
@@ -86,9 +84,10 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		create.UserAttribute("asset_managers").In("Assets_UA"),
 
 		create.ObjectAttribute("assets").In("Assets_OA"),
+		create.Object("all_assets").In("assets"),
 
 		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("assets"),
-		grant.UserAttribute("asset_managers").Permissions("onboard_asset", "offboard_asset", "view_asset_info").On("assets"),
+		grant.UserAttribute("asset_managers").Permissions("onboard_asset", "offboard_asset", "view_assets", "view_asset_private", "view_asset_public").On("assets"),
 
 		create.Obligation("onboard_asset").
 			When(policy.AnyUserSubject).
@@ -101,7 +100,7 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 
 		// view catalog policy
 		create.UserAttribute("accounts_UA.Assets_PC").In("Assets_UA"),
-		grant.UserAttribute("accounts_UA.Assets_PC").Permissions("view_assets").On("assets"),
+		grant.UserAttribute("accounts_UA.Assets_PC").Permissions("view_assets", "view_asset_public").On("assets"),
 
 		// status policy
 		create.PolicyClass("Status_PC"),
@@ -126,11 +125,12 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		create.ObjectAttribute("accounts_OA.Status_PC").In("Status_OA"),
 		create.ObjectAttribute("catalog_OA.Status_PC").In("Status_OA"),
 		assign.Object(BlossomObject).To("catalog_OA.Status_PC"),
+		assign.Object("all_assets").To("catalog_OA.Status_PC"),
 
 		// grants
 		grant.UserAttribute("active").Permissions(policy.AllOps).On("accounts_OA.Status_PC"),
 		grant.UserAttribute("pending").Permissions("upload_ato").On("accounts_OA.Status_PC"),
-		grant.UserAttribute("active").Permissions("view_assets").On("catalog_OA.Status_PC"),
+		grant.UserAttribute("active").Permissions("view_assets", "view_asset_public").On("catalog_OA.Status_PC"),
 
 		create.Obligation("set_account_active").
 			When(policy.AnyUserSubject).
@@ -165,7 +165,7 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 				// create account obj and assign to rbac and status policies
 				create.Object(AccountObjectName("<accountName>")).
 					WithProperties("account", "<accountName>", "type", "account").
-					In("accounts.RBAC_PC", "accounts_OA.Status_PC"),
+					In("accounts_OA.RBAC_PC", "accounts_OA.Status_PC"),
 
 				// create a UA for the account
 				create.UserAttribute(AccountUA("<accountName>")).In("accounts_UA.Assets_PC", "pending"),

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	events "github.com/usnistgov/blossom/chaincode/ngac/epp"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	decider "github.com/usnistgov/blossom/chaincode/ngac/pdp"
@@ -32,7 +33,7 @@ func NewLicenseContract() AssetsInterface {
 }
 
 func (b *BlossomSmartContract) assetExists(stub shim.ChaincodeStubInterface, id string) (bool, error) {
-	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey(id))
+	data, err := stub.GetPrivateData(collections.Catalog(), model.AssetKey(id))
 	if err != nil {
 		return false, errors.Wrapf(err, "error checking if asset id %q already exists on the ledger", id)
 	}
@@ -57,7 +58,7 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	// ngac check
-	if err = pdp.CanOnboardAsset(stub, CatalogCollection()); err != nil {
+	if err = pdp.CanOnboardAsset(stub); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -76,7 +77,7 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	// put in catalog pdc
-	if err = stub.PutPrivateData(CatalogCollection(), model.AssetKey(id), bytes); err != nil {
+	if err = stub.PutPrivateData(collections.Catalog(), model.AssetKey(id), bytes); err != nil {
 		return errors.Wrap(err, "error adding asset to catalog private data collection")
 	}
 
@@ -99,12 +100,12 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	// add license to licenses private data
-	if err = stub.PutPrivateData(LicensesCollection(), model.AssetKey(id), bytes); err != nil {
+	if err = stub.PutPrivateData(collections.Licenses(), model.AssetKey(id), bytes); err != nil {
 		return errors.Wrapf(err, "error adding asset to ledger")
 	}
 
 	// ngac event
-	return events.ProcessOnboardAsset(stub, CatalogCollection(), id)
+	return events.ProcessOnboardAsset(stub, collections.Catalog(), id)
 }
 
 func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, assetID string) error {
@@ -120,7 +121,7 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 	)
 
 	// ngac check
-	if err := pdp.CanOffboardAsset(stub, CatalogCollection()); err != nil {
+	if err := pdp.CanOffboardAsset(stub); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -134,21 +135,21 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 	}
 
 	// remove asset from catalog
-	if err = stub.DelPrivateData(CatalogCollection(), model.AssetKey(assetID)); err != nil {
+	if err = stub.DelPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
 		return errors.Wrapf(err, "error offboarding asset from catalog pdc")
 	}
 
 	// remove license licenses pdc
-	if err = stub.DelPrivateData(LicensesCollection(), model.AssetKey(assetID)); err != nil {
+	if err = stub.DelPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
 		return errors.Wrapf(err, "error offboarding asset from licenses pdc")
 	}
 
 	// ngac event
-	return events.ProcessOffboardAsset(stub, CatalogCollection(), assetID)
+	return events.ProcessOffboardAsset(stub, collections.Catalog(), assetID)
 }
 
 func (b *BlossomSmartContract) GetAssets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error) {
-	resultsIterator, err := stub.GetPrivateDataByRange(CatalogCollection(), "", "")
+	resultsIterator, err := stub.GetPrivateDataByRange(collections.Catalog(), "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +192,7 @@ func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id str
 		err      error
 	)
 
-	if bytes, err = stub.GetPrivateData(CatalogCollection(), model.AssetKey(id)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(id)); err != nil {
 		return nil, errors.Wrapf(err, "error getting asset from private data")
 	}
 
@@ -199,7 +200,7 @@ func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id str
 		return nil, errors.Wrapf(err, "error deserializing license")
 	}
 
-	if bytes, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey(id)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey(id)); err != nil {
 		// ignore error if a user does not have access to the private data collection of the asset
 		// they can still have access to the public info
 		mspid, _ := cid.GetMSPID(stub)
@@ -235,7 +236,7 @@ func (b *BlossomSmartContract) RequestCheckout(stub shim.ChaincodeStubInterface)
 	)
 
 	// check requested asset exists
-	if bytes, err = stub.GetPrivateData(CatalogCollection(), model.AssetKey(transientInput.AssetID)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(transientInput.AssetID)); err != nil {
 		return err
 	} else if bytes == nil {
 		return fmt.Errorf("asset with id %s does not exist", transientInput.AssetID)
@@ -245,10 +246,10 @@ func (b *BlossomSmartContract) RequestCheckout(stub shim.ChaincodeStubInterface)
 		return errors.Wrap(err, "error getting MSPID from stub")
 	}
 
-	collection := AccountCollection(account)
+	collection := collections.Account(account)
 
 	// ngac check
-	if err = decider.CanRequestCheckout(stub, collection, account); err != nil {
+	if err = decider.CanRequestCheckout(stub, account); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -275,7 +276,7 @@ func checkoutRequestKey(account, assetID string) string {
 }
 
 func (b *BlossomSmartContract) GetCheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error) {
-	collection := AccountCollection(account)
+	collection := collections.Account(account)
 
 	key := checkoutRequestKey(account, "")
 
@@ -313,13 +314,13 @@ func (b *BlossomSmartContract) ApproveCheckout(stub shim.ChaincodeStubInterface)
 	}
 
 	var (
-		acctColl = AccountCollection(transientInput.Account)
+		acctColl = collections.Account(transientInput.Account)
 		key      = checkoutRequestKey(transientInput.Account, transientInput.AssetID)
 		bytes    []byte
 	)
 
 	// ngac check
-	if err = decider.CanApproveCheckout(stub, acctColl, transientInput.Account); err != nil {
+	if err = decider.CanApproveCheckout(stub, transientInput.Account); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -398,7 +399,7 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 }
 
 func (b *BlossomSmartContract) GetLicenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error) {
-	bytes, err := stub.GetPrivateData(AccountCollection(account), model.AccountKey(account))
+	bytes, err := stub.GetPrivateData(collections.Account(account), model.AccountKey(account))
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading account private data")
 	}
@@ -422,10 +423,10 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 		return errors.Wrapf(err, "error getting MSPID from stub")
 	}
 
-	collection := AccountCollection(account)
+	collection := collections.Account(account)
 
 	// ngac check
-	if err = decider.CanInitiateCheckIn(stub, collection, account); err != nil {
+	if err = decider.CanInitiateCheckIn(stub, account); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -435,7 +436,7 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 	)
 
 	// check if the licenses in the request are really checked out by the account
-	if bytes, err = stub.GetPrivateData(AccountCollection(account), model.AccountKey(account)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
 		return fmt.Errorf("error getting account private info from private data: %v", err)
 	}
 
@@ -472,7 +473,7 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 }
 
 func (b *BlossomSmartContract) GetInitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error) {
-	collection := AccountCollection(account)
+	collection := collections.Account(account)
 
 	key := checkinRequestKey(account, "")
 
@@ -556,13 +557,13 @@ func (b *BlossomSmartContract) ProcessCheckin(stub shim.ChaincodeStubInterface) 
 	}
 
 	var (
-		acctColl = AccountCollection(transientInput.Account)
+		acctColl = collections.Account(transientInput.Account)
 		key      = checkinRequestKey(transientInput.Account, transientInput.AssetID)
 		bytes    []byte
 	)
 
 	// ngac check
-	if err = decider.CanProcessCheckIn(stub, acctColl, transientInput.Account); err != nil {
+	if err = decider.CanProcessCheckIn(stub, transientInput.Account); err != nil {
 		return errors.Wrapf(err, "ngac check failed")
 	}
 
@@ -600,7 +601,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 	var (
 		bytes    []byte
 		acctKey  = model.AccountKey(acctPub.Name)
-		acctColl = AccountCollection(acctPub.Name)
+		acctColl = collections.Account(acctPub.Name)
 	)
 
 	// put account public
@@ -626,7 +627,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	if err = stub.PutPrivateData(CatalogCollection(), model.AssetKey(assetPub.ID), bytes); err != nil {
+	if err = stub.PutPrivateData(collections.Catalog(), model.AssetKey(assetPub.ID), bytes); err != nil {
 		return
 	}
 
@@ -635,7 +636,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	return stub.PutPrivateData(LicensesCollection(), model.AssetKey(assetPub.ID), bytes)
+	return stub.PutPrivateData(collections.Licenses(), model.AssetKey(assetPub.ID), bytes)
 }
 
 func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) (*model.AccountPublic, *model.AccountPrivate, *model.AssetPublic, *model.AssetPrivate, error) {
@@ -645,7 +646,7 @@ func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) 
 	)
 
 	// get licenses from license collection
-	if bytes, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey(assetID)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
 		return nil, nil, nil, nil, errors.Wrapf(err, "error getting license info from private data")
 	}
 
@@ -655,7 +656,7 @@ func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) 
 	}
 
 	// get asset public info from catalog collection to update available
-	if bytes, err = stub.GetPrivateData(CatalogCollection(), model.AssetKey(assetID)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
 		return nil, nil, nil, nil, errors.Wrapf(err, "error getting asset public info from private data")
 	}
 
@@ -665,7 +666,7 @@ func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) 
 	}
 
 	// get account private info from account collection to update available
-	if bytes, err = stub.GetPrivateData(AccountCollection(account), model.AccountKey(account)); err != nil {
+	if bytes, err = stub.GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
 		return nil, nil, nil, nil, errors.Wrapf(err, "error getting account private info from private data")
 	}
 

@@ -13,12 +13,12 @@ func TestInitCatalogNGAC(t *testing.T) {
 	err := stub.SetUser(mocks.Super)
 	require.NoError(t, err)
 
-	err = InitCatalogNGAC(stub, "catalog_coll")
+	err = InitCatalogNGAC(stub)
 	require.NoError(t, err)
 
 	err = stub.SetUser(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
-	err = InitCatalogNGAC(stub, "catalog_coll")
+	err = InitCatalogNGAC(stub)
 	require.Error(t, err)
 }

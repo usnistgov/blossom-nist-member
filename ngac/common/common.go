@@ -7,6 +7,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/pkg/errors"
+	"github.com/usnistgov/blossom/chaincode/collections"
 )
 
 const (
@@ -31,6 +32,15 @@ func GetUser(stub shim.ChaincodeStubInterface) (string, error) {
 	}
 
 	return FormatUsername(cert.Subject.CommonName, mspid), nil
+}
+
+func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
+	cert, err := cid.GetX509Certificate(stub)
+	if err != nil {
+		return "", err
+	}
+
+	return cert.Subject.CommonName, nil
 }
 
 func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string) (policy.Store, error) {
@@ -74,35 +84,37 @@ func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string)
 	return pip, nil
 }
 
-func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string, policyStore policy.Store) error {
+func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, policyStore policy.Store) error {
+	coll := collections.Catalog()
+
 	// put graph
 	bytes, err := policyStore.Graph().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling graph for collection %s", pvtCollName)
+		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(pvtCollName, GraphKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting graph for collection %s", pvtCollName)
+	if err = stub.PutPrivateData(coll, GraphKey, bytes); err != nil {
+		return errors.Wrapf(err, "error putting graph for collection %s", coll)
 	}
 
 	// put prohibitions
 	bytes, err = policyStore.Prohibitions().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling graph for collection %s", pvtCollName)
+		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(pvtCollName, ProhibitionsKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting prohibitions for collection %s", pvtCollName)
+	if err = stub.PutPrivateData(coll, ProhibitionsKey, bytes); err != nil {
+		return errors.Wrapf(err, "error putting prohibitions for collection %s", coll)
 	}
 
 	// put obligations
 	bytes, err = policyStore.Obligations().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling obligations for collection %s", pvtCollName)
+		return errors.Wrapf(err, "error marshaling obligations for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(pvtCollName, ObligationsKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting obligations for collection %s", pvtCollName)
+	if err = stub.PutPrivateData(coll, ObligationsKey, bytes); err != nil {
+		return errors.Wrapf(err, "error putting obligations for collection %s", coll)
 	}
 
 	return nil

@@ -17,7 +17,7 @@ func process(stub shim.ChaincodeStubInterface, collection string, evtCtx epp.Eve
 		return err
 	}
 
-	return common.PutPvtCollPolicyStore(stub, collection, policyStore)
+	return common.PutPvtCollPolicyStore(stub, policyStore)
 }
 
 func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, account string, acctPvt model.AccountPrivate, store policy.Store) error {
@@ -31,9 +31,6 @@ func ProcessApproveAccount(stub shim.ChaincodeStubInterface, pvtCollName, accoun
 		Event: "approve_account",
 		Args: map[string]string{
 			"accountName": account,
-			"sysOwner":    common.FormatUsername(acctPvt.Users.SystemOwner, account),
-			"sysAdmin":    common.FormatUsername(acctPvt.Users.SystemAdministrator, account),
-			"acqSpec":     common.FormatUsername(acctPvt.Users.AcquisitionSpecialist, account),
 		},
 	}
 
@@ -81,7 +78,7 @@ func ProcessSetAccountActive(stub shim.ChaincodeStubInterface, pvtCollName, acco
 		User:  user,
 		Event: "set_account_active",
 		Args: map[string]string{
-			"account": account,
+			"accountName": account,
 		},
 	}
 
@@ -103,7 +100,7 @@ func ProcessSetAccountPending(stub shim.ChaincodeStubInterface, pvtCollName, acc
 		User:  user,
 		Event: "set_account_pending",
 		Args: map[string]string{
-			"account": account,
+			"accountName": account,
 		},
 	}
 
@@ -125,7 +122,7 @@ func ProcessSetAccountInactive(stub shim.ChaincodeStubInterface, pvtCollName, ac
 		User:  user,
 		Event: "set_account_inactive",
 		Args: map[string]string{
-			"account": account,
+			"accountName": account,
 		},
 	}
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
@@ -10,21 +11,21 @@ import (
 const A1MSP = "A1MSP"
 const A2MSP = "A2MSP"
 
-var A1Collection = AccountCollection(A1MSP)
-var A2Collection = AccountCollection(A1MSP)
+var A1Collection = collections.Account(A1MSP)
+var A2Collection = collections.Account(A1MSP)
 
 func newTestStub(t *testing.T) *mocks.MemChaincodeStub {
 	stub := mocks.NewMemCCStub()
-	stub.CreateCollection(CatalogCollection(),
+	stub.CreateCollection(collections.Catalog(),
 		[]string{A1MSP, A2MSP, "BlossomMSP"},
 		[]string{"BlossomMSP"})
-	stub.CreateCollection(AccountCollection(A1MSP),
+	stub.CreateCollection(collections.Account(A1MSP),
 		[]string{A1MSP, "BlossomMSP"},
 		[]string{A1MSP, "BlossomMSP"})
-	stub.CreateCollection(AccountCollection(A2MSP),
+	stub.CreateCollection(collections.Account(A2MSP),
 		[]string{A2MSP, "BlossomMSP"},
 		[]string{A2MSP, "BlossomMSP"})
-	stub.CreateCollection(LicensesCollection(),
+	stub.CreateCollection(collections.Licenses(),
 		[]string{"BlossomMSP"},
 		[]string{"BlossomMSP"})
 
@@ -60,7 +61,7 @@ func requestTestAccount(t *testing.T, stub *mocks.MemChaincodeStub, account stri
 
 	stub.SetFunctionAndArgs("ApproveAccount", account)
 	result = bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status)
+	require.Equal(t, int32(200), result.Status, result.Message)
 
 	acct, err := bcc.GetAccount(stub, account)
 	require.NoError(t, err)

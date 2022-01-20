@@ -91,7 +91,7 @@ func (b *BlossomSmartContract) Invoke(stub shim.ChaincodeStubInterface) peer.Res
 }
 
 func (b *BlossomSmartContract) handleInitNGAC(stub shim.ChaincodeStubInterface) error {
-	return pdp.InitCatalogNGAC(stub, CatalogCollection())
+	return pdp.InitCatalogNGAC(stub)
 }
 
 func (b *BlossomSmartContract) handleGetHistory(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {

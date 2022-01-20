@@ -1,15 +1,15 @@
-package main
+package collections
 
 import "fmt"
 
-func AccountCollection(account string) string {
+func Account(account string) string {
 	return fmt.Sprintf("%s_account_coll", account)
 }
 
-func CatalogCollection() string {
+func Catalog() string {
 	return fmt.Sprintf("catalog_coll")
 }
 
-func LicensesCollection() string {
+func Licenses() string {
 	return fmt.Sprintf("licenses_coll")
 }

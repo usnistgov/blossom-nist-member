@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/protos/ledger/queryresult"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	"strings"
@@ -15,7 +16,7 @@ func NewSwIDContract() SwIDInterface {
 }
 
 func (b *BlossomSmartContract) swidExists(stub shim.ChaincodeStubInterface, account, primaryTag string) (bool, error) {
-	data, err := stub.GetPrivateData(AccountCollection(account), model.SwIDKey(primaryTag))
+	data, err := stub.GetPrivateData(collections.Account(account), model.SwIDKey(primaryTag))
 	if err != nil {
 		return false, fmt.Errorf("error checking if SwID with primary tag %q already exists on the ledger: %v", primaryTag, err)
 	}
@@ -40,7 +41,7 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface) erro
 		return fmt.Errorf("a SwID tag with the primary tag %s has already been reported", transientInput.PrimaryTag)
 	}
 
-	collection := AccountCollection(account)
+	collection := collections.Account(account)
 
 	// check if this account did indeed checkout the license in the request
 	licenses, err := b.GetLicenses(stub, account, transientInput.Asset)
@@ -60,7 +61,7 @@ func (b *BlossomSmartContract) ReportSwID(stub shim.ChaincodeStubInterface) erro
 	}
 
 	// ngac check
-	if err = pdp.CanReportSwID(stub, collection, account); err != nil {
+	if err = pdp.CanReportSwID(stub, account); err != nil {
 		return fmt.Errorf("ngac check failed: %v", err)
 	}
 
@@ -96,11 +97,11 @@ func (b *BlossomSmartContract) DeleteSwID(stub shim.ChaincodeStubInterface) erro
 	}
 
 	// ngac check
-	if err = pdp.CanReportSwID(stub, AccountCollection(transientInput.Account), transientInput.Account); err != nil {
+	if err = pdp.CanReportSwID(stub, transientInput.Account); err != nil {
 		return fmt.Errorf("ngac check failed: %v", err)
 	}
 
-	if err = stub.DelPrivateData(AccountCollection(transientInput.Account), model.SwIDKey(transientInput.PrimaryTag)); err != nil {
+	if err = stub.DelPrivateData(collections.Account(transientInput.Account), model.SwIDKey(transientInput.PrimaryTag)); err != nil {
 		return fmt.Errorf("error getting SwID %s: %v", transientInput.PrimaryTag, err)
 	}
 
@@ -120,7 +121,7 @@ func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface) (*model
 	}
 	var swidBytes []byte
 
-	if swidBytes, err = stub.GetPrivateData(AccountCollection(transientInput.Account), model.SwIDKey(transientInput.PrimaryTag)); err != nil {
+	if swidBytes, err = stub.GetPrivateData(collections.Account(transientInput.Account), model.SwIDKey(transientInput.PrimaryTag)); err != nil {
 		return nil, fmt.Errorf("error getting SwID %s: %v", transientInput.PrimaryTag, err)
 	}
 
@@ -133,7 +134,7 @@ func (b *BlossomSmartContract) GetSwID(stub shim.ChaincodeStubInterface) (*model
 }
 
 func (b *BlossomSmartContract) GetSwIDsAssociatedWithAsset(stub shim.ChaincodeStubInterface, account string, assetID string) ([]*model.SwID, error) {
-	resultsIterator, err := stub.GetPrivateDataByRange(AccountCollection(account), "", "")
+	resultsIterator, err := stub.GetPrivateDataByRange(collections.Account(account), "", "")
 
 	if err != nil {
 		return nil, err

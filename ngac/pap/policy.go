@@ -21,34 +21,74 @@ func AccountObjectName(accountName string) string {
 	return fmt.Sprintf("%s_object", accountName)
 }
 
+func AccountUA(accountName string) string {
+	return fmt.Sprintf("%s_UA", accountName)
+}
+
 func adminUA(adminMSP string) string {
 	return fmt.Sprintf("%s_UA", adminMSP)
 }
 
 func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) {
 	policyStore := memory.NewPolicyStore()
+
+	adminUA := adminUA(adminMSP)
+
 	err := author.Author(policyStore,
-		// catalog policy
-		create.PolicyClass("catalog"),
+		// RBAC policy
+		create.PolicyClass("RBAC_PC"),
 
-		// ua
-		create.UserAttribute(adminUA(adminMSP)).In("catalog"),
-		create.User(adminUser).In(adminUA(adminMSP)),
+		// admin policy
+		create.UserAttribute("RBAC_UA").In("RBAC_PC"),
+		create.ObjectAttribute("RBAC_OA").In("RBAC_PC"),
+		create.UserAttribute(adminUA).In("RBAC_PC"),
+		create.User(adminUser).In(adminUA),
 
-		// oa
-		create.ObjectAttribute(BlossomOA).In("catalog"),
+		create.ObjectAttribute(BlossomOA).In("RBAC_OA"),
 		create.Object(BlossomObject).In(BlossomOA),
 
-		// grants
-		grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On(BlossomOA),
+		// grant admin permission on user and object attributes in this policy class
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("RBAC_UA"),
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("RBAC_OA"),
+
+		// create roles in RBAC ua
+		create.UserAttribute("SystemOwner").In("RBAC_UA"),
+		create.UserAttribute("SystemAdministrator").In("RBAC_UA"),
+		create.UserAttribute("AcquisitionSpecialist").In("RBAC_UA"),
+
+		create.ObjectAttribute("accounts.RBAC_PC").In("RBAC_OA"),
+
+		grant.UserAttribute("SystemOwner").
+			Permissions("upload_ato").
+			On("accounts.RBAC_PC"),
+		grant.UserAttribute("SystemAdministrator").
+			Permissions("check_out", "initiate_check_in", "report_swid", "delete_swid").
+			On("accounts.RBAC_PC"),
+		/*grant.UserAttribute("Approvers").
+		Permissions("approve_checkout", "process_check_in").
+		On("accounts.RBAC_PC"),*/
+
+		// assets policy
+		create.PolicyClass("Assets_PC"),
+
+		// admin policy
+		create.UserAttribute("Assets_UA").In("Assets_PC"),
+		create.ObjectAttribute("Assets_OA").In("Assets_PC"),
+		assign.UserAttribute(adminUA).To("Assets_PC"),
+
+		assign.ObjectAttribute(BlossomOA).To("Assets_OA"),
+
+		// grant admin permission on user and object attributes in this policy class
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("Assets_UA"),
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("Assets_OA"),
 
 		// onboarding/offboarding policy
-		create.UserAttribute("Onboarders").In("catalog"),
+		create.UserAttribute("asset_managers").In("Assets_UA"),
 
-		create.ObjectAttribute("assets").In("catalog"),
+		create.ObjectAttribute("assets").In("Assets_OA"),
 
-		grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On("assets"),
-		grant.UserAttribute("Onboarders").Permissions("onboard_asset", "offboard_asset").On("assets"),
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("assets"),
+		grant.UserAttribute("asset_managers").Permissions("onboard_asset", "offboard_asset", "view_asset_info").On("assets"),
 
 		create.Obligation("onboard_asset").
 			When(policy.AnyUserSubject).
@@ -58,118 +98,82 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 			When(policy.AnyUserSubject).
 			Performs("offboard_asset", "asset_id").
 			Do(remove.Object("<asset_id>")),
-	)
-	if err != nil {
-		return nil, err
-	}
 
-	return policyStore, nil
-}
+		// view catalog policy
+		create.UserAttribute("accounts_UA.Assets_PC").In("Assets_UA"),
+		grant.UserAttribute("accounts_UA.Assets_PC").Permissions("view_assets").On("assets"),
 
-func LoadAccountPolicy(adminUser string, adminMSP string) (policy.Store, error) {
-	policyStore := memory.NewPolicyStore()
-	err := author.Author(policyStore,
-		create.PolicyClass("super"),
-		create.UserAttribute(adminUA(adminMSP)).In("super"),
-		create.User(adminUser).In(adminUA(adminMSP)),
+		// status policy
+		create.PolicyClass("Status_PC"),
 
-		create.ObjectAttribute(BlossomOA).In("super"),
-		create.Object(BlossomObject).In(BlossomOA),
+		// admin policy
+		create.UserAttribute("Status_UA").In("Status_PC"),
+		create.ObjectAttribute("Status_OA").In("Status_PC"),
+		assign.UserAttribute(adminUA).To("Status_PC"),
 
-		grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On(BlossomOA),
+		assign.ObjectAttribute(BlossomOA).To("Status_OA"),
 
-		create.Obligation("approve_account").
-			When(policy.AnyUserSubject).
-			Performs("approve_account", "accountName", "sysOwner", "sysAdmin", "acqSpec").
-			Do(
-				create.PolicyClass("RBAC"),
-				// ua
-				create.UserAttribute("RBAC_UA").In("RBAC"),
-				create.UserAttribute("Account_UA").In("RBAC_UA"),
-				create.UserAttribute("SystemOwner").In("RBAC_UA"),
-				create.UserAttribute("SystemAdministrator").In("RBAC_UA"),
-				create.UserAttribute("AcquisitionSpecialist").In("RBAC_UA"),
-				create.UserAttribute("Approvers").In("RBAC_UA"),
-				// assign.UserAttribute(BlossomAdminUser).To("Approvers"),
+		// grant admin permission on user and object attributes in this policy class
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("Status_UA"),
+		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On("Status_OA"),
 
-				create.User("<sysOwner>").In("SystemOwner", "Account_UA"),
-				create.User("<sysAdmin>").In("SystemAdministrator", "Account_UA"),
-				create.User("<acqSpec>").In("AcquisitionSpecialist", "Account_UA"),
+		// ua
+		create.UserAttribute("active").In("Status_UA"),
+		create.UserAttribute("pending").In("Status_UA"),
+		create.UserAttribute("inactive").In("pending"),
 
-				// oa
-				create.ObjectAttribute("RBAC_OA").In("RBAC"),
-				create.ObjectAttribute("Account_OA").In("RBAC_OA"),
-				create.Object(AccountObjectName("<accountName>")).
-					WithProperties("account", "<accountName>", "type", "account").
-					In("Account_OA"),
+		// oa
+		create.ObjectAttribute("accounts_OA.Status_PC").In("Status_OA"),
+		create.ObjectAttribute("catalog_OA.Status_PC").In("Status_OA"),
+		assign.Object(BlossomObject).To("catalog_OA.Status_PC"),
 
-				// grants
-				grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On("RBAC_UA"),
-				grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On("RBAC_OA"),
-
-				grant.UserAttribute("SystemOwner").Permissions("upload_ato").On("Account_OA"),
-				grant.UserAttribute("SystemAdministrator").
-					Permissions("check_out", "initiate_check_in", "report_swid", "delete_swid").
-					On("Account_OA"),
-				grant.UserAttribute("Approvers").
-					Permissions("approve_checkout", "process_check_in").
-					On("Account_OA"),
-
-				// status policy
-				create.PolicyClass("Status"),
-				// ua
-				create.UserAttribute("Status_UA").In("Status"),
-				create.UserAttribute("active").In("Status_UA"),
-				create.UserAttribute("pending").In("Status_UA"),
-				create.UserAttribute("inactive").In("pending"),
-
-				assign.UserAttribute("Account_UA").To("pending"),
-
-				// oa
-				create.ObjectAttribute("Status_OA").In("Status"),
-				create.ObjectAttribute("status_accounts_OA").In("Status_OA"),
-				create.ObjectAttribute("status_assets_OA").In("Status_OA"),
-				create.ObjectAttribute("status_swids_OA").In("Status_OA"),
-
-				assign.Object(AccountObjectName("<accountName>")).To("status_accounts_OA"),
-
-				// grants
-				grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On("Status_UA"),
-				grant.UserAttribute(adminUA(adminMSP)).Permissions(policy.AllOps).On("Status_OA"),
-				grant.UserAttribute("active").Permissions(policy.AllOps).On("status_accounts_OA"),
-				grant.UserAttribute("pending").Permissions("upload_ato").On("status_accounts_OA"),
-				grant.UserAttribute("active").Permissions(policy.AllOps).On("status_assets_OA"),
-				grant.UserAttribute("active").Permissions(policy.AllOps).On("status_swids_OA"),
-			),
+		// grants
+		grant.UserAttribute("active").Permissions(policy.AllOps).On("accounts_OA.Status_PC"),
+		grant.UserAttribute("pending").Permissions("upload_ato").On("accounts_OA.Status_PC"),
+		grant.UserAttribute("active").Permissions("view_assets").On("catalog_OA.Status_PC"),
 
 		create.Obligation("set_account_active").
 			When(policy.AnyUserSubject).
-			Performs("set_account_active").
+			Performs("set_account_active", "accountName").
 			Do(
-				deassign.UserAttribute("Account_UA").From("pending"),
-				deassign.UserAttribute("Account_UA").From("inactive"),
-				assign.UserAttribute("Account_UA").To("active"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("pending"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("inactive"),
+				assign.UserAttribute(AccountUA("<accountName>")).To("active"),
 			),
 		create.Obligation("set_account_pending").
 			When(policy.AnyUserSubject).
-			Performs("set_account_pending").
+			Performs("set_account_pending", "accountName").
 			Do(
-				assign.UserAttribute("Account_UA").To("pending"),
-				deassign.UserAttribute("Account_UA").From("inactive"),
-				deassign.UserAttribute("Account_UA").From("active"),
+				assign.UserAttribute(AccountUA("<accountName>")).To("pending"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("inactive"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("active"),
 			),
 		create.Obligation("set_account_inactive").
 			When(policy.AnyUserSubject).
-			Performs("set_account_inactive").
+			Performs("set_account_inactive", "accountName").
 			Do(
-				deassign.UserAttribute("Account_UA").From("pending"),
-				assign.UserAttribute("Account_UA").To("inactive"),
-				deassign.UserAttribute("Account_UA").From("active"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("pending"),
+				assign.UserAttribute(AccountUA("<accountName>")).To("inactive"),
+				deassign.UserAttribute(AccountUA("<accountName>")).From("active"),
+			),
+
+		// general obligations
+		create.Obligation("approve_account").
+			When(policy.AnyUserSubject).
+			Performs("approve_account", "accountName").
+			Do(
+				// create account obj and assign to rbac and status policies
+				create.Object(AccountObjectName("<accountName>")).
+					WithProperties("account", "<accountName>", "type", "account").
+					In("accounts.RBAC_PC", "accounts_OA.Status_PC"),
+
+				// create a UA for the account
+				create.UserAttribute(AccountUA("<accountName>")).In("accounts_UA.Assets_PC", "pending"),
 			),
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error building policy: %v", err)
 	}
 
 	return policyStore, nil

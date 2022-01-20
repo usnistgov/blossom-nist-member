@@ -4,6 +4,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
@@ -28,7 +29,7 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test without initngac", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		mock := mocks.NewMemCCStub()
-		mock.CreateCollection(CatalogCollection(), []string{"BlossomMSP"}, []string{"BlossomMSP"})
+		mock.CreateCollection(collections.Catalog(), []string{"BlossomMSP"}, []string{"BlossomMSP"})
 		require.NoError(t, mock.SetUser(mocks.A1SystemOwner))
 		mock.SetFunctionAndArgs("test", "hello world")
 		result := bcc.Invoke(mock)
@@ -47,7 +48,7 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test after initngac", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		stub := mocks.NewMemCCStub()
-		stub.CreateCollection(CatalogCollection(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
+		stub.CreateCollection(collections.Catalog(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
 
 		require.NoError(t, stub.SetUser(mocks.Super))
 		stub.SetFunctionAndArgs("InitNGAC")
@@ -65,7 +66,7 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test initngac unauthorized", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		stub := mocks.NewMemCCStub()
-		stub.CreateCollection(CatalogCollection(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
+		stub.CreateCollection(collections.Catalog(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
 
 		require.NoError(t, stub.SetUser(mocks.A1SystemAdmin))
 		stub.SetFunctionAndArgs("InitNGAC")

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
@@ -16,7 +17,7 @@ func TestOnboardAsset(t *testing.T) {
 
 	onboardTestAsset(t, stub, "123", "myasset", []string{"1", "2"})
 
-	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey("123"))
+	data, err := stub.GetPrivateData(collections.Catalog(), model.AssetKey("123"))
 	require.NoError(t, err)
 
 	assetPub := model.AssetPublic{}
@@ -26,7 +27,7 @@ func TestOnboardAsset(t *testing.T) {
 	require.Equal(t, "myasset", assetPub.Name)
 	require.Equal(t, 2, assetPub.Available)
 
-	data, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey("123"))
+	data, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey("123"))
 	require.NoError(t, err)
 
 	assetPvt := model.AssetPrivate{}
@@ -48,11 +49,11 @@ func TestOffboardAsset(t *testing.T) {
 	result := bcc.Invoke(stub)
 	require.Equal(t, int32(200), result.Status, result.Message)
 
-	data, err := stub.GetPrivateData(CatalogCollection(), model.AssetKey("123"))
+	data, err := stub.GetPrivateData(collections.Catalog(), model.AssetKey("123"))
 	require.NoError(t, err)
 	require.Nil(t, data)
 
-	data, err = stub.GetPrivateData(LicensesCollection(), model.AssetKey("123"))
+	data, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey("123"))
 	require.NoError(t, err)
 	require.Nil(t, data)
 }

@@ -7,7 +7,7 @@ func Account(account string) string {
 }
 
 func Catalog() string {
-	return fmt.Sprintf("catalog_coll")
+	return fmt.Sprintf("catalog_coll_v2")
 }
 
 func Licenses() string {

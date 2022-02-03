@@ -26,7 +26,7 @@ func newTestStub(t *testing.T) *mocks.MemChaincodeStub {
 		[]string{A2MSP, "BlossomMSP"},
 		[]string{A2MSP, "BlossomMSP"})
 	stub.CreateCollection(collections.Licenses(),
-		[]string{"BlossomMSP"},
+		[]string{"BlossomMSP", A1MSP, A2MSP},
 		[]string{"BlossomMSP"})
 
 	bcc := BlossomSmartContract{}

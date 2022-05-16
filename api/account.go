@@ -136,7 +136,7 @@ func (b *BlossomSmartContract) ApproveAccount(ctx contractapi.TransactionContext
 		return fmt.Errorf("error getting account %q from world state: %w", account, err)
 	}
 
-	acctPub := &model.AccountPublic{}
+	acctPub := model.NewAccountPublic()
 	if err = json.Unmarshal(bytes, acctPub); err != nil {
 		return fmt.Errorf("error unmarshaling account %q: %w", account, err)
 	}
@@ -186,7 +186,7 @@ func (b *BlossomSmartContract) UploadATO(ctx contractapi.TransactionContextInter
 		return fmt.Errorf("error getting account %q from world state: %w", accountName, err)
 	}
 
-	acctPvt := &model.AccountPrivate{}
+	acctPvt := model.NewAccountPrivate()
 	if err = json.Unmarshal(bytes, acctPvt); err != nil {
 		return fmt.Errorf("error unmarshaling account %q: %w", accountName, err)
 	}
@@ -229,7 +229,7 @@ func (b *BlossomSmartContract) UpdateAccountStatus(ctx contractapi.TransactionCo
 		return fmt.Errorf("error getting account %q from world state: %w", accountName, err)
 	}
 
-	acctPub := &model.AccountPublic{}
+	acctPub := model.NewAccountPublic()
 	if err = json.Unmarshal(bytes, acctPub); err != nil {
 		return fmt.Errorf("error unmarshaling account %q: %w", accountName, err)
 	}
@@ -269,7 +269,7 @@ func (b *BlossomSmartContract) GetAccounts(ctx contractapi.TransactionContextInt
 			continue
 		}
 
-		acctPub := &model.AccountPublic{}
+		acctPub := model.NewAccountPublic()
 		if err = json.Unmarshal(queryResponse.Value, acctPub); err != nil {
 			return nil, err
 		}
@@ -282,8 +282,8 @@ func (b *BlossomSmartContract) GetAccounts(ctx contractapi.TransactionContextInt
 
 func (b *BlossomSmartContract) GetAccount(ctx contractapi.TransactionContextInterface, accountName string) (*model.Account, error) {
 	var (
-		acctPub = &model.AccountPublic{}
-		acctPvt = &model.AccountPrivate{}
+		acctPub = model.NewAccountPublic()
+		acctPvt = model.NewAccountPrivate()
 		bytes   []byte
 		err     error
 	)

@@ -170,7 +170,7 @@ func (b *BlossomSmartContract) GetAssets(ctx contractapi.TransactionContextInter
 			continue
 		}
 
-		asset := &model.AssetPublic{}
+		asset := model.NewAssetPublic()
 		if err = json.Unmarshal(queryResponse.Value, asset); err != nil {
 			return nil, err
 		}
@@ -189,8 +189,8 @@ func (b *BlossomSmartContract) GetAsset(ctx contractapi.TransactionContextInterf
 	}
 
 	var (
-		assetPub = &model.AssetPublic{}
-		assetPvt = &model.AssetPrivate{}
+		assetPub = model.NewAssetPublic()
+		assetPvt = model.NewAssetPrivate()
 		bytes    []byte
 		err      error
 	)
@@ -410,7 +410,7 @@ func (b *BlossomSmartContract) GetLicenses(ctx contractapi.TransactionContextInt
 		return nil, fmt.Errorf("error reading account private data: %w", err)
 	}
 
-	acctPvt := &model.AccountPrivate{}
+	acctPvt := model.NewAccountPrivate()
 	if err = json.Unmarshal(bytes, acctPvt); err != nil {
 		return nil, fmt.Errorf("error unmarshaling account private data: %w", err)
 	}
@@ -446,7 +446,7 @@ func (b *BlossomSmartContract) InitiateCheckin(ctx contractapi.TransactionContex
 		return fmt.Errorf("error getting account private info from private data: %w", err)
 	}
 
-	acctPvt := &model.AccountPrivate{}
+	acctPvt := model.NewAccountPrivate()
 	if err = json.Unmarshal(bytes, &acctPvt); err != nil {
 		return fmt.Errorf("error unmarshaling account private info: %w", err)
 	}
@@ -656,7 +656,7 @@ func getAcctAndAsset(ctx contractapi.TransactionContextInterface, account, asset
 		return nil, nil, nil, nil, err
 	}
 
-	assetPvt := &model.AssetPrivate{}
+	assetPvt := model.NewAssetPrivate()
 	if err = json.Unmarshal(bytes, &assetPvt); err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -666,7 +666,7 @@ func getAcctAndAsset(ctx contractapi.TransactionContextInterface, account, asset
 		return nil, nil, nil, nil, err
 	}
 
-	assetPub := &model.AssetPublic{}
+	assetPub := model.NewAssetPublic()
 	if err = json.Unmarshal(bytes, &assetPub); err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -676,7 +676,7 @@ func getAcctAndAsset(ctx contractapi.TransactionContextInterface, account, asset
 		return nil, nil, nil, nil, err
 	}
 
-	acctPvt := &model.AccountPrivate{}
+	acctPvt := model.NewAccountPrivate()
 	if err = json.Unmarshal(bytes, &acctPvt); err != nil {
 		return nil, nil, nil, nil, err
 	}
@@ -686,7 +686,7 @@ func getAcctAndAsset(ctx contractapi.TransactionContextInterface, account, asset
 		return nil, nil, nil, nil, err
 	}
 
-	acctPub := &model.AccountPublic{}
+	acctPub := model.NewAccountPublic()
 	if err = json.Unmarshal(bytes, &acctPub); err != nil {
 		return nil, nil, nil, nil, err
 	}

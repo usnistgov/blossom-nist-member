@@ -65,3 +65,36 @@ const AssetPrefix = "asset:"
 func AssetKey(id string) string {
 	return fmt.Sprintf("%s%s", AssetPrefix, id)
 }
+
+func NewAssetPublic() *AssetPublic {
+	return &AssetPublic{
+		ID:             "",
+		Name:           "",
+		Available:      0,
+		OnboardingDate: "",
+		Expiration:     "",
+	}
+}
+
+func NewAssetPrivate() *AssetPrivate {
+	return &AssetPrivate{
+		TotalAmount:       0,
+		Licenses:          make(map[string]string),
+		AvailableLicenses: make([]string, 0),
+		CheckedOut:        make(map[string]map[string]string),
+	}
+}
+
+func NewAsset() *Asset {
+	return &Asset{
+		ID:                "",
+		Name:              "",
+		Available:         0,
+		OnboardingDate:    "",
+		Expiration:        "",
+		TotalAmount:       0,
+		Licenses:          make(map[string]string),
+		AvailableLicenses: make([]string, 0),
+		CheckedOut:        make(map[string]map[string]string),
+	}
+}

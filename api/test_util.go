@@ -26,7 +26,7 @@ func newTestStub(t *testing.T) *mocks.Ctx {
 		[]string{A2MSP, "BlossomMSP"},
 		[]string{A2MSP, "BlossomMSP"})
 	ctx.CreateCollection(collections.Licenses(),
-		[]string{"BlossomMSP", A1MSP, A2MSP},
+		[]string{"BlossomMSP"},
 		[]string{"BlossomMSP"})
 
 	bcc := BlossomSmartContract{}

@@ -79,3 +79,38 @@ func GetStatusUpdate(s string) (Status, error) {
 func AccountKey(name string) string {
 	return fmt.Sprintf("%s%s", AccountPrefix, name)
 }
+
+func NewAccount() *Account {
+	return &Account{
+		Name:   "",
+		MSPID:  "",
+		Status: "",
+		ATO:    "",
+		Users: Users{
+			SystemOwner:           "",
+			AcquisitionSpecialist: "",
+			SystemAdministrator:   "",
+		},
+		Assets: make(map[string]map[string]string),
+	}
+}
+
+func NewAccountPublic() *AccountPublic {
+	return &AccountPublic{
+		Name:   "",
+		MSPID:  "",
+		Status: "",
+	}
+}
+
+func NewAccountPrivate() *AccountPrivate {
+	return &AccountPrivate{
+		ATO: "",
+		Users: Users{
+			SystemOwner:           "",
+			AcquisitionSpecialist: "",
+			SystemAdministrator:   "",
+		},
+		Assets: make(map[string]map[string]string),
+	}
+}

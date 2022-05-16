@@ -137,18 +137,35 @@ func TestCheckout(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 1, len(licenses))
 
-		err = ctx.SetClientIdentity(mocks.Super)
-		require.NoError(t, err)
+		t.Run("test GetAsset returns public and private info for super user", func(t *testing.T) {
+			err = ctx.SetClientIdentity(mocks.Super)
+			require.NoError(t, err)
 
-		info := &model.Asset{}
-		info, err = bcc.GetAsset(ctx, "123")
-		require.NoError(t, err)
-		require.Equal(t, 2, info.TotalAmount)
-		require.Equal(t, "123", info.ID)
-		require.Equal(t, "myasset", info.Name)
-		require.Equal(t, 1, len(info.AvailableLicenses))
-		require.Equal(t, 1, info.Available)
-		require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
+			info := &model.Asset{}
+			info, err = bcc.GetAsset(ctx, "123")
+			require.NoError(t, err)
+			require.Equal(t, 2, info.TotalAmount)
+			require.Equal(t, "123", info.ID)
+			require.Equal(t, "myasset", info.Name)
+			require.Equal(t, 1, len(info.AvailableLicenses))
+			require.Equal(t, 1, info.Available)
+			require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
+		})
+
+		t.Run("test GetAsset returns only public info for user", func(t *testing.T) {
+			err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+			require.NoError(t, err)
+
+			info := &model.Asset{}
+			info, err = bcc.GetAsset(ctx, "123")
+			require.NoError(t, err)
+			require.Equal(t, 0, info.TotalAmount)
+			require.Equal(t, "123", info.ID)
+			require.Equal(t, "myasset", info.Name)
+			require.Equal(t, 0, len(info.AvailableLicenses))
+			require.Equal(t, 1, info.Available)
+			require.Equal(t, 0, len(info.CheckedOut))
+		})
 
 		// check in
 		require.NoError(t, ctx.SetClientIdentity(mocks.A1SystemAdmin))

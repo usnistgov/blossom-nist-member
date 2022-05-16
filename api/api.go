@@ -15,11 +15,10 @@ type (
 
 	// AccountInterface provides the functions to interact with Accounts in blossom.
 	AccountInterface interface {
-		// RequestAccount allows accounts to request an account in the Blossom system. The systemOwner, systemAdmin, and
-		// acqSpec will be added as users to the NGAC graph, and given the appropriate permissions on the account. The
-		// ato can be empty and uploaded via UploadATO later. The name of the acount is the MSPID of the requesting
-		// user's member.
-		// TRANSIENT MAP: export ACCOUNT=$(echo -n "{\"system_owner\":\"\",\"system_admin\":\"\",\"acquisition_specialist\":\"\",\"ato\":\"\"}" | base64 | tr -d \\n)
+		// RequestAccount allows accounts to request an account in the Blossom system. The name of the account is the
+		// MSPID of the requesting user's member. Only users with the system_owner attribute can call this function
+		// for their organization. Account names cannot be deleted because each account has their own private data collection
+		// and they cannot be deleted.
 		RequestAccount(ctx contractapi.TransactionContextInterface) error
 
 		// ApproveAccount initializes the account's NGAC graph in the account's PDC, with the user invoking this function

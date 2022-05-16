@@ -44,11 +44,6 @@ func (b *BlossomSmartContract) RequestAccount(ctx contractapi.TransactionContext
 			return fmt.Errorf("only org admins can request accounts")
 		}*/
 
-	transientInput, err := getAccountTransientInput(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting transient input: %w", err)
-	}
-
 	accountName, err := accountName(ctx)
 	if err != nil {
 		return fmt.Errorf("error retrieving MSPID from ctx: %w", err)
@@ -75,12 +70,7 @@ func (b *BlossomSmartContract) RequestAccount(ctx contractapi.TransactionContext
 
 	// account private goes on private data collection for the msp
 	acctPvt := model.AccountPrivate{
-		ATO: "",
-		Users: model.Users{
-			SystemOwner:           transientInput.SystemOwner,
-			SystemAdministrator:   transientInput.SystemAdmin,
-			AcquisitionSpecialist: transientInput.AcquisitionSpecialist,
-		},
+		ATO:    "",
 		Assets: make(map[string]map[string]string),
 	}
 
@@ -317,7 +307,6 @@ func (b *BlossomSmartContract) GetAccount(ctx contractapi.TransactionContextInte
 		MSPID:  acctPub.MSPID,
 		Status: acctPub.Status,
 		ATO:    acctPvt.ATO,
-		Users:  acctPvt.Users,
 		Assets: acctPvt.Assets,
 	}, nil
 }

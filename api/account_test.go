@@ -30,11 +30,6 @@ func TestRequestAccount(t *testing.T) {
 		acctPvt := &model.AccountPrivate{}
 		err = json.Unmarshal(bytes, acctPvt)
 		require.NoError(t, err)
-		require.Equal(t, model.Users{
-			SystemOwner:           "a1_system_owner",
-			AcquisitionSpecialist: "a1_acq_spec",
-			SystemAdministrator:   "a1_system_admin",
-		}, acctPvt.Users)
 	})
 
 	t.Run("test without ato", func(t *testing.T) {
@@ -65,11 +60,6 @@ func TestRequestAccount(t *testing.T) {
 		acctPvt := &model.AccountPrivate{}
 		err = json.Unmarshal(bytes, acctPvt)
 		require.NoError(t, err)
-		require.Equal(t, model.Users{
-			SystemOwner:           "a1_system_owner",
-			AcquisitionSpecialist: "a1_acq_spec",
-			SystemAdministrator:   "a1_system_admin",
-		}, acctPvt.Users)
 	})
 
 }
@@ -153,7 +143,6 @@ func TestAccount(t *testing.T) {
 	require.Equal(t, A1MSP, acct.MSPID)
 	require.Equal(t, model.Authorized, acct.Status)
 	require.Equal(t, "", acct.ATO)
-	require.Equal(t, model.Users{}, acct.Users)
 	require.Empty(t, acct.Assets)
 
 	acct, err = bcc.GetAccount(ctx, A2MSP)
@@ -161,10 +150,5 @@ func TestAccount(t *testing.T) {
 	require.Equal(t, A2MSP, acct.Name)
 	require.Equal(t, A2MSP, acct.MSPID)
 	require.Equal(t, model.Authorized, acct.Status)
-	require.Equal(t, model.Users{
-		SystemOwner:           "a2_system_owner",
-		AcquisitionSpecialist: "a2_acq_spec",
-		SystemAdministrator:   "a2_system_admin",
-	}, acct.Users)
 	require.Empty(t, acct.Assets)
 }

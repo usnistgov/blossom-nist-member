@@ -7,7 +7,6 @@ import (
 type (
 	AccountPrivate struct {
 		ATO    string                       `json:"ato"`
-		Users  Users                        `json:"users"`
 		Assets map[string]map[string]string `json:"assets" json:"assets"`
 	}
 
@@ -22,22 +21,11 @@ type (
 		MSPID  string                       `json:"mspid"`
 		Status Status                       `json:"status"`
 		ATO    string                       `json:"ato"`
-		Users  Users                        `json:"users"`
 		Assets map[string]map[string]string `json:"assets" json:"assets"`
 	}
 
 	// Status represents the status of an account within the blossom system
 	Status string
-
-	// Users that will access blossom on behalf of an account
-	Users struct {
-		// SystemOwner is responsible for administrative tasks for the account system
-		SystemOwner string `json:"system_owner"`
-		// AcquisitionSpecialist authorizes transaction requests for the account
-		AcquisitionSpecialist string `json:"acquisition_specialist"`
-		// SystemAdministrator interacts with the smart contracts to checkin and checkout software licenses for the account
-		SystemAdministrator string `json:"system_administrator"`
-	}
 )
 
 var (
@@ -86,11 +74,6 @@ func NewAccount() *Account {
 		MSPID:  "",
 		Status: "",
 		ATO:    "",
-		Users: Users{
-			SystemOwner:           "",
-			AcquisitionSpecialist: "",
-			SystemAdministrator:   "",
-		},
 		Assets: make(map[string]map[string]string),
 	}
 }
@@ -105,12 +88,7 @@ func NewAccountPublic() *AccountPublic {
 
 func NewAccountPrivate() *AccountPrivate {
 	return &AccountPrivate{
-		ATO: "",
-		Users: Users{
-			SystemOwner:           "",
-			AcquisitionSpecialist: "",
-			SystemAdministrator:   "",
-		},
+		ATO:    "",
 		Assets: make(map[string]map[string]string),
 	}
 }

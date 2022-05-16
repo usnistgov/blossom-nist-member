@@ -56,8 +56,8 @@ type (
 		GetHistory(ctx contractapi.TransactionContextInterface, account string) ([]model.HistorySnapshot, error)
 	}
 
-	// AssetsInterface provides the functions to interact with Assets in fabric.
-	AssetsInterface interface {
+	// AssetInterface provides the functions to interact with Assets in fabric.
+	AssetInterface interface {
 		// OnboardAsset adds a new software asset to Blossom.  This will create a new asset object on the ledger and in the
 		// NGAC graph. Assets are identified by the ID field. The user performing the request will need to
 		// have permission to add an asset to the ledger. The asset will be an object attribute in NGAC and the

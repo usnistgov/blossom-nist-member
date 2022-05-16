@@ -26,7 +26,7 @@ type (
 	}
 )
 
-func NewLicenseContract() AssetsInterface {
+func NewLicenseContract() AssetInterface {
 	return &BlossomSmartContract{}
 }
 

@@ -4,30 +4,30 @@ import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/epp"
 	"github.com/PM-Master/policy-machine-go/policy"
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/common"
 )
 
-func process(stub shim.ChaincodeStubInterface, evtCtx epp.EventContext, policyStore policy.Store) error {
+func process(ctx contractapi.TransactionContextInterface, evtCtx epp.EventContext, policyStore policy.Store) error {
 	eventProcessor := epp.NewEPP(policyStore)
 
 	if err := eventProcessor.ProcessEvent(evtCtx); err != nil {
 		return err
 	}
 
-	return common.PutPvtCollPolicyStore(stub, policyStore)
+	return common.PutPvtCollPolicyStore(ctx, policyStore)
 }
 
-func ProcessApproveAccount(stub shim.ChaincodeStubInterface, account string) error {
-	user, err := common.GetUser(stub)
+func ProcessApproveAccount(ctx contractapi.TransactionContextInterface, account string) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return err
 	}
 
-	store, err := common.GetPvtCollPolicyStore(stub, collections.Catalog())
+	store, err := common.GetPvtCollPolicyStore(ctx, collections.Catalog())
 	if err != nil {
 		return err
 	}
@@ -40,16 +40,16 @@ func ProcessApproveAccount(stub shim.ChaincodeStubInterface, account string) err
 		},
 	}
 
-	return process(stub, evtCtx, store)
+	return process(ctx, evtCtx, store)
 }
 
-func UpdateAccountStatusEvent(stub shim.ChaincodeStubInterface, accountName, pvtColl string, status model.Status) error {
-	store, err := common.GetPvtCollPolicyStore(stub, collections.Catalog())
+func UpdateAccountStatusEvent(ctx contractapi.TransactionContextInterface, accountName, pvtColl string, status model.Status) error {
+	store, err := common.GetPvtCollPolicyStore(ctx, collections.Catalog())
 	if err != nil {
 		return err
 	}
 
-	var f func(shim.ChaincodeStubInterface, string, string, policy.Store) error
+	var f func(contractapi.TransactionContextInterface, string, string, policy.Store) error
 	switch status {
 	case model.PendingApproval:
 		f = ProcessSetAccountPending
@@ -71,11 +71,11 @@ func UpdateAccountStatusEvent(stub shim.ChaincodeStubInterface, accountName, pvt
 		return fmt.Errorf("unknown status: %s", status)
 	}
 
-	return f(stub, pvtColl, accountName, store)
+	return f(ctx, pvtColl, accountName, store)
 }
 
-func ProcessSetAccountActive(stub shim.ChaincodeStubInterface, pvtCollName, account string, store policy.Store) error {
-	user, err := common.GetUser(stub)
+func ProcessSetAccountActive(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return errors.Wrap(err, "error getting user from stub")
 	}
@@ -88,16 +88,16 @@ func ProcessSetAccountActive(stub shim.ChaincodeStubInterface, pvtCollName, acco
 		},
 	}
 
-	return process(stub, evtCtx, store)
+	return process(ctx, evtCtx, store)
 }
 
-func ProcessSetAccountPending(stub shim.ChaincodeStubInterface, pvtCollName, account string, store policy.Store) error {
-	user, err := common.GetUser(stub)
+func ProcessSetAccountPending(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return errors.Wrap(err, "error getting user from stub")
 	}
 
-	policyStore, err := common.GetPvtCollPolicyStore(stub, pvtCollName)
+	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
 		return errors.Wrap(err, "error getting ngac components")
 	}
@@ -110,16 +110,16 @@ func ProcessSetAccountPending(stub shim.ChaincodeStubInterface, pvtCollName, acc
 		},
 	}
 
-	return process(stub, evtCtx, policyStore)
+	return process(ctx, evtCtx, policyStore)
 }
 
-func ProcessSetAccountInactive(stub shim.ChaincodeStubInterface, pvtCollName, account string, store policy.Store) error {
-	user, err := common.GetUser(stub)
+func ProcessSetAccountInactive(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return errors.Wrap(err, "error getting user from stub")
 	}
 
-	policyStore, err := common.GetPvtCollPolicyStore(stub, pvtCollName)
+	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
 		return errors.Wrap(err, "error getting ngac components")
 	}
@@ -132,16 +132,16 @@ func ProcessSetAccountInactive(stub shim.ChaincodeStubInterface, pvtCollName, ac
 		},
 	}
 
-	return process(stub, evtCtx, policyStore)
+	return process(ctx, evtCtx, policyStore)
 }
 
-func ProcessOnboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID string) error {
-	user, err := common.GetUser(stub)
+func ProcessOnboardAsset(ctx contractapi.TransactionContextInterface, pvtCollName, assetID string) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return errors.Wrap(err, "error getting user from stub")
 	}
 
-	policyStore, err := common.GetPvtCollPolicyStore(stub, pvtCollName)
+	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
 		return errors.Wrap(err, "error getting ngac components")
 	}
@@ -154,16 +154,16 @@ func ProcessOnboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID 
 		},
 	}
 
-	return process(stub, evtCtx, policyStore)
+	return process(ctx, evtCtx, policyStore)
 }
 
-func ProcessOffboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID string) error {
-	user, err := common.GetUser(stub)
+func ProcessOffboardAsset(ctx contractapi.TransactionContextInterface, pvtCollName, assetID string) error {
+	user, err := common.GetUser(ctx)
 	if err != nil {
 		return errors.Wrap(err, "error getting user from stub")
 	}
 
-	policyStore, err := common.GetPvtCollPolicyStore(stub, pvtCollName)
+	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
 		return errors.Wrap(err, "error getting ngac components")
 	}
@@ -176,5 +176,5 @@ func ProcessOffboardAsset(stub shim.ChaincodeStubInterface, pvtCollName, assetID
 		},
 	}
 
-	return process(stub, evtCtx, policyStore)
+	return process(ctx, evtCtx, policyStore)
 }

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/PM-Master/policy-machine-go/policy"
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/collections"
 )
@@ -20,13 +19,15 @@ func FormatUsername(user string, mspid string) string {
 	return fmt.Sprintf("%s:%s", user, mspid)
 }
 
-func GetUser(stub shim.ChaincodeStubInterface) (string, error) {
-	cert, err := cid.GetX509Certificate(stub)
+func GetUser(ctx contractapi.TransactionContextInterface) (string, error) {
+	cid := ctx.GetClientIdentity()
+
+	cert, err := cid.GetX509Certificate()
 	if err != nil {
 		return "", err
 	}
 
-	mspid, err := cid.GetMSPID(stub)
+	mspid, err := cid.GetMSPID()
 	if err != nil {
 		return "", err
 	}
@@ -34,8 +35,8 @@ func GetUser(stub shim.ChaincodeStubInterface) (string, error) {
 	return FormatUsername(cert.Subject.CommonName, mspid), nil
 }
 
-func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
-	cert, err := cid.GetX509Certificate(stub)
+func GetUsername(ctx contractapi.TransactionContextInterface) (string, error) {
+	cert, err := ctx.GetClientIdentity().GetX509Certificate()
 	if err != nil {
 		return "", err
 	}
@@ -43,11 +44,11 @@ func GetUsername(stub shim.ChaincodeStubInterface) (string, error) {
 	return cert.Subject.CommonName, nil
 }
 
-func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string) (policy.Store, error) {
+func GetPvtCollPolicyStore(ctx contractapi.TransactionContextInterface, pvtCollName string) (policy.Store, error) {
 	pip := memory.NewPolicyStore()
 
 	// get graph
-	bytes, err := stub.GetPrivateData(pvtCollName, GraphKey)
+	bytes, err := ctx.GetStub().GetPrivateData(pvtCollName, GraphKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
 	} else if bytes == nil {
@@ -59,7 +60,7 @@ func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string)
 	}
 
 	// get prohibitions
-	bytes, err = stub.GetPrivateData(pvtCollName, ProhibitionsKey)
+	bytes, err = ctx.GetStub().GetPrivateData(pvtCollName, ProhibitionsKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
 	}
@@ -70,7 +71,7 @@ func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string)
 	}
 
 	// get obligations
-	bytes, err = stub.GetPrivateData(pvtCollName, ObligationsKey)
+	bytes, err = ctx.GetStub().GetPrivateData(pvtCollName, ObligationsKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
 	}
@@ -84,7 +85,7 @@ func GetPvtCollPolicyStore(stub shim.ChaincodeStubInterface, pvtCollName string)
 	return pip, nil
 }
 
-func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, policyStore policy.Store) error {
+func PutPvtCollPolicyStore(ctx contractapi.TransactionContextInterface, policyStore policy.Store) error {
 	coll := collections.Catalog()
 
 	// put graph
@@ -93,7 +94,7 @@ func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, policyStore policy.
 		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(coll, GraphKey, bytes); err != nil {
+	if err = ctx.GetStub().PutPrivateData(coll, GraphKey, bytes); err != nil {
 		return errors.Wrapf(err, "error putting graph for collection %s", coll)
 	}
 
@@ -103,7 +104,7 @@ func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, policyStore policy.
 		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(coll, ProhibitionsKey, bytes); err != nil {
+	if err = ctx.GetStub().PutPrivateData(coll, ProhibitionsKey, bytes); err != nil {
 		return errors.Wrapf(err, "error putting prohibitions for collection %s", coll)
 	}
 
@@ -113,15 +114,15 @@ func PutPvtCollPolicyStore(stub shim.ChaincodeStubInterface, policyStore policy.
 		return errors.Wrapf(err, "error marshaling obligations for collection %s", coll)
 	}
 
-	if err = stub.PutPrivateData(coll, ObligationsKey, bytes); err != nil {
+	if err = ctx.GetStub().PutPrivateData(coll, ObligationsKey, bytes); err != nil {
 		return errors.Wrapf(err, "error putting obligations for collection %s", coll)
 	}
 
 	return nil
 }
 
-func IsNGACInitialized(stub shim.ChaincodeStubInterface, collName string) (bool, error) {
-	bytes, err := stub.GetPrivateData(collName, GraphKey)
+func IsNGACInitialized(ctx contractapi.TransactionContextInterface, collName string) (bool, error) {
+	bytes, err := ctx.GetStub().GetPrivateData(collName, GraphKey)
 	if err != nil {
 		return false, errors.Wrapf(err, "error reading graph of collection %s", collName)
 	}

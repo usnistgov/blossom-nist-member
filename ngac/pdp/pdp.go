@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/policy"
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/collections"
@@ -15,13 +14,13 @@ import (
 	"github.com/usnistgov/blossom/chaincode/ngac/pap"
 )
 
-func InitCatalogNGAC(stub shim.ChaincodeStubInterface) error {
+func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 	// check if this has already been called.  An error is thrown if this has not been called before
-	if _, err := common.GetPvtCollPolicyStore(stub, collections.Catalog()); err == nil {
+	if _, err := common.GetPvtCollPolicyStore(ctx, collections.Catalog()); err == nil {
 		return fmt.Errorf("ngac initialization function has already been called")
 	}
 
-	mspid, err := cid.GetMSPID(stub)
+	mspid, err := ctx.GetClientIdentity().GetMSPID()
 	if err != nil {
 		return err
 	}
@@ -32,7 +31,7 @@ func InitCatalogNGAC(stub shim.ChaincodeStubInterface) error {
 	}
 
 	// the admin user for the graph will be the user that performs the initialization
-	adminUser, err := common.GetUser(stub)
+	adminUser, err := common.GetUser(ctx)
 	if err != nil {
 		return err
 	}
@@ -42,84 +41,84 @@ func InitCatalogNGAC(stub shim.ChaincodeStubInterface) error {
 		return errors.Wrap(err, "error loading catalog policy")
 	}
 
-	return common.PutPvtCollPolicyStore(stub, policyStore)
+	return common.PutPvtCollPolicyStore(ctx, policyStore)
 }
 
-func CanApproveAccount(stub shim.ChaincodeStubInterface) error {
-	return check(stub, pap.BlossomObject, "approve_account")
+func CanApproveAccount(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, pap.BlossomObject, "approve_account")
 }
 
-func CanUploadATO(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "upload_ato")
+func CanUploadATO(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "upload_ato")
 }
 
-func CanUpdateAccountStatus(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "update_account_status")
+func CanUpdateAccountStatus(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "update_account_status")
 }
 
-func CanRequestCheckout(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "check_out")
+func CanRequestCheckout(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "check_out")
 }
 
-func CanApproveCheckout(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.BlossomObject, "approve_checkout")
+func CanApproveCheckout(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.BlossomObject, "approve_checkout")
 }
 
-func CanInitiateCheckIn(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "initiate_check_in")
+func CanInitiateCheckIn(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "initiate_check_in")
 }
 
-func CanProcessCheckIn(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "process_check_in")
+func CanProcessCheckIn(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "process_check_in")
 }
 
-func CanReportSwID(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "report_swid")
+func CanReportSwID(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "report_swid")
 }
 
-func CanDeleteSwID(stub shim.ChaincodeStubInterface, account string) error {
-	return check(stub, pap.AccountObjectName(account), "delete_swid")
+func CanDeleteSwID(ctx contractapi.TransactionContextInterface, account string) error {
+	return check(ctx, pap.AccountObjectName(account), "delete_swid")
 }
 
-func CanOnboardAsset(stub shim.ChaincodeStubInterface) error {
-	return check(stub, "assets", "onboard_asset")
+func CanOnboardAsset(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, "assets", "onboard_asset")
 }
 
-func CanOffboardAsset(stub shim.ChaincodeStubInterface) error {
-	return check(stub, "assets", "offboard_asset")
+func CanOffboardAsset(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, "assets", "offboard_asset")
 }
 
-func CanViewAssetPrivate(stub shim.ChaincodeStubInterface) error {
-	return check(stub, "all_assets", "view_asset_private")
+func CanViewAssetPrivate(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, "all_assets", "view_asset_private")
 }
 
-func CanViewAssetPublic(stub shim.ChaincodeStubInterface) error {
-	return check(stub, "all_assets", "view_asset_public")
+func CanViewAssetPublic(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, "all_assets", "view_asset_public")
 }
 
-func CanViewAssets(stub shim.ChaincodeStubInterface) error {
-	return check(stub, "all_assets", "view_assets")
+func CanViewAssets(ctx contractapi.TransactionContextInterface) error {
+	return check(ctx, "all_assets", "view_assets")
 }
 
-func check(stub shim.ChaincodeStubInterface, target, permission string) error {
-	user, err := common.GetUsername(stub)
+func check(ctx contractapi.TransactionContextInterface, target, permission string) error {
+	user, err := common.GetUsername(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting user: %v", err)
 	}
 
-	policyStore, err := common.GetPvtCollPolicyStore(stub, collections.Catalog())
+	policyStore, err := common.GetPvtCollPolicyStore(ctx, collections.Catalog())
 	if err != nil {
 		return err
 	}
 
-	account, err := cid.GetMSPID(stub)
+	account, err := ctx.GetClientIdentity().GetMSPID()
 	if err != nil {
 		return err
 	}
 
 	// skip this step for users in the adminmsp as they dont have account roles
 	if account != adminmsp.AdminMSP {
-		role, err := getRole(stub, user, account)
+		role, err := getRole(ctx, user, account)
 		if err != nil {
 			return err
 		}
@@ -142,11 +141,11 @@ func check(stub shim.ChaincodeStubInterface, target, permission string) error {
 	return nil
 }
 
-func getRole(stub shim.ChaincodeStubInterface, user, account string) (role string, err error) {
+func getRole(ctx contractapi.TransactionContextInterface, user, account string) (role string, err error) {
 	// get role from pvtcol of account if mspid == adminmsp skip this step
 	acctColl := collections.Account(account)
 
-	data, err := stub.GetPrivateData(acctColl, model.AccountKey(account))
+	data, err := ctx.GetStub().GetPrivateData(acctColl, model.AccountKey(account))
 	if err != nil {
 		return "", fmt.Errorf("error getting the users of account: %v", account)
 	}

@@ -8,18 +8,18 @@ import (
 )
 
 func TestInitCatalogNGAC(t *testing.T) {
-	stub := mocks.NewMemCCStub()
+	ctx := mocks.NewCtx()
 
-	stub.CreateCollection(collections.Catalog(), []string{"BlossomMSP"}, []string{"BlossomMSP"})
-	err := stub.SetUser(mocks.Super)
+	ctx.CreateCollection(collections.Catalog(), []string{"BlossomMSP"}, []string{"BlossomMSP"})
+	err := ctx.SetClientIdentity(mocks.Super)
 	require.NoError(t, err)
 
-	err = InitCatalogNGAC(stub)
+	err = InitCatalogNGAC(ctx)
 	require.NoError(t, err)
 
-	err = stub.SetUser(mocks.A1SystemOwner)
+	err = ctx.SetClientIdentity(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
-	err = InitCatalogNGAC(stub)
+	err = InitCatalogNGAC(ctx)
 	require.Error(t, err)
 }

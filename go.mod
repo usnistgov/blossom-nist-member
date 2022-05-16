@@ -13,8 +13,10 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/hashicorp/go-version v1.3.0 // indirect
-	github.com/hyperledger/fabric v1.4.12
 	github.com/hyperledger/fabric-amcl v0.0.0-20210603140002-2670f91851c8 // indirect
+	github.com/hyperledger/fabric-chaincode-go v0.0.0-20220131132609-1476cf1d3206
+	github.com/hyperledger/fabric-contract-api-go v1.1.1
+	github.com/hyperledger/fabric-protos-go v0.0.0-20220315113721-7dc293e117f7
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/opencontainers/runc v1.0.1 // indirect
@@ -29,5 +31,5 @@ require (
 	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/genproto v0.0.0-20210721163202-f1cecdd8b78a // indirect
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.27.1 // indirect
 )

@@ -6,7 +6,6 @@ import (
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -38,7 +37,7 @@ func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 
 	policyStore, err := pap.LoadCatalogPolicy(adminUser, adminmsp.AdminMSP)
 	if err != nil {
-		return errors.Wrap(err, "error loading catalog policy")
+		return fmt.Errorf("error loading catalog policy: %w", err)
 	}
 
 	return common.PutPvtCollPolicyStore(ctx, policyStore)
@@ -133,7 +132,7 @@ func check(ctx contractapi.TransactionContextInterface, target, permission strin
 
 	decider := pdp.NewDecider(policyStore.Graph(), policyStore.Prohibitions())
 	if ok, err := decider.HasPermissions(user, target, permission); err != nil {
-		return errors.Wrapf(err, "error checking if user %s can %s on %s", user, permission, target)
+		return fmt.Errorf("error checking if user %s can %s on %s: %w", user, permission, target, err)
 	} else if !ok {
 		return fmt.Errorf("user %s does not have permission %s on %s", user, permission, target)
 	}

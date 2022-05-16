@@ -5,7 +5,6 @@ import (
 	"github.com/PM-Master/policy-machine-go/pip/memory"
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/collections"
 )
 
@@ -50,35 +49,35 @@ func GetPvtCollPolicyStore(ctx contractapi.TransactionContextInterface, pvtCollN
 	// get graph
 	bytes, err := ctx.GetStub().GetPrivateData(pvtCollName, GraphKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
+		return nil, fmt.Errorf("error reading graph of collection %s: %w", pvtCollName, err)
 	} else if bytes == nil {
 		return nil, fmt.Errorf("catalog collection NGAC graph has not been initialized with InitNGAC")
 	}
 
 	if err = pip.Graph().UnmarshalJSON(bytes); err != nil {
-		return nil, errors.Wrap(err, "error unmarshaling graph bytes")
+		return nil, fmt.Errorf("error unmarshaling graph bytes: %w", err)
 	}
 
 	// get prohibitions
 	bytes, err = ctx.GetStub().GetPrivateData(pvtCollName, ProhibitionsKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
+		return nil, fmt.Errorf("error reading graph of collection %s: %w", pvtCollName, err)
 	}
 	if bytes != nil {
 		if err = pip.Prohibitions().UnmarshalJSON(bytes); err != nil {
-			return nil, errors.Wrap(err, "error unmarshaling prohibition bytes")
+			return nil, fmt.Errorf("error unmarshaling prohibition bytes: %w", err)
 		}
 	}
 
 	// get obligations
 	bytes, err = ctx.GetStub().GetPrivateData(pvtCollName, ObligationsKey)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading graph of collection %s", pvtCollName)
+		return nil, fmt.Errorf("error reading graph of collection %s: %w", pvtCollName, err)
 	}
 
 	if bytes != nil {
 		if err = pip.Obligations().UnmarshalJSON(bytes); err != nil {
-			return nil, errors.Wrap(err, "error unmarshaling obligation bytes")
+			return nil, fmt.Errorf("error unmarshaling obligation bytes: %w", err)
 		}
 	}
 
@@ -91,31 +90,31 @@ func PutPvtCollPolicyStore(ctx contractapi.TransactionContextInterface, policySt
 	// put graph
 	bytes, err := policyStore.Graph().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
+		return fmt.Errorf("error marshaling graph for collection %s: %w", coll, err)
 	}
 
 	if err = ctx.GetStub().PutPrivateData(coll, GraphKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting graph for collection %s", coll)
+		return fmt.Errorf("error putting graph for collection %s: %w", coll, err)
 	}
 
 	// put prohibitions
 	bytes, err = policyStore.Prohibitions().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling graph for collection %s", coll)
+		return fmt.Errorf("error marshaling graph for collection %s: %w", coll, err)
 	}
 
 	if err = ctx.GetStub().PutPrivateData(coll, ProhibitionsKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting prohibitions for collection %s", coll)
+		return fmt.Errorf("error putting prohibitions for collection %s: %w", coll, err)
 	}
 
 	// put obligations
 	bytes, err = policyStore.Obligations().MarshalJSON()
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling obligations for collection %s", coll)
+		return fmt.Errorf("error marshaling obligations for collection %s: %w", coll, err)
 	}
 
 	if err = ctx.GetStub().PutPrivateData(coll, ObligationsKey, bytes); err != nil {
-		return errors.Wrapf(err, "error putting obligations for collection %s", coll)
+		return fmt.Errorf("error putting obligations for collection %s: %w", coll, err)
 	}
 
 	return nil
@@ -124,7 +123,7 @@ func PutPvtCollPolicyStore(ctx contractapi.TransactionContextInterface, policySt
 func IsNGACInitialized(ctx contractapi.TransactionContextInterface, collName string) (bool, error) {
 	bytes, err := ctx.GetStub().GetPrivateData(collName, GraphKey)
 	if err != nil {
-		return false, errors.Wrapf(err, "error reading graph of collection %s", collName)
+		return false, fmt.Errorf("error reading graph of collection %s: %w", collName, err)
 	}
 
 	return bytes != nil, nil

@@ -5,7 +5,6 @@ import (
 	"github.com/PM-Master/policy-machine-go/epp"
 	"github.com/PM-Master/policy-machine-go/policy"
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
-	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"github.com/usnistgov/blossom/chaincode/ngac/common"
@@ -77,7 +76,7 @@ func UpdateAccountStatusEvent(ctx contractapi.TransactionContextInterface, accou
 func ProcessSetAccountActive(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
 	user, err := common.GetUser(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error getting user from stub")
+		return fmt.Errorf("error getting user from stub: %w", err)
 	}
 
 	evtCtx := epp.EventContext{
@@ -94,12 +93,12 @@ func ProcessSetAccountActive(ctx contractapi.TransactionContextInterface, pvtCol
 func ProcessSetAccountPending(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
 	user, err := common.GetUser(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error getting user from stub")
+		return fmt.Errorf("error getting user from stub: %w", err)
 	}
 
 	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
-		return errors.Wrap(err, "error getting ngac components")
+		return fmt.Errorf("error getting ngac components: %w", err)
 	}
 
 	evtCtx := epp.EventContext{
@@ -116,12 +115,12 @@ func ProcessSetAccountPending(ctx contractapi.TransactionContextInterface, pvtCo
 func ProcessSetAccountInactive(ctx contractapi.TransactionContextInterface, pvtCollName, account string, store policy.Store) error {
 	user, err := common.GetUser(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error getting user from stub")
+		return fmt.Errorf("error getting user from stub: %w", err)
 	}
 
 	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
-		return errors.Wrap(err, "error getting ngac components")
+		return fmt.Errorf("error getting ngac components: %w", err)
 	}
 
 	evtCtx := epp.EventContext{
@@ -138,12 +137,12 @@ func ProcessSetAccountInactive(ctx contractapi.TransactionContextInterface, pvtC
 func ProcessOnboardAsset(ctx contractapi.TransactionContextInterface, pvtCollName, assetID string) error {
 	user, err := common.GetUser(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error getting user from stub")
+		return fmt.Errorf("error getting user from stub: %w", err)
 	}
 
 	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
-		return errors.Wrap(err, "error getting ngac components")
+		return fmt.Errorf("error getting ngac components: %w", err)
 	}
 
 	evtCtx := epp.EventContext{
@@ -160,12 +159,12 @@ func ProcessOnboardAsset(ctx contractapi.TransactionContextInterface, pvtCollNam
 func ProcessOffboardAsset(ctx contractapi.TransactionContextInterface, pvtCollName, assetID string) error {
 	user, err := common.GetUser(ctx)
 	if err != nil {
-		return errors.Wrap(err, "error getting user from stub")
+		return fmt.Errorf("error getting user from stub: %w", err)
 	}
 
 	policyStore, err := common.GetPvtCollPolicyStore(ctx, pvtCollName)
 	if err != nil {
-		return errors.Wrap(err, "error getting ngac components")
+		return fmt.Errorf("error getting ngac components: %w", err)
 	}
 
 	evtCtx := epp.EventContext{

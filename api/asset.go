@@ -1,18 +1,16 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hyperledger/fabric/core/chaincode/shim/ext/cid"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
+	"github.com/hyperledger/fabric-protos-go/ledger/queryresult"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	events "github.com/usnistgov/blossom/chaincode/ngac/epp"
 	"github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	decider "github.com/usnistgov/blossom/chaincode/ngac/pdp"
 	"strings"
 
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	"github.com/hyperledger/fabric/protos/ledger/queryresult"
-	"github.com/pkg/errors"
 	"github.com/usnistgov/blossom/chaincode/model"
 )
 
@@ -32,25 +30,25 @@ func NewLicenseContract() AssetsInterface {
 	return &BlossomSmartContract{}
 }
 
-func (b *BlossomSmartContract) assetExists(stub shim.ChaincodeStubInterface, id string) (bool, error) {
-	data, err := stub.GetPrivateData(collections.Catalog(), model.AssetKey(id))
+func (b *BlossomSmartContract) assetExists(ctx contractapi.TransactionContextInterface, id string) (bool, error) {
+	data, err := ctx.GetStub().GetPrivateData(collections.Catalog(), model.AssetKey(id))
 	if err != nil {
-		return false, errors.Wrapf(err, "error checking if asset id %q already exists on the ledger", id)
+		return false, fmt.Errorf("error checking if asset id %q already exists on the ledger: %w", id, err)
 	}
 
 	return data != nil, nil
 }
 
-func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id string, name string, onboardDate string, expiration string) error {
-	if ok, err := b.assetExists(stub, id); err != nil {
-		return errors.Wrapf(err, "error checking if asset already exists")
+func (b *BlossomSmartContract) OnboardAsset(ctx contractapi.TransactionContextInterface, id string, name string, onboardDate string, expiration string) error {
+	if ok, err := b.assetExists(ctx, id); err != nil {
+		return fmt.Errorf("error checking if asset already exists: %w", err)
 	} else if ok {
-		return errors.Errorf("an asset with the ID %q already exists", id)
+		return fmt.Errorf("an asset with the ID %q already exists", id)
 	}
 
-	assetInput, err := getOnboardAssetTransientInput(stub)
+	assetInput, err := getOnboardAssetTransientInput(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting transient input: %v", err)
+		return fmt.Errorf("error getting transient input: %w", err)
 	}
 
 	if len(assetInput.Licenses) == 0 {
@@ -58,8 +56,8 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	// ngac check
-	if err = pdp.CanOnboardAsset(stub); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err = pdp.CanOnboardAsset(ctx); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
 	// public info - id, name, available (=total), expiration
@@ -73,12 +71,12 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 
 	bytes, err := json.Marshal(assetPub)
 	if err != nil {
-		return errors.Wrapf(err, "error marshaling asset %q", name)
+		return fmt.Errorf("error marshaling asset %q: %w", name, err)
 	}
 
 	// put in catalog pdc
-	if err = stub.PutPrivateData(collections.Catalog(), model.AssetKey(id), bytes); err != nil {
-		return errors.Wrap(err, "error adding asset to catalog private data collection")
+	if err = ctx.GetStub().PutPrivateData(collections.Catalog(), model.AssetKey(id), bytes); err != nil {
+		return fmt.Errorf("error adding asset to catalog private data collection: %w", err)
 	}
 
 	licenses := make([]string, 0)
@@ -96,21 +94,21 @@ func (b *BlossomSmartContract) OnboardAsset(stub shim.ChaincodeStubInterface, id
 	}
 
 	if bytes, err = json.Marshal(assetPvt); err != nil {
-		return errors.Wrapf(err, "error marshaling asset %q", name)
+		return fmt.Errorf("error marshaling asset %q: %w", name, err)
 	}
 
 	// add license to licenses private data
-	if err = stub.PutPrivateData(collections.Licenses(), model.AssetKey(id), bytes); err != nil {
-		return errors.Wrapf(err, "error adding asset to ledger")
+	if err = ctx.GetStub().PutPrivateData(collections.Licenses(), model.AssetKey(id), bytes); err != nil {
+		return fmt.Errorf("error adding asset to ledger: %w", err)
 	}
 
 	// ngac event
-	return events.ProcessOnboardAsset(stub, collections.Catalog(), id)
+	return events.ProcessOnboardAsset(ctx, collections.Catalog(), id)
 }
 
-func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, assetID string) error {
-	if ok, err := b.assetExists(stub, assetID); err != nil {
-		return errors.Wrapf(err, "error checking if asset exists")
+func (b *BlossomSmartContract) OffboardAsset(ctx contractapi.TransactionContextInterface, assetID string) error {
+	if ok, err := b.assetExists(ctx, assetID); err != nil {
+		return fmt.Errorf("error checking if asset exists: %w", err)
 	} else if !ok {
 		return nil
 	}
@@ -121,40 +119,40 @@ func (b *BlossomSmartContract) OffboardAsset(stub shim.ChaincodeStubInterface, a
 	)
 
 	// ngac check
-	if err := pdp.CanOffboardAsset(stub); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err := pdp.CanOffboardAsset(ctx); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
-	if asset, err = b.GetAsset(stub, assetID); err != nil {
-		return errors.Wrapf(err, "error getting asset info")
+	if asset, err = b.GetAsset(ctx, assetID); err != nil {
+		return fmt.Errorf("error getting asset info: %w", err)
 	}
 
 	// check that all licenses have been returned
 	if asset.Available != len(asset.Licenses) {
-		return errors.Errorf("asset %s still has licenses checked out", assetID)
+		return fmt.Errorf("asset %s still has licenses checked out: %w", assetID, err)
 	}
 
 	// remove asset from catalog
-	if err = stub.DelPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
-		return errors.Wrapf(err, "error offboarding asset from catalog pdc")
+	if err = ctx.GetStub().DelPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
+		return fmt.Errorf("error offboarding asset from catalog pdc: %w", err)
 	}
 
 	// remove license licenses pdc
-	if err = stub.DelPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
-		return errors.Wrapf(err, "error offboarding asset from licenses pdc")
+	if err = ctx.GetStub().DelPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
+		return fmt.Errorf("error offboarding asset from licenses pdc: %w", err)
 	}
 
 	// ngac event
-	return events.ProcessOffboardAsset(stub, collections.Catalog(), assetID)
+	return events.ProcessOffboardAsset(ctx, collections.Catalog(), assetID)
 }
 
-func (b *BlossomSmartContract) GetAssets(stub shim.ChaincodeStubInterface) ([]*model.AssetPublic, error) {
+func (b *BlossomSmartContract) GetAssets(ctx contractapi.TransactionContextInterface) ([]*model.AssetPublic, error) {
 	// ngac check
-	if err := pdp.CanViewAssets(stub); err != nil {
-		return nil, errors.Wrapf(err, "ngac check failed")
+	if err := pdp.CanViewAssets(ctx); err != nil {
+		return nil, fmt.Errorf("ngac check failed: %w", err)
 	}
 
-	resultsIterator, err := stub.GetPrivateDataByRange(collections.Catalog(), "", "")
+	resultsIterator, err := ctx.GetStub().GetPrivateDataByRange(collections.Catalog(), "", "")
 	if err != nil {
 		return nil, err
 	}
@@ -183,11 +181,11 @@ func (b *BlossomSmartContract) GetAssets(stub shim.ChaincodeStubInterface) ([]*m
 	return assets, nil
 }
 
-func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id string) (*model.Asset, error) {
-	if ok, err := b.assetExists(stub, id); err != nil {
-		return nil, errors.Wrapf(err, "error checking if asset exists")
+func (b *BlossomSmartContract) GetAsset(ctx contractapi.TransactionContextInterface, id string) (*model.Asset, error) {
+	if ok, err := b.assetExists(ctx, id); err != nil {
+		return nil, fmt.Errorf("error checking if asset exists: %w", err)
 	} else if !ok {
-		return nil, errors.Errorf("an asset with the ID %q does not exist", id)
+		return nil, fmt.Errorf("an asset with the ID %q does not exist", id)
 	}
 
 	var (
@@ -197,30 +195,25 @@ func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id str
 		err      error
 	)
 
-	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(id)); err != nil {
-		return nil, errors.Wrapf(err, "error getting asset from private data")
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Catalog(), model.AssetKey(id)); err != nil {
+		return nil, fmt.Errorf("error getting asset from private data: %w", err)
 	}
 
 	// ngac check
-	if err = pdp.CanViewAssetPublic(stub); err != nil {
-		return nil, fmt.Errorf("ngac check on asset public failed: %v", err)
+	if err = pdp.CanViewAssetPublic(ctx); err != nil {
+		return nil, fmt.Errorf("ngac check on asset public failed: %w", err)
 	}
 
 	if err = json.Unmarshal(bytes, assetPub); err != nil {
-		return nil, fmt.Errorf("error unmarshaling asset public info: %v", err)
+		return nil, fmt.Errorf("error unmarshaling asset public info: %w", err)
 	}
 
-	/*	if err = pdp.CanViewAssetPrivate(stub); err != nil {
-		mspid, _ := cid.GetMSPID(stub)
-		fmt.Printf("error occurred reading pvtdata for user in org %s: %v\n", mspid, err)
-	}*/
-
-	if bytes, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey(id)); err != nil {
-		mspid, _ := cid.GetMSPID(stub)
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Licenses(), model.AssetKey(id)); err != nil {
+		mspid, _ := ctx.GetClientIdentity().GetMSPID()
 		fmt.Printf("error occurred reading pvtdata for user in org %s: %v\n", mspid, err)
 	} else {
 		if err = json.Unmarshal(bytes, assetPvt); err != nil {
-			return nil, errors.Wrapf(err, "error deserializing account private info")
+			return nil, fmt.Errorf("error deserializing account private info: %w", err)
 		}
 	}
 
@@ -237,10 +230,10 @@ func (b *BlossomSmartContract) GetAsset(stub shim.ChaincodeStubInterface, id str
 	}, nil
 }
 
-func (b *BlossomSmartContract) RequestCheckout(stub shim.ChaincodeStubInterface) error {
-	transientInput, err := getRequestCheckoutTransientInput(stub)
+func (b *BlossomSmartContract) RequestCheckout(ctx contractapi.TransactionContextInterface) error {
+	transientInput, err := getRequestCheckoutTransientInput(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting transient input: %v", err)
+		return fmt.Errorf("error getting transient input: %w", err)
 	}
 
 	var (
@@ -249,28 +242,28 @@ func (b *BlossomSmartContract) RequestCheckout(stub shim.ChaincodeStubInterface)
 	)
 
 	// check requested asset exists
-	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(transientInput.AssetID)); err != nil {
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Catalog(), model.AssetKey(transientInput.AssetID)); err != nil {
 		return err
 	} else if bytes == nil {
 		return fmt.Errorf("asset with id %s does not exist", transientInput.AssetID)
 	}
 
-	if account, err = accountName(stub); err != nil {
-		return errors.Wrap(err, "error getting MSPID from stub")
+	if account, err = accountName(ctx); err != nil {
+		return fmt.Errorf("error getting MSPID from stub: %w", err)
 	}
 
 	collection := collections.Account(account)
 
 	// ngac check
-	if err = decider.CanRequestCheckout(stub, account); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err = decider.CanRequestCheckout(ctx, account); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
 	key := checkoutRequestKey(account, transientInput.AssetID)
 
 	// check if request has already been made and not approved
-	if bytes, err = stub.GetPrivateData(collection, key); err != nil {
-		return err
+	if bytes, err = ctx.GetStub().GetPrivateData(collection, key); err != nil {
+		return fmt.Errorf("error reading private data to check if request has been made but not approved: %w", err)
 	} else if bytes != nil {
 		return fmt.Errorf("request for asset %s alreadys exists for account %s and has not been approved yet", transientInput.AssetID, account)
 	}
@@ -278,31 +271,31 @@ func (b *BlossomSmartContract) RequestCheckout(stub shim.ChaincodeStubInterface)
 	req := &CheckoutRequest{transientInput.AssetID, transientInput.Amount}
 
 	if bytes, err = json.Marshal(req); err != nil {
-		return err
+		return fmt.Errorf("error marshaling request: %w", err)
 	}
 
-	return stub.PutPrivateData(collection, key, bytes)
+	return ctx.GetStub().PutPrivateData(collection, key, bytes)
 }
 
 func checkoutRequestKey(account, assetID string) string {
 	return fmt.Sprintf("checkout=%s:%s", account, assetID)
 }
 
-func (b *BlossomSmartContract) GetCheckoutRequests(stub shim.ChaincodeStubInterface, account string) ([]CheckoutRequest, error) {
+func (b *BlossomSmartContract) GetCheckoutRequests(ctx contractapi.TransactionContextInterface, account string) ([]CheckoutRequest, error) {
 	collection := collections.Account(account)
 
 	key := checkoutRequestKey(account, "")
 
-	iter, err := stub.GetPrivateDataByRange(collection, "", "")
+	iter, err := ctx.GetStub().GetPrivateDataByRange(collection, "", "")
 	if err != nil {
 		return nil, err
 	}
 
 	reqs := make([]CheckoutRequest, 0)
 	for iter.HasNext() {
-		next, err := iter.Next()
-		if err != nil {
-			return nil, err
+		next := &queryresult.KV{}
+		if next, err = iter.Next(); err != nil {
+			return nil, fmt.Errorf("error getting next KV: %w", err)
 		}
 
 		if !strings.HasPrefix(next.Key, key) {
@@ -311,7 +304,7 @@ func (b *BlossomSmartContract) GetCheckoutRequests(stub shim.ChaincodeStubInterf
 
 		req := CheckoutRequest{}
 		if err = json.Unmarshal(next.Value, &req); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error unmarshaling request: %w", err)
 		}
 
 		reqs = append(reqs, req)
@@ -320,10 +313,10 @@ func (b *BlossomSmartContract) GetCheckoutRequests(stub shim.ChaincodeStubInterf
 	return reqs, nil
 }
 
-func (b *BlossomSmartContract) ApproveCheckout(stub shim.ChaincodeStubInterface) error {
-	transientInput, err := getApproveCheckoutTransientInput(stub)
+func (b *BlossomSmartContract) ApproveCheckout(ctx contractapi.TransactionContextInterface) error {
+	transientInput, err := getApproveCheckoutTransientInput(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting transient input: %v", err)
+		return fmt.Errorf("error getting transient input: %w", err)
 	}
 
 	var (
@@ -333,43 +326,43 @@ func (b *BlossomSmartContract) ApproveCheckout(stub shim.ChaincodeStubInterface)
 	)
 
 	// ngac check
-	if err = decider.CanApproveCheckout(stub, transientInput.Account); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err = decider.CanApproveCheckout(ctx, transientInput.Account); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
 	// check that request exists
-	if bytes, err = stub.GetPrivateData(acctColl, key); err != nil {
-		return errors.Wrapf(err, "error checking if request exists")
+	if bytes, err = ctx.GetStub().GetPrivateData(acctColl, key); err != nil {
+		return fmt.Errorf("error checking if request exists: %w", err)
 	} else if bytes == nil {
 		return fmt.Errorf("request for asset %s does not exist for account %s", transientInput.AssetID, transientInput.Account)
 	}
 
 	// delete request key
-	if err = stub.DelPrivateData(acctColl, key); err != nil {
-		return errors.Wrapf(err, "error deleting request")
+	if err = ctx.GetStub().DelPrivateData(acctColl, key); err != nil {
+		return fmt.Errorf("error deleting request: %w", err)
 	}
 
 	req := &CheckoutRequest{}
 	if err = json.Unmarshal(bytes, req); err != nil {
-		return errors.Wrapf(err, "error unmarshaling request")
+		return fmt.Errorf("error unmarshaling request: %w", err)
 	}
 
-	acctPub, acctPvt, assetPub, assetPvt, err := getAcctAndAsset(stub, transientInput.Account, transientInput.AssetID)
+	acctPub, acctPvt, assetPub, assetPvt, err := getAcctAndAsset(ctx, transientInput.Account, transientInput.AssetID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting account and asset to process checkout: %w", err)
 	}
 
 	if err = checkout(assetPub, assetPvt, acctPub, acctPvt, req.Amount); err != nil {
-		return errors.Wrapf(err, "error checking out %s for account %s", transientInput.AssetID, transientInput.Account)
+		return fmt.Errorf("error checking out %s for account %s: %w", transientInput.AssetID, transientInput.Account, err)
 	}
 
-	return putAcctAndAsset(stub, acctPub, acctPvt, assetPub, assetPvt)
+	return putAcctAndAsset(ctx, acctPub, acctPvt, assetPub, assetPvt)
 }
 
 func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub *model.AccountPublic, acctPvt *model.AccountPrivate, amount int) error {
 	// check that the amount requested is less than the amount available
 	if amount > assetPub.Available {
-		return errors.Errorf("requested amount %v cannot be greater than the available amount %v",
+		return fmt.Errorf("requested amount %v cannot be greater than the available amount %v",
 			amount, assetPub.Available)
 	}
 
@@ -411,36 +404,36 @@ func checkout(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub
 	return nil
 }
 
-func (b *BlossomSmartContract) GetLicenses(stub shim.ChaincodeStubInterface, account, assetID string) (map[string]string, error) {
-	bytes, err := stub.GetPrivateData(collections.Account(account), model.AccountKey(account))
+func (b *BlossomSmartContract) GetLicenses(ctx contractapi.TransactionContextInterface, account, assetID string) (map[string]string, error) {
+	bytes, err := ctx.GetStub().GetPrivateData(collections.Account(account), model.AccountKey(account))
 	if err != nil {
-		return nil, errors.Wrapf(err, "error reading account private data")
+		return nil, fmt.Errorf("error reading account private data: %w", err)
 	}
 
 	acctPvt := &model.AccountPrivate{}
 	if err = json.Unmarshal(bytes, acctPvt); err != nil {
-		return nil, errors.Wrapf(err, "error unmarshaling account private data")
+		return nil, fmt.Errorf("error unmarshaling account private data: %w", err)
 	}
 
 	return acctPvt.Assets[assetID], nil
 }
 
-func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface) error {
-	transientInput, err := getInitiateCheckinTransientInput(stub)
+func (b *BlossomSmartContract) InitiateCheckin(ctx contractapi.TransactionContextInterface) error {
+	transientInput, err := getInitiateCheckinTransientInput(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting transient input: %v", err)
+		return fmt.Errorf("error getting transient input: %w", err)
 	}
 
-	account, err := accountName(stub)
+	account, err := accountName(ctx)
 	if err != nil {
-		return errors.Wrapf(err, "error getting MSPID from stub")
+		return fmt.Errorf("error getting MSPID from stub: %w", err)
 	}
 
 	collection := collections.Account(account)
 
 	// ngac check
-	if err = decider.CanInitiateCheckIn(stub, account); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err = decider.CanInitiateCheckIn(ctx, account); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
 	var (
@@ -449,28 +442,28 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 	)
 
 	// check if the licenses in the request are really checked out by the account
-	if bytes, err = stub.GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
-		return fmt.Errorf("error getting account private info from private data: %v", err)
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
+		return fmt.Errorf("error getting account private info from private data: %w", err)
 	}
 
 	acctPvt := &model.AccountPrivate{}
 	if err = json.Unmarshal(bytes, &acctPvt); err != nil {
-		return fmt.Errorf("error unmarshaling account private info: %v", err)
+		return fmt.Errorf("error unmarshaling account private info: %w", err)
 	}
 
 	checkedOut := acctPvt.Assets[transientInput.AssetID]
 	for _, returnedKey := range transientInput.Licenses {
 		// check that the returned license is leased to the account
 		if _, ok := checkedOut[returnedKey]; !ok {
-			return errors.Errorf("returned key %s was not checked out by %s", returnedKey, account)
+			return fmt.Errorf("returned key %s was not checked out by %s: %w", returnedKey, account, err)
 		}
 	}
 
 	// check if request has already been made and not approved
-	if bytes, err = stub.GetPrivateData(collection, key); err != nil {
+	if bytes, err = ctx.GetStub().GetPrivateData(collection, key); err != nil {
 		return err
 	} else if bytes != nil {
-		return fmt.Errorf("request to checkin %s has already been initiated for account %s and has not been processed yet", transientInput.AssetID, account)
+		return fmt.Errorf("request to checkin %s has already been initiated for account %s and has not been processed yet: %w", transientInput.AssetID, account, err)
 	}
 
 	req := CheckinRequest{
@@ -479,27 +472,27 @@ func (b *BlossomSmartContract) InitiateCheckin(stub shim.ChaincodeStubInterface)
 	}
 
 	if bytes, err = json.Marshal(req); err != nil {
-		return err
+		return fmt.Errorf("error marshaling request: %w", err)
 	}
 
-	return stub.PutPrivateData(collection, key, bytes)
+	return ctx.GetStub().PutPrivateData(collection, key, bytes)
 }
 
-func (b *BlossomSmartContract) GetInitiatedCheckins(stub shim.ChaincodeStubInterface, account string) ([]CheckinRequest, error) {
+func (b *BlossomSmartContract) GetInitiatedCheckins(ctx contractapi.TransactionContextInterface, account string) ([]CheckinRequest, error) {
 	collection := collections.Account(account)
 
 	key := checkinRequestKey(account, "")
 
-	iter, err := stub.GetPrivateDataByRange(collection, "", "")
+	iter, err := ctx.GetStub().GetPrivateDataByRange(collection, "", "")
 	if err != nil {
 		return nil, err
 	}
 
 	reqs := make([]CheckinRequest, 0)
 	for iter.HasNext() {
-		next, err := iter.Next()
-		if err != nil {
-			return nil, err
+		next := &queryresult.KV{}
+		if next, err = iter.Next(); err != nil {
+			return nil, fmt.Errorf("error getting next KV: %w", err)
 		}
 
 		if !strings.HasPrefix(next.Key, key) {
@@ -508,7 +501,7 @@ func (b *BlossomSmartContract) GetInitiatedCheckins(stub shim.ChaincodeStubInter
 
 		req := CheckinRequest{}
 		if err = json.Unmarshal(next.Value, &req); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error unmarshaling request: %w", err)
 		}
 
 		reqs = append(reqs, req)
@@ -536,13 +529,13 @@ func checkin(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub 
 
 	accountCheckedOut, ok := assetPvt.CheckedOut[acctPub.Name]
 	if !ok {
-		return errors.Errorf("account %s has not checked out any licenses for asset %s", acctPub.Name, assetPub.ID)
+		return fmt.Errorf("account %s has not checked out any licenses for asset %s", acctPub.Name, assetPub.ID)
 	}
 
 	for _, license := range licenses {
 		// check that the account has the license checked out
 		if _, ok = accountCheckedOut[license]; !ok {
-			return errors.Errorf("returned license %s was not checked out by %s", license, acctPub.Name)
+			return fmt.Errorf("returned license %s was not checked out by %s", license, acctPub.Name)
 		}
 
 		// remove the returned license from the checked out licenses
@@ -563,10 +556,10 @@ func checkin(assetPub *model.AssetPublic, assetPvt *model.AssetPrivate, acctPub 
 	return nil
 }
 
-func (b *BlossomSmartContract) ProcessCheckin(stub shim.ChaincodeStubInterface) error {
-	transientInput, err := getProcessCheckinTransientInput(stub)
+func (b *BlossomSmartContract) ProcessCheckin(ctx contractapi.TransactionContextInterface) error {
+	transientInput, err := getProcessCheckinTransientInput(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting transient input: %v", err)
+		return fmt.Errorf("error getting transient input: %w", err)
 	}
 
 	var (
@@ -576,40 +569,40 @@ func (b *BlossomSmartContract) ProcessCheckin(stub shim.ChaincodeStubInterface) 
 	)
 
 	// ngac check
-	if err = decider.CanProcessCheckIn(stub, transientInput.Account); err != nil {
-		return errors.Wrapf(err, "ngac check failed")
+	if err = decider.CanProcessCheckIn(ctx, transientInput.Account); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
 	}
 
 	// check that request exists
-	if bytes, err = stub.GetPrivateData(acctColl, key); err != nil {
-		return errors.Wrapf(err, "error checking if checkin request exists")
+	if bytes, err = ctx.GetStub().GetPrivateData(acctColl, key); err != nil {
+		return fmt.Errorf("error checking if checkin request exists: %w", err)
 	} else if bytes == nil {
 		return fmt.Errorf("request to checkin asset %s does not exist for account %s", transientInput.AssetID, transientInput.Account)
 	}
 
 	// delete request key
-	if err = stub.DelPrivateData(acctColl, key); err != nil {
-		return errors.Wrapf(err, "error deleting request")
+	if err = ctx.GetStub().DelPrivateData(acctColl, key); err != nil {
+		return fmt.Errorf("error deleting request: %w", err)
 	}
 
 	req := &CheckinRequest{}
 	if err = json.Unmarshal(bytes, req); err != nil {
-		return errors.Wrapf(err, "error unmarshaling request")
+		return fmt.Errorf("error unmarshaling request: %w", err)
 	}
 
-	acctPub, acctPvt, assetPub, assetPvt, err := getAcctAndAsset(stub, transientInput.Account, transientInput.AssetID)
+	acctPub, acctPvt, assetPub, assetPvt, err := getAcctAndAsset(ctx, transientInput.Account, transientInput.AssetID)
 	if err != nil {
 		return err
 	}
 
 	if err = checkin(assetPub, assetPvt, acctPub, acctPvt, req.Licenses); err != nil {
-		return errors.Wrapf(err, "error checking out %s for account %s", transientInput.AssetID, transientInput.Account)
+		return fmt.Errorf("error checking out %s for account %s: %w", transientInput.AssetID, transientInput.Account, err)
 	}
 
-	return putAcctAndAsset(stub, acctPub, acctPvt, assetPub, assetPvt)
+	return putAcctAndAsset(ctx, acctPub, acctPvt, assetPub, assetPvt)
 }
 
-func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPublic, acctPvt *model.AccountPrivate,
+func putAcctAndAsset(ctx contractapi.TransactionContextInterface, acctPub *model.AccountPublic, acctPvt *model.AccountPrivate,
 	assetPub *model.AssetPublic, assetPvt *model.AssetPrivate) (err error) {
 	var (
 		bytes    []byte
@@ -622,7 +615,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	if err = stub.PutState(acctKey, bytes); err != nil {
+	if err = ctx.GetStub().PutState(acctKey, bytes); err != nil {
 		return
 	}
 
@@ -631,7 +624,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	if err = stub.PutPrivateData(acctColl, acctKey, bytes); err != nil {
+	if err = ctx.GetStub().PutPrivateData(acctColl, acctKey, bytes); err != nil {
 		return
 	}
 
@@ -640,7 +633,7 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	if err = stub.PutPrivateData(collections.Catalog(), model.AssetKey(assetPub.ID), bytes); err != nil {
+	if err = ctx.GetStub().PutPrivateData(collections.Catalog(), model.AssetKey(assetPub.ID), bytes); err != nil {
 		return
 	}
 
@@ -649,53 +642,53 @@ func putAcctAndAsset(stub shim.ChaincodeStubInterface, acctPub *model.AccountPub
 		return
 	}
 
-	return stub.PutPrivateData(collections.Licenses(), model.AssetKey(assetPub.ID), bytes)
+	return ctx.GetStub().PutPrivateData(collections.Licenses(), model.AssetKey(assetPub.ID), bytes)
 }
 
-func getAcctAndAsset(stub shim.ChaincodeStubInterface, account, assetID string) (*model.AccountPublic, *model.AccountPrivate, *model.AssetPublic, *model.AssetPrivate, error) {
+func getAcctAndAsset(ctx contractapi.TransactionContextInterface, account, assetID string) (*model.AccountPublic, *model.AccountPrivate, *model.AssetPublic, *model.AssetPrivate, error) {
 	var (
 		bytes []byte
 		err   error
 	)
 
 	// get licenses from license collection
-	if bytes, err = stub.GetPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error getting license info from private data")
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Licenses(), model.AssetKey(assetID)); err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	assetPvt := &model.AssetPrivate{}
 	if err = json.Unmarshal(bytes, &assetPvt); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error unmarshaling asset private info")
+		return nil, nil, nil, nil, err
 	}
 
 	// get asset public info from catalog collection to update available
-	if bytes, err = stub.GetPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error getting asset public info from private data")
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Catalog(), model.AssetKey(assetID)); err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	assetPub := &model.AssetPublic{}
 	if err = json.Unmarshal(bytes, &assetPub); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error unmarshaling asset private info")
+		return nil, nil, nil, nil, err
 	}
 
 	// get account private info from account collection to update available
-	if bytes, err = stub.GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error getting account private info from private data")
+	if bytes, err = ctx.GetStub().GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	acctPvt := &model.AccountPrivate{}
 	if err = json.Unmarshal(bytes, &acctPvt); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error unmarshaling account private info")
+		return nil, nil, nil, nil, err
 	}
 
 	// get account private info from account collection to update available
-	if bytes, err = stub.GetState(model.AccountKey(account)); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error getting account public info from private data")
+	if bytes, err = ctx.GetStub().GetState(model.AccountKey(account)); err != nil {
+		return nil, nil, nil, nil, err
 	}
 
 	acctPub := &model.AccountPublic{}
 	if err = json.Unmarshal(bytes, &acctPub); err != nil {
-		return nil, nil, nil, nil, errors.Wrapf(err, "error unmarshaling account public info")
+		return nil, nil, nil, nil, err
 	}
 
 	return acctPub, acctPvt, assetPub, assetPvt, nil

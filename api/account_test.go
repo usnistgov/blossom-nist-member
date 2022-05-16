@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"encoding/json"
@@ -10,11 +10,11 @@ import (
 
 func TestRequestAccount(t *testing.T) {
 	t.Run("test with ato", func(t *testing.T) {
-		stub := newTestStub(t)
+		ctx := newTestStub(t)
 
-		requestTestAccount(t, stub, A1MSP)
+		requestTestAccount(t, ctx, A1MSP)
 
-		bytes, err := stub.GetState(model.AccountKey("A1MSP"))
+		bytes, err := ctx.GetStub().GetState(model.AccountKey("A1MSP"))
 		require.NoError(t, err)
 
 		acctPub := &model.AccountPublic{}
@@ -24,7 +24,7 @@ func TestRequestAccount(t *testing.T) {
 		require.Equal(t, A1MSP, acctPub.MSPID)
 		require.Equal(t, model.Authorized, acctPub.Status)
 
-		bytes, err = stub.GetPrivateData(A1Collection, model.AccountKey("A1MSP"))
+		bytes, err = ctx.GetStub().GetPrivateData(A1Collection, model.AccountKey("A1MSP"))
 		require.NoError(t, err)
 
 		acctPvt := &model.AccountPrivate{}
@@ -38,19 +38,18 @@ func TestRequestAccount(t *testing.T) {
 	})
 
 	t.Run("test without ato", func(t *testing.T) {
-		stub := newTestStub(t)
+		ctx := newTestStub(t)
 
-		err := stub.SetUser(mocks.A1SystemOwner)
+		err := ctx.SetClientIdentity(mocks.A1SystemOwner)
 		require.NoError(t, err)
 
 		bcc := BlossomSmartContract{}
-		stub.SetFunctionAndArgs("RequestAccount")
-		err = stub.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec"})
+		err = ctx.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec"})
 		require.NoError(t, err)
-		result := bcc.Invoke(stub)
-		require.Equal(t, int32(200), result.Status)
+		err = bcc.RequestAccount(ctx)
+		require.NoError(t, err)
 
-		bytes, err := stub.GetState(model.AccountKey(A1MSP))
+		bytes, err := ctx.GetStub().GetState(model.AccountKey(A1MSP))
 		require.NoError(t, err)
 
 		acctPub := &model.AccountPublic{}
@@ -60,7 +59,7 @@ func TestRequestAccount(t *testing.T) {
 		require.Equal(t, A1MSP, acctPub.MSPID)
 		require.Equal(t, model.PendingApproval, acctPub.Status)
 
-		bytes, err = stub.GetPrivateData(A1Collection, model.AccountKey(A1MSP))
+		bytes, err = ctx.GetStub().GetPrivateData(A1Collection, model.AccountKey(A1MSP))
 		require.NoError(t, err)
 
 		acctPvt := &model.AccountPrivate{}
@@ -76,80 +75,79 @@ func TestRequestAccount(t *testing.T) {
 }
 
 func TestUploadATO(t *testing.T) {
-	stub := newTestStub(t)
+	ctx := newTestStub(t)
 
-	requestTestAccount(t, stub, A1MSP)
+	requestTestAccount(t, ctx, A1MSP)
 
-	err := stub.SetUser(mocks.A1SystemOwner)
+	err := ctx.SetClientIdentity(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	stub.SetFunctionAndArgs("UploadATO")
-	err = stub.SetTransient("ato", uploadATOTransientInput{"my ato"})
+	err = ctx.SetTransient("ato", uploadATOTransientInput{"my ato"})
 	require.NoError(t, err)
-	result := bcc.Invoke(stub)
-	require.Equal(t, int32(200), result.Status, result.Message)
+	err = bcc.UploadATO(ctx)
+	require.NoError(t, err)
 
-	account, err := bcc.GetAccount(stub, A1MSP)
+	account, err := bcc.GetAccount(ctx, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, "my ato", account.ATO)
 
-	err = stub.SetUser(mocks.A1AcqSpec)
+	err = ctx.SetClientIdentity(mocks.A1AcqSpec)
 	require.NoError(t, err)
 
-	err = stub.SetTransient("ato", uploadATOTransientInput{"my ato"})
+	err = ctx.SetTransient("ato", uploadATOTransientInput{"my ato"})
 	require.NoError(t, err)
-	result = bcc.Invoke(stub)
-	require.Equal(t, int32(500), result.Status)
-	require.Equal(t, "error uploading ATO for account A1MSP: user a1_acq_spec does not have permission upload_ato on A1MSP_object", result.Message)
+	err = bcc.UploadATO(ctx)
+	require.Error(t, err)
+	require.Errorf(t, err, "error uploading ATO for account A1MSP: user a1_acq_spec does not have permission upload_ato on A1MSP_object", err.Error())
 }
 
 func TestUpdateAccountStatus(t *testing.T) {
-	stub := newTestStub(t)
+	ctx := newTestStub(t)
 
-	requestTestAccount(t, stub, A1MSP)
+	requestTestAccount(t, ctx, A1MSP)
 
-	err := stub.SetUser(mocks.A1SystemOwner)
+	err := ctx.SetClientIdentity(mocks.A1SystemOwner)
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
+	err = bcc.UpdateAccountStatus(ctx, A1MSP, "AUTHORIZED")
 	require.Error(t, err)
 
-	err = stub.SetUser(mocks.Super)
+	err = ctx.SetClientIdentity(mocks.Super)
 	require.NoError(t, err)
 
-	err = bcc.UpdateAccountStatus(stub, A1MSP, "AUTHORIZED")
+	err = bcc.UpdateAccountStatus(ctx, A1MSP, "AUTHORIZED")
 	require.NoError(t, err)
 }
 
 func TestAccounts(t *testing.T) {
-	stub := newTestStub(t)
+	ctx := newTestStub(t)
 
-	requestTestAccount(t, stub, A1MSP)
-	requestTestAccount(t, stub, A2MSP)
+	requestTestAccount(t, ctx, A1MSP)
+	requestTestAccount(t, ctx, A2MSP)
 
-	err := stub.SetUser(mocks.A2SystemOwner)
+	err := ctx.SetClientIdentity(mocks.A2SystemOwner)
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	accounts, err := bcc.GetAccounts(stub)
+	accounts, err := bcc.GetAccounts(ctx)
 	require.NoError(t, err)
 
 	require.Equal(t, 2, len(accounts))
 }
 
 func TestAccount(t *testing.T) {
-	stub := newTestStub(t)
+	ctx := newTestStub(t)
 
-	requestTestAccount(t, stub, A1MSP)
-	requestTestAccount(t, stub, A2MSP)
+	requestTestAccount(t, ctx, A1MSP)
+	requestTestAccount(t, ctx, A2MSP)
 
-	err := stub.SetUser(mocks.A2SystemOwner)
+	err := ctx.SetClientIdentity(mocks.A2SystemOwner)
 	require.NoError(t, err)
 
 	bcc := BlossomSmartContract{}
-	acct, err := bcc.GetAccount(stub, A1MSP)
+	acct, err := bcc.GetAccount(ctx, A1MSP)
 	require.NoError(t, err)
 	require.Equal(t, A1MSP, acct.Name)
 	require.Equal(t, A1MSP, acct.MSPID)
@@ -158,7 +156,7 @@ func TestAccount(t *testing.T) {
 	require.Equal(t, model.Users{}, acct.Users)
 	require.Empty(t, acct.Assets)
 
-	acct, err = bcc.GetAccount(stub, A2MSP)
+	acct, err = bcc.GetAccount(ctx, A2MSP)
 	require.NoError(t, err)
 	require.Equal(t, A2MSP, acct.Name)
 	require.Equal(t, A2MSP, acct.MSPID)

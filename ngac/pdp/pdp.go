@@ -147,7 +147,7 @@ func getRole(ctx contractapi.TransactionContextInterface, user, account string) 
 
 	data, err := ctx.GetStub().GetPrivateData(acctColl, model.AccountKey(account))
 	if err != nil {
-		return "", fmt.Errorf("error getting the users of account: %v", account)
+		return "", fmt.Errorf("error getting the users of account %v: %w", account, err)
 	}
 
 	acctPvt := model.AccountPrivate{}

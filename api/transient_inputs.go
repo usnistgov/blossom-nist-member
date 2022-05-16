@@ -1,9 +1,9 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+	"github.com/hyperledger/fabric-contract-api-go/contractapi"
 	"github.com/usnistgov/blossom/chaincode/model"
 )
 
@@ -60,10 +60,10 @@ type (
 	}
 )
 
-func getAccountTransientInput(stub shim.ChaincodeStubInterface) (accountTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getAccountTransientInput(ctx contractapi.TransactionContextInterface) (accountTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return accountTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return accountTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["account"]
@@ -73,7 +73,7 @@ func getAccountTransientInput(stub shim.ChaincodeStubInterface) (accountTransien
 
 	var input accountTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return accountTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return accountTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if len(input.SystemOwner) == 0 {
@@ -89,10 +89,10 @@ func getAccountTransientInput(stub shim.ChaincodeStubInterface) (accountTransien
 	return input, nil
 }
 
-func getUploadATOTransientInput(stub shim.ChaincodeStubInterface) (uploadATOTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getUploadATOTransientInput(ctx contractapi.TransactionContextInterface) (uploadATOTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return uploadATOTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return uploadATOTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["ato"]
@@ -102,7 +102,7 @@ func getUploadATOTransientInput(stub shim.ChaincodeStubInterface) (uploadATOTran
 
 	var input uploadATOTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return uploadATOTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return uploadATOTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if len(input.ATO) == 0 {
@@ -112,10 +112,10 @@ func getUploadATOTransientInput(stub shim.ChaincodeStubInterface) (uploadATOTran
 	return input, nil
 }
 
-func getOnboardAssetTransientInput(stub shim.ChaincodeStubInterface) (onboardAssetTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getOnboardAssetTransientInput(ctx contractapi.TransactionContextInterface) (onboardAssetTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return onboardAssetTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return onboardAssetTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["asset"]
@@ -125,7 +125,7 @@ func getOnboardAssetTransientInput(stub shim.ChaincodeStubInterface) (onboardAss
 
 	var input onboardAssetTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return onboardAssetTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return onboardAssetTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if len(input.Licenses) == 0 {
@@ -135,10 +135,10 @@ func getOnboardAssetTransientInput(stub shim.ChaincodeStubInterface) (onboardAss
 	return input, nil
 }
 
-func getRequestCheckoutTransientInput(stub shim.ChaincodeStubInterface) (requestCheckoutTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getRequestCheckoutTransientInput(ctx contractapi.TransactionContextInterface) (requestCheckoutTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return requestCheckoutTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return requestCheckoutTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["checkout"]
@@ -148,7 +148,7 @@ func getRequestCheckoutTransientInput(stub shim.ChaincodeStubInterface) (request
 
 	var input requestCheckoutTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return requestCheckoutTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return requestCheckoutTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.AssetID == "" {
@@ -161,10 +161,10 @@ func getRequestCheckoutTransientInput(stub shim.ChaincodeStubInterface) (request
 	return input, nil
 }
 
-func getApproveCheckoutTransientInput(stub shim.ChaincodeStubInterface) (approveCheckoutTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getApproveCheckoutTransientInput(ctx contractapi.TransactionContextInterface) (approveCheckoutTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return approveCheckoutTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return approveCheckoutTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["checkout"]
@@ -174,7 +174,7 @@ func getApproveCheckoutTransientInput(stub shim.ChaincodeStubInterface) (approve
 
 	var input approveCheckoutTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return approveCheckoutTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return approveCheckoutTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.Account == "" {
@@ -187,10 +187,10 @@ func getApproveCheckoutTransientInput(stub shim.ChaincodeStubInterface) (approve
 	return input, nil
 }
 
-func getInitiateCheckinTransientInput(stub shim.ChaincodeStubInterface) (initiateCheckinTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getInitiateCheckinTransientInput(ctx contractapi.TransactionContextInterface) (initiateCheckinTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return initiateCheckinTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return initiateCheckinTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["checkin"]
@@ -200,7 +200,7 @@ func getInitiateCheckinTransientInput(stub shim.ChaincodeStubInterface) (initiat
 
 	var input initiateCheckinTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return initiateCheckinTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return initiateCheckinTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.AssetID == "" {
@@ -213,10 +213,10 @@ func getInitiateCheckinTransientInput(stub shim.ChaincodeStubInterface) (initiat
 	return input, nil
 }
 
-func getProcessCheckinTransientInput(stub shim.ChaincodeStubInterface) (processCheckinTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getProcessCheckinTransientInput(ctx contractapi.TransactionContextInterface) (processCheckinTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return processCheckinTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return processCheckinTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["checkin"]
@@ -226,7 +226,7 @@ func getProcessCheckinTransientInput(stub shim.ChaincodeStubInterface) (processC
 
 	var input processCheckinTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return processCheckinTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return processCheckinTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.Account == "" {
@@ -239,10 +239,10 @@ func getProcessCheckinTransientInput(stub shim.ChaincodeStubInterface) (processC
 	return input, nil
 }
 
-func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getReportSwIDTransientInput(ctx contractapi.TransactionContextInterface) (reportSwIDTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return reportSwIDTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return reportSwIDTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["swid"]
@@ -252,7 +252,7 @@ func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTr
 
 	var input reportSwIDTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return reportSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return reportSwIDTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.PrimaryTag == "" {
@@ -271,10 +271,10 @@ func getReportSwIDTransientInput(stub shim.ChaincodeStubInterface) (reportSwIDTr
 	return input, nil
 }
 
-func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (swidTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getGetSwIDTransientInput(ctx contractapi.TransactionContextInterface) (swidTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return swidTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return swidTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["swid"]
@@ -284,7 +284,7 @@ func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (swidTransientIn
 
 	var input swidTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return swidTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return swidTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.Account == "" {
@@ -297,10 +297,10 @@ func getGetSwIDTransientInput(stub shim.ChaincodeStubInterface) (swidTransientIn
 	return input, nil
 }
 
-func getGetSwIDsAssociatedWithAssetTransientInput(stub shim.ChaincodeStubInterface) (getSwIDsAssociatedWithAssetTransientInput, error) {
-	transientMap, err := stub.GetTransient()
+func getGetSwIDsAssociatedWithAssetTransientInput(ctx contractapi.TransactionContextInterface) (getSwIDsAssociatedWithAssetTransientInput, error) {
+	transientMap, err := ctx.GetStub().GetTransient()
 	if err != nil {
-		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error getting transient: %v", err)
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error getting transient: %w", err)
 	}
 
 	transientAccountJson, ok := transientMap["swid"]
@@ -310,7 +310,7 @@ func getGetSwIDsAssociatedWithAssetTransientInput(stub shim.ChaincodeStubInterfa
 
 	var input getSwIDsAssociatedWithAssetTransientInput
 	if err = json.Unmarshal(transientAccountJson, &input); err != nil {
-		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error unmarshaling json: %v", err)
+		return getSwIDsAssociatedWithAssetTransientInput{}, fmt.Errorf("error unmarshaling json: %w", err)
 	}
 
 	if input.Account == "" {

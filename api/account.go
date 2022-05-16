@@ -32,17 +32,9 @@ func accountName(ctx contractapi.TransactionContextInterface) (string, error) {
 }
 
 func (b *BlossomSmartContract) RequestAccount(ctx contractapi.TransactionContextInterface) error {
-	/*
-		removing for now until it's clear users can have the admin attribute
-		attr, _, err := cid.GetAttributeValue(stub, "hf.Type")
-		if err != nil {
-			return err
-		}
-
-		// check if requesting user is an admin
-		if attr != "admin" {
-			return fmt.Errorf("only org admins can request accounts")
-		}*/
+	if err := decider.CanRequestAccount(ctx); err != nil {
+		return fmt.Errorf("ngac check failed: %w", err)
+	}
 
 	accountName, err := accountName(ctx)
 	if err != nil {
@@ -101,18 +93,13 @@ func (b *BlossomSmartContract) RequestAccount(ctx contractapi.TransactionContext
 
 func (b *BlossomSmartContract) ApproveAccount(ctx contractapi.TransactionContextInterface, account string) error {
 	var (
-		acctPvt model.AccountPrivate
-		bytes   []byte
-		err     error
+		bytes []byte
+		err   error
 	)
 
 	// get account private details from PDC to add users to NGAC graph
 	if bytes, err = ctx.GetStub().GetPrivateData(collections.Account(account), model.AccountKey(account)); err != nil {
 		return fmt.Errorf("error getting private data: %w", err)
-	} else {
-		if err = json.Unmarshal(bytes, &acctPvt); err != nil {
-			return fmt.Errorf("error deserializing account private info: %w", err)
-		}
 	}
 
 	if err = decider.CanApproveAccount(ctx); err != nil {

@@ -1,7 +1,6 @@
 package pdp
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/PM-Master/policy-machine-go/pdp"
 	"github.com/PM-Master/policy-machine-go/policy"
@@ -41,6 +40,19 @@ func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 	}
 
 	return common.PutPvtCollPolicyStore(ctx, policyStore)
+}
+
+func CanRequestAccount(ctx contractapi.TransactionContextInterface) error {
+	return ctx.GetClientIdentity().AssertAttributeValue(model.RoleAttribute, model.SystemOwnerRole)
+	/*attr, _, err := cid.GetAttributeValue(ctx, "hf.Type")
+	if err != nil {
+		return err
+	}
+
+	// check if requesting user is an admin
+	if attr != "admin" {
+		return fmt.Errorf("only org admins can request accounts")
+	}*/
 }
 
 func CanApproveAccount(ctx contractapi.TransactionContextInterface) error {
@@ -117,7 +129,7 @@ func check(ctx contractapi.TransactionContextInterface, target, permission strin
 
 	// skip this step for users in the adminmsp as they dont have account roles
 	if account != adminmsp.AdminMSP {
-		role, err := getRole(ctx, user, account)
+		role, err := getRole(ctx)
 		if err != nil {
 			return err
 		}
@@ -140,29 +152,17 @@ func check(ctx contractapi.TransactionContextInterface, target, permission strin
 	return nil
 }
 
-func getRole(ctx contractapi.TransactionContextInterface, user, account string) (role string, err error) {
-	// get role from pvtcol of account if mspid == adminmsp skip this step
-	acctColl := collections.Account(account)
-
-	data, err := ctx.GetStub().GetPrivateData(acctColl, model.AccountKey(account))
-	if err != nil {
-		return "", fmt.Errorf("error getting the users of account %v: %w", account, err)
+func getRole(ctx contractapi.TransactionContextInterface) (role string, err error) {
+	var ok bool
+	if role, ok, err = ctx.GetClientIdentity().GetAttributeValue(model.RoleAttribute); err != nil {
+		return "", err
+	} else if !ok {
+		return "", fmt.Errorf("user does not have a role")
 	}
 
-	acctPvt := model.AccountPrivate{}
-	if err = json.Unmarshal(data, &acctPvt); err != nil {
-		return "", fmt.Errorf("error unmarshaling private account details: %v", err)
+	if !model.IsValidRole(role) {
+		return "", fmt.Errorf("unrecognized role: %s", role)
 	}
 
-	if acctPvt.Users.SystemOwner == user {
-		role = "SystemOwner"
-	} else if acctPvt.Users.SystemAdministrator == user {
-		role = "SystemAdministrator"
-	} else if acctPvt.Users.AcquisitionSpecialist == user {
-		role = "AcquisitionSpecialist"
-	} else {
-		return "", fmt.Errorf("user %s is not registered with the account %s", user, account)
-	}
-
-	return
+	return role, err
 }

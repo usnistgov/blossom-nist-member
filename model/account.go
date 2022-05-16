@@ -39,6 +39,12 @@ var (
 		"UNAUTHORIZED_SECURITY_RISK": UnauthorizedSecurityRisk,
 		"UNAUTHORIZED_ROB":           UnauthorizedROB,
 	}
+
+	roles = map[string]bool{
+		SystemOwnerRole:           true,
+		SystemAdminRole:           true,
+		AcquisitionSpecialistRole: true,
+	}
 )
 
 const (
@@ -52,7 +58,16 @@ const (
 	UnauthorizedROB          Status = "Unauthorized: breach in rules of behavior"
 
 	AccountPrefix = "account:"
+
+	SystemOwnerRole           = "SystemOwner"
+	SystemAdminRole           = "SystemAdministrator"
+	AcquisitionSpecialistRole = "AcquisitionSpecialist"
+	RoleAttribute             = "blossom.role"
 )
+
+func IsValidRole(role string) bool {
+	return roles[role]
+}
 
 func GetStatusUpdate(s string) (Status, error) {
 	status, ok := statusUpdates[s]

@@ -95,16 +95,16 @@ func TestCheckout(t *testing.T) {
 	bcc := BlossomSmartContract{}
 	onboardTestAsset(t, ctx, "123", "myasset", []string{"1", "2"})
 
-	requestTestAccount(t, ctx, A1MSP)
+	requestTestAccount(t, ctx, Org2MSP)
 
 	err := ctx.SetClientIdentity(mocks.Super)
 	require.NoError(t, err)
 
-	err = bcc.UpdateAccountStatus(ctx, A1MSP, "AUTHORIZED")
+	err = bcc.UpdateAccountStatus(ctx, Org2MSP, "AUTHORIZED")
 	require.NoError(t, err)
 
 	t.Run("error unauthorized to request checkout", func(t *testing.T) {
-		err = ctx.SetClientIdentity(mocks.A1SystemOwner)
+		err = ctx.SetClientIdentity(mocks.Org2SystemOwner)
 		require.NoError(t, err)
 
 		err = ctx.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
@@ -114,7 +114,7 @@ func TestCheckout(t *testing.T) {
 	})
 
 	t.Run("authorized request checkout", func(t *testing.T) {
-		err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+		err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 		require.NoError(t, err)
 		err = ctx.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
 		require.NoError(t, err)
@@ -124,16 +124,16 @@ func TestCheckout(t *testing.T) {
 		err = ctx.SetClientIdentity(mocks.Super)
 		require.NoError(t, err)
 
-		err = ctx.SetTransient("checkout", approveCheckoutTransientInput{A1MSP, "123"})
+		err = ctx.SetTransient("checkout", approveCheckoutTransientInput{Org2MSP, "123"})
 		require.NoError(t, err)
 		err = bcc.ApproveCheckout(ctx)
 		require.NoError(t, err)
 
-		err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+		err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 		require.NoError(t, err)
 
 		licenses := make(map[string]string, 0)
-		licenses, err = bcc.GetLicenses(ctx, A1MSP, "123")
+		licenses, err = bcc.GetLicenses(ctx, Org2MSP, "123")
 		require.NoError(t, err)
 		require.Equal(t, 1, len(licenses))
 
@@ -149,11 +149,11 @@ func TestCheckout(t *testing.T) {
 			require.Equal(t, "myasset", info.Name)
 			require.Equal(t, 1, len(info.AvailableLicenses))
 			require.Equal(t, 1, info.Available)
-			require.Equal(t, map[string]map[string]string{A1MSP: {"1": licenses["1"]}}, info.CheckedOut)
+			require.Equal(t, map[string]map[string]string{Org2MSP: {"1": licenses["1"]}}, info.CheckedOut)
 		})
 
 		t.Run("test GetAsset returns only public info for user", func(t *testing.T) {
-			err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+			err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 			require.NoError(t, err)
 
 			info := &model.Asset{}
@@ -168,7 +168,7 @@ func TestCheckout(t *testing.T) {
 		})
 
 		// check in
-		require.NoError(t, ctx.SetClientIdentity(mocks.A1SystemAdmin))
+		require.NoError(t, ctx.SetClientIdentity(mocks.Org2SystemAdmin))
 		require.NoError(t, ctx.SetTransient("checkin", initiateCheckinTransientInput{
 			AssetID:  "123",
 			Licenses: []string{"1"},
@@ -178,23 +178,23 @@ func TestCheckout(t *testing.T) {
 
 		require.NoError(t, ctx.SetClientIdentity(mocks.Super))
 		require.NoError(t, ctx.SetTransient("checkin", processCheckinTransientInput{
-			Account: A1MSP,
+			Account: Org2MSP,
 			AssetID: "123",
 		}))
 		err = bcc.ProcessCheckin(ctx)
 		require.NoError(t, err)
 
-		licenses, err = bcc.GetLicenses(ctx, A1MSP, "123")
+		licenses, err = bcc.GetLicenses(ctx, Org2MSP, "123")
 		require.NoError(t, err)
 
 		require.Equal(t, 0, len(licenses))
 
 		// update account to pending
-		err = bcc.UpdateAccountStatus(ctx, A1MSP, "PENDING_ATO")
+		err = bcc.UpdateAccountStatus(ctx, Org2MSP, "PENDING_ATO")
 		require.NoError(t, err)
 
 		// checkout should fail
-		err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+		err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 		require.NoError(t, err)
 
 		err = ctx.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
@@ -210,10 +210,10 @@ func TestCheckoutRequests(t *testing.T) {
 	onboardTestAsset(t, ctx, "123", "myasset1", []string{"1", "2"})
 	onboardTestAsset(t, ctx, "456", "myasset2", []string{"1", "2"})
 
-	requestTestAccount(t, ctx, A1MSP)
+	requestTestAccount(t, ctx, Org2MSP)
 
 	bcc := BlossomSmartContract{}
-	err := ctx.SetClientIdentity(mocks.A1SystemAdmin)
+	err := ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 	require.NoError(t, err)
 	err = ctx.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
 	require.NoError(t, err)
@@ -225,15 +225,15 @@ func TestCheckoutRequests(t *testing.T) {
 	err = bcc.RequestCheckout(ctx)
 	require.NoError(t, err)
 
-	result, err := bcc.GetCheckoutRequests(ctx, A1MSP)
+	result, err := bcc.GetCheckoutRequests(ctx, Org2MSP)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(result))
 }
 
 func TestViewAssetPermissions(t *testing.T) {
 	ctx := newTestStub(t)
-	requestTestAccount(t, ctx, A1MSP)
-	requestTestAccount(t, ctx, A2MSP)
+	requestTestAccount(t, ctx, Org2MSP)
+	requestTestAccount(t, ctx, Org3MSP)
 	require.NoError(t, ctx.SetClientIdentity(mocks.Super))
 	onboardTestAsset(t, ctx, "123", "myasset1", []string{"1", "2"})
 	onboardTestAsset(t, ctx, "456", "myasset2", []string{"1", "2"})
@@ -243,21 +243,21 @@ func TestViewAssetPermissions(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(assets))
 
-	require.NoError(t, ctx.SetClientIdentity(mocks.A1SystemAdmin))
+	require.NoError(t, ctx.SetClientIdentity(mocks.Org2SystemAdmin))
 	assets, err = bcc.GetAssets(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(assets))
 
 	// update account status
 	require.NoError(t, ctx.SetClientIdentity(mocks.Super))
-	err = bcc.UpdateAccountStatus(ctx, A1MSP, "UNAUTHORIZED_DENIED")
+	err = bcc.UpdateAccountStatus(ctx, Org2MSP, "UNAUTHORIZED_DENIED")
 	require.NoError(t, err)
 
-	require.NoError(t, ctx.SetClientIdentity(mocks.A1SystemAdmin))
+	require.NoError(t, ctx.SetClientIdentity(mocks.Org2SystemAdmin))
 	assets, err = bcc.GetAssets(ctx)
 	require.Error(t, err)
 
-	require.NoError(t, ctx.SetClientIdentity(mocks.A1SystemAdmin))
+	require.NoError(t, ctx.SetClientIdentity(mocks.Org2SystemAdmin))
 	_, err = bcc.GetAsset(ctx, "123")
 	require.Error(t, err)
 }

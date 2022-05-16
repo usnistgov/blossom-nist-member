@@ -17,9 +17,9 @@ func TestSwID(t *testing.T) {
 	onboardTestAsset(t, ctx, "123", "myasset", []string{"1", "2"})
 	require.NoError(t, err)
 
-	requestTestAccount(t, ctx, A1MSP)
+	requestTestAccount(t, ctx, Org2MSP)
 
-	err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+	err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 	require.NoError(t, err)
 
 	err = ctx.SetTransient("checkout", requestCheckoutTransientInput{"123", 1})
@@ -30,12 +30,12 @@ func TestSwID(t *testing.T) {
 	err = ctx.SetClientIdentity(mocks.Super)
 	require.NoError(t, err)
 
-	err = ctx.SetTransient("checkout", approveCheckoutTransientInput{A1MSP, "123"})
+	err = ctx.SetTransient("checkout", approveCheckoutTransientInput{Org2MSP, "123"})
 	require.NoError(t, err)
 	err = bcc.ApproveCheckout(ctx)
 	require.NoError(t, err)
 
-	err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+	err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 	require.NoError(t, err)
 
 	// report swid on license they did not checkout
@@ -63,7 +63,7 @@ func TestSwID(t *testing.T) {
 
 	// check swid in collection
 	err = ctx.SetTransient("swid", swidTransientInput{
-		Account:    A1MSP,
+		Account:    Org2MSP,
 		PrimaryTag: "primary_tag_1",
 	})
 	require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestSwID(t *testing.T) {
 	}, swid)
 
 	swids := make([]*model.SwID, 0)
-	swids, err = bcc.GetSwIDsAssociatedWithAsset(ctx, A1MSP, "123")
+	swids, err = bcc.GetSwIDsAssociatedWithAsset(ctx, Org2MSP, "123")
 	require.NoError(t, err)
 	require.Equal(t, 1, len(swids))
 	require.Equal(t, &model.SwID{
@@ -89,13 +89,13 @@ func TestSwID(t *testing.T) {
 		License:    "1",
 	}, swids[0])
 
-	err = ctx.SetClientIdentity(mocks.A1SystemOwner)
+	err = ctx.SetClientIdentity(mocks.Org2SystemOwner)
 	require.NoError(t, err)
 
 	// try deleting as unauthorized user
 	t.Run("delete swid as unauthorized user", func(t *testing.T) {
 		err = ctx.SetTransient("swid", swidTransientInput{
-			Account:    A1MSP,
+			Account:    Org2MSP,
 			PrimaryTag: "primary_tag_1",
 		})
 		require.NoError(t, err)
@@ -103,11 +103,11 @@ func TestSwID(t *testing.T) {
 		require.Error(t, err)
 	})
 
-	err = ctx.SetClientIdentity(mocks.A1SystemAdmin)
+	err = ctx.SetClientIdentity(mocks.Org2SystemAdmin)
 	require.NoError(t, err)
 
 	err = ctx.SetTransient("swid", swidTransientInput{
-		Account:    A1MSP,
+		Account:    Org2MSP,
 		PrimaryTag: "primary_tag_1",
 	})
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestSwID(t *testing.T) {
 	require.NoError(t, err)
 
 	err = ctx.SetTransient("swid", swidTransientInput{
-		Account:    A1MSP,
+		Account:    Org2MSP,
 		PrimaryTag: "primary_tag_1",
 	})
 	require.NoError(t, err)

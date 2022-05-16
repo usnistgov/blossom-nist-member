@@ -4,6 +4,7 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/pkg/cid"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
@@ -29,8 +30,8 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test without initngac", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		mock := mocks.NewCtx()
-		mock.CreateCollection(collections.Catalog(), []string{"BlossomMSP"}, []string{"BlossomMSP"})
-		require.NoError(t, mock.SetClientIdentity(mocks.A1SystemOwner))
+		mock.CreateCollection(collections.Catalog(), []string{adminmsp.AdminMSP}, []string{adminmsp.AdminMSP})
+		require.NoError(t, mock.SetClientIdentity(mocks.Org2SystemOwner))
 		_, err := bcc.GetAssets(mock)
 		require.Error(t, err)
 
@@ -46,7 +47,7 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test after initngac", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		testCtx := mocks.NewCtx()
-		testCtx.CreateCollection(collections.Catalog(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
+		testCtx.CreateCollection(collections.Catalog(), []string{adminmsp.AdminMSP, "Org2MSP", "Org3MSP"}, []string{adminmsp.AdminMSP})
 
 		require.NoError(t, testCtx.SetClientIdentity(mocks.Super))
 		err := bcc.InitNGAC(testCtx)
@@ -59,9 +60,9 @@ func TestInitNGAC(t *testing.T) {
 	t.Run("test initngac unauthorized", func(t *testing.T) {
 		bcc := new(BlossomSmartContract)
 		testCtx := mocks.NewCtx()
-		testCtx.CreateCollection(collections.Catalog(), []string{"BlossomMSP", "A1MSP", "A2MSP"}, []string{"BlossomMSP"})
+		testCtx.CreateCollection(collections.Catalog(), []string{adminmsp.AdminMSP, "Org2MSP", "Org3MSP"}, []string{adminmsp.AdminMSP})
 
-		require.NoError(t, testCtx.SetClientIdentity(mocks.A1SystemAdmin))
+		require.NoError(t, testCtx.SetClientIdentity(mocks.Org2SystemAdmin))
 		err := bcc.InitNGAC(testCtx)
 		require.Error(t, err)
 	})

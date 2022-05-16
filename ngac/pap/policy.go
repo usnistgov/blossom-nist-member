@@ -10,6 +10,7 @@ import (
 	"github.com/PM-Master/policy-machine-go/policy/author/deassign"
 	"github.com/PM-Master/policy-machine-go/policy/author/grant"
 	"github.com/PM-Master/policy-machine-go/policy/author/remove"
+	"github.com/usnistgov/blossom/chaincode/model"
 )
 
 const (
@@ -38,9 +39,6 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		RbacPolicyClass          = "RBAC_PC"
 		RbacUserAttr             = "RBAC_UA"
 		RbacObjectAttr           = "RBAC_OA"
-		SystemOwnerAttr          = "SystemOwner"
-		SystemAdminAttr          = "SystemAdministrator"
-		AcqSpecAttr              = "AcquisitionSpecialist"
 		AccountsObjectAttrInRBAC = "accounts_OA.RBAC_PC"
 		AccountsUserAttrInRBAC   = "accounts_UA.RBAC_PC"
 
@@ -80,17 +78,17 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		grant.UserAttribute(adminUA).Permissions(policy.AllOps).On(RbacObjectAttr),
 
 		// create roles in RBAC ua
-		create.UserAttribute(SystemOwnerAttr).In(RbacUserAttr),
-		create.UserAttribute(SystemAdminAttr).In(RbacUserAttr),
-		create.UserAttribute(AcqSpecAttr).In(RbacUserAttr),
+		create.UserAttribute(model.SystemOwnerRole).In(RbacUserAttr),
+		create.UserAttribute(model.SystemAdminRole).In(RbacUserAttr),
+		create.UserAttribute(model.AcquisitionSpecialistRole).In(RbacUserAttr),
 
 		create.ObjectAttribute(AccountsObjectAttrInRBAC).In(RbacObjectAttr),
 		create.UserAttribute(AccountsUserAttrInRBAC).In(RbacUserAttr),
 
-		grant.UserAttribute(SystemOwnerAttr).
+		grant.UserAttribute(model.SystemOwnerRole).
 			Permissions("upload_ato").
 			On(AccountsObjectAttrInRBAC),
-		grant.UserAttribute(SystemAdminAttr).
+		grant.UserAttribute(model.SystemAdminRole).
 			Permissions("check_out", "initiate_check_in", "report_swid", "delete_swid").
 			On(AccountsObjectAttrInRBAC),
 

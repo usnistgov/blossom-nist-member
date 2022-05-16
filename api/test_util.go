@@ -2,32 +2,33 @@ package api
 
 import (
 	"github.com/stretchr/testify/require"
+	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/collections"
 	"github.com/usnistgov/blossom/chaincode/mocks"
 	"github.com/usnistgov/blossom/chaincode/model"
 	"testing"
 )
 
-const A1MSP = "A1MSP"
-const A2MSP = "A2MSP"
+const Org2MSP = "Org2MSP"
+const Org3MSP = "Org3MSP"
 
-var A1Collection = collections.Account(A1MSP)
-var A2Collection = collections.Account(A2MSP)
+var Org2Collection = collections.Account(Org2MSP)
+var Org3Collection = collections.Account(Org3MSP)
 
 func newTestStub(t *testing.T) *mocks.Ctx {
 	ctx := mocks.NewCtx()
 	ctx.CreateCollection(collections.Catalog(),
-		[]string{A1MSP, A2MSP, "BlossomMSP"},
-		[]string{"BlossomMSP"})
-	ctx.CreateCollection(collections.Account(A1MSP),
-		[]string{A1MSP, "BlossomMSP"},
-		[]string{A1MSP, "BlossomMSP"})
-	ctx.CreateCollection(collections.Account(A2MSP),
-		[]string{A2MSP, "BlossomMSP"},
-		[]string{A2MSP, "BlossomMSP"})
+		[]string{Org2MSP, Org3MSP, adminmsp.AdminMSP},
+		[]string{adminmsp.AdminMSP})
+	ctx.CreateCollection(collections.Account(Org2MSP),
+		[]string{Org2MSP, adminmsp.AdminMSP},
+		[]string{Org2MSP, adminmsp.AdminMSP})
+	ctx.CreateCollection(collections.Account(Org3MSP),
+		[]string{Org3MSP, adminmsp.AdminMSP},
+		[]string{Org3MSP, adminmsp.AdminMSP})
 	ctx.CreateCollection(collections.Licenses(),
-		[]string{"BlossomMSP"},
-		[]string{"BlossomMSP"})
+		[]string{adminmsp.AdminMSP},
+		[]string{adminmsp.AdminMSP})
 
 	bcc := BlossomSmartContract{}
 	err := ctx.SetClientIdentity(mocks.Super)
@@ -40,15 +41,11 @@ func newTestStub(t *testing.T) *mocks.Ctx {
 
 func requestTestAccount(t *testing.T, ctx *mocks.Ctx, account string) {
 	bcc := BlossomSmartContract{}
-	if account == A1MSP {
-		err := ctx.SetClientIdentity(mocks.A1SystemOwner)
-		require.NoError(t, err)
-		err = ctx.SetTransient("account", accountTransientInput{"a1_system_owner", "a1_system_admin", "a1_acq_spec"})
+	if account == Org2MSP {
+		err := ctx.SetClientIdentity(mocks.Org2SystemOwner)
 		require.NoError(t, err)
 	} else {
-		err := ctx.SetClientIdentity(mocks.A2SystemOwner)
-		require.NoError(t, err)
-		err = ctx.SetTransient("account", accountTransientInput{"a2_system_owner", "a2_system_admin", "a2_acq_spec"})
+		err := ctx.SetClientIdentity(mocks.Org3SystemOwner)
 		require.NoError(t, err)
 	}
 	err := bcc.RequestAccount(ctx)
@@ -64,7 +61,7 @@ func requestTestAccount(t *testing.T, ctx *mocks.Ctx, account string) {
 	require.NoError(t, err)
 	require.Equal(t, model.PendingATO, acct.Status)
 
-	err = ctx.SetClientIdentity(mocks.A1SystemOwner)
+	err = ctx.SetClientIdentity(mocks.Org2SystemOwner)
 	require.NoError(t, err)
 
 	err = ctx.SetTransient("ato", uploadATOTransientInput{ATO: "test ato"})

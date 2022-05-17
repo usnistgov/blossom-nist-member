@@ -65,5 +65,9 @@ func TestInitNGAC(t *testing.T) {
 		require.NoError(t, testCtx.SetClientIdentity(mocks.Org2SystemAdmin))
 		err := bcc.InitNGAC(testCtx)
 		require.Error(t, err)
+
+		require.NoError(t, testCtx.SetClientIdentity(mocks.UserInAdminMSPWithoutAdminRole))
+		err = bcc.InitNGAC(testCtx)
+		require.Error(t, err)
 	})
 }

@@ -24,14 +24,34 @@ func buildIdentity(certStr, mspid string) (*ClientIdentity, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting attributes from cert: %s", err)
 	}
+
 	c.GetAttributeValueReturns(attrs.Value(model.RoleAttribute))
+	c.AssertAttributeValueCalls(func(attr string, value string) error {
+		retrievedValue, ok, err := attrs.Value(attr)
+		if err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("")
+		}
+
+		if retrievedValue != value {
+			return fmt.Errorf("")
+		}
+
+		return nil
+	})
 
 	return c, nil
 }
 
 // Super returns the certificate for the user Org1 Admin:Org1MSP
 func Super() (*ClientIdentity, error) {
-	str := "-----BEGIN CERTIFICATE-----\nMIIB8jCCAZmgAwIBAgIUdNYUlT7BA4BD17ZZXiOhdlFEJtEwCgYIKoZIzj0EAwIw\ncDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH\nEwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjIwNTE2MTc1MzAwWhcNMjMwNTE2MjMwNDAw\nWjAhMQ8wDQYDVQQLEwZjbGllbnQxDjAMBgNVBAMTBWFkbWluMFkwEwYHKoZIzj0C\nAQYIKoZIzj0DAQcDQgAE4apNVtCmfWGdMnoCk80HwuNBznS9sjDzEhRXbQzbyJ7P\npgdkHo2hhVJDCKzJ6MX1jss6O8CaL/6uqpvUgJakVaNgMF4wDgYDVR0PAQH/BAQD\nAgeAMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFJAKRRm2jE73kACd2CqrXvzJV6E2\nMB8GA1UdIwQYMBaAFAbTrgP/ZPyF48ZzuEFKRLfY01tPMAoGCCqGSM49BAMCA0cA\nMEQCIB3TXFFZB/ZRNBq9tqbz99hENTT896FrG51hUwRWMk5AAiAtkvy/nq/9Vj6V\nJO1c1uVu09OmhytyUToMUwvW1PvtIg==\n-----END CERTIFICATE-----\n"
+	str := "-----BEGIN CERTIFICATE-----\nMIICbTCCAhSgAwIBAgIUCjoPBiSPEj8sK7jUC05kpQRGtOUwCgYIKoZIzj0EAwIw\ncDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH\nEwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjIwNTE2MjMzMjAwWhcNMjMwNTE3MDAyMTAw\nWjAlMQ8wDQYDVQQLEwZjbGllbnQxEjAQBgNVBAMTCWFkbWludXNlcjBZMBMGByqG\nSM49AgEGCCqGSM49AwEHA0IABOA2FSuCUy+ZRPqMCsHC92xpTnI4BoD2Hm7XMs2Y\nrNhjbzexWza9NZTiwkgpd8+G5vq3c2XLlqouhgKa84SHzGmjgdYwgdMwDgYDVR0P\nAQH/BAQDAgeAMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFLuP4UjYW5SWZWOCIUGq\njnfrrXJ2MB8GA1UdIwQYMBaAFIk6JIULS50ZiEd73yMeaoOSjwVGMHMGCCoDBAUG\nBwgBBGd7ImF0dHJzIjp7ImJsb3Nzb20ucm9sZSI6ImFkbWluIiwiaGYuQWZmaWxp\nYXRpb24iOiIiLCJoZi5FbnJvbGxtZW50SUQiOiJhZG1pbnVzZXIiLCJoZi5UeXBl\nIjoiY2xpZW50In19MAoGCCqGSM49BAMCA0cAMEQCIE0Y3ISCTG1w+6ZLg9zCH+5l\nHSV3V+2CR+qnm52axzU5AiBmj6H5aNxa0TEX5ZvP1HIkQcqvx4U1uGke8DZAZXqr\nMA==\n-----END CERTIFICATE-----\n"
+	return buildIdentity(str, "Org1MSP")
+}
+
+func UserInAdminMSPWithoutAdminRole() (*ClientIdentity, error) {
+	str := "-----BEGIN CERTIFICATE-----\nMIIB8zCCAZmgAwIBAgIUYa0rLJ/xI/dBo096OiCQ5fYv/iQwCgYIKoZIzj0EAwIw\ncDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH\nEwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh\nLm9yZzEuZXhhbXBsZS5jb20wHhcNMjIwNTE2MjMzMjAwWhcNMjMwNTE3MDAxOTAw\nWjAhMQ8wDQYDVQQLEwZjbGllbnQxDjAMBgNVBAMTBWFkbWluMFkwEwYHKoZIzj0C\nAQYIKoZIzj0DAQcDQgAEhI8kekn7wbLqDfJG4tw/ZFUejpZje4i7oBcESan3dm17\nmJq5ZQs1Al9p/M6JO3DppdH4ELkwd4PxTnSSvHLP66NgMF4wDgYDVR0PAQH/BAQD\nAgeAMAwGA1UdEwEB/wQCMAAwHQYDVR0OBBYEFH19EN0tx95LX4Z30sKbXkZDgJ9g\nMB8GA1UdIwQYMBaAFIk6JIULS50ZiEd73yMeaoOSjwVGMAoGCCqGSM49BAMCA0gA\nMEUCIQCtazR/ulaekKNnA+Nu/N9o86Afy7M2ZRYy2Ro838iLrQIgFOFvvRHtxzkw\n+ZeVIO04xiZ3bLJmXO6aqqD4fjMwUNk=\n-----END CERTIFICATE-----\n"
 	return buildIdentity(str, "Org1MSP")
 }
 

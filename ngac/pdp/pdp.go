@@ -28,6 +28,11 @@ func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 		return fmt.Errorf("users in MSP %s do not have pemrission to initialize ngac graphs", mspid)
 	}
 
+	// check that the user is an admin user
+	if err = ctx.GetClientIdentity().AssertAttributeValue(model.RoleAttribute, model.AdminRole); err != nil {
+		return err
+	}
+
 	// the admin user for the graph will be the user that performs the initialization
 	adminUser, err := common.GetUser(ctx)
 	if err != nil {
@@ -44,15 +49,6 @@ func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 
 func CanRequestAccount(ctx contractapi.TransactionContextInterface) error {
 	return ctx.GetClientIdentity().AssertAttributeValue(model.RoleAttribute, model.SystemOwnerRole)
-	/*attr, _, err := cid.GetAttributeValue(ctx, "hf.Type")
-	if err != nil {
-		return err
-	}
-
-	// check if requesting user is an admin
-	if attr != "admin" {
-		return fmt.Errorf("only org admins can request accounts")
-	}*/
 }
 
 func CanApproveAccount(ctx contractapi.TransactionContextInterface) error {

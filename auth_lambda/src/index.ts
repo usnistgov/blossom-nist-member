@@ -1,4 +1,4 @@
-import { Context, APIGatewayProxyCallback, APIGatewayEvent } from "aws-lambda";
+import { Context, APIGatewayProxyCallback, APIGatewayEvent } from 'aws-lambda';
 import { SecretsManager } from 'aws-sdk';
 import axios from 'axios';
 
@@ -15,7 +15,7 @@ function getSecret(client: SecretsManager, key: string): Promise<string> {
             } else if (data.SecretBinary) {
                 return resolve(data.SecretBinary.toString('ascii'));
             } else {
-                return reject("Secret string or secret binary not provided");
+                return reject('Secret string or secret binary not provided');
             }
         })
     });
@@ -29,7 +29,7 @@ export const handler = async (
     console.log(`Event: ${JSON.stringify(event, null, 2)}`);
     console.log(`Context: ${JSON.stringify(context, null, 2)}`);
 
-    const forwardUrl = "todo";
+    const forwardUrl = process.env['FORWARD_URL'];
 
     // setup the client
     const secrets = new SecretsManager();
@@ -47,7 +47,7 @@ export const handler = async (
             const headerEntry = event.headers[curr];
             if (headerEntry) {
                 if (acc[curr]) { // check to see the user isn't putting in a bad request
-                    const error = new Error("Request attempting to override injected hyperledger fabric identity data");
+                    const error = new Error('Request attempting to override injected hyperledger fabric identity data');
                     callback(error);
                     throw error;
                 }

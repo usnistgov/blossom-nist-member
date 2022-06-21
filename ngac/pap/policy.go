@@ -10,6 +10,7 @@ import (
 	"github.com/PM-Master/policy-machine-go/policy/author/deassign"
 	"github.com/PM-Master/policy-machine-go/policy/author/grant"
 	"github.com/PM-Master/policy-machine-go/policy/author/remove"
+	"github.com/usnistgov/blossom/chaincode/adminmsp"
 	"github.com/usnistgov/blossom/chaincode/model"
 )
 
@@ -18,23 +19,25 @@ const (
 	BlossomOA     = "Blossom_OA"
 )
 
+// AccountObjectName returns the name of the object that represents the account
 func AccountObjectName(accountName string) string {
 	return fmt.Sprintf("%s_object", accountName)
 }
 
+// AccountUA returns the name of the user attribute representing the account
 func AccountUA(accountName string) string {
 	return fmt.Sprintf("%s_UA", accountName)
 }
 
-func adminUA(adminMSP string) string {
-	return fmt.Sprintf("%s_UA", adminMSP)
+// AdminUA returns the name of the user attribute representing the admin member
+func AdminUA() string {
+	return fmt.Sprintf("%s_UA", adminmsp.AdminMSP)
 }
 
-func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) {
+func LoadCatalogPolicy() (policy.Store, error) {
 	policyStore := memory.NewPolicyStore()
 
-	adminUA := adminUA(adminMSP)
-
+	adminUA := AdminUA()
 	const (
 		RbacPolicyClass          = "RBAC_PC"
 		RbacUserAttr             = "RBAC_UA"
@@ -68,7 +71,6 @@ func LoadCatalogPolicy(adminUser string, adminMSP string) (policy.Store, error) 
 		create.UserAttribute(RbacUserAttr).In(RbacPolicyClass),
 		create.ObjectAttribute(RbacObjectAttr).In(RbacPolicyClass),
 		create.UserAttribute(adminUA).In(RbacPolicyClass),
-		create.User(adminUser).In(adminUA),
 
 		create.ObjectAttribute(BlossomOA).In(RbacObjectAttr),
 		create.Object(BlossomObject).In(BlossomOA),

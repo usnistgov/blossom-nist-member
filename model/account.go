@@ -62,7 +62,7 @@ const (
 	SystemOwnerRole           = "SystemOwner"
 	SystemAdminRole           = "SystemAdministrator"
 	AcquisitionSpecialistRole = "AcquisitionSpecialist"
-	AdminRole                 = "admin"
+	AdminAttribute            = "blossom.admin"
 	RoleAttribute             = "blossom.role"
 )
 

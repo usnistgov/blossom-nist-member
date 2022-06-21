@@ -29,17 +29,12 @@ func InitCatalogNGAC(ctx contractapi.TransactionContextInterface) error {
 	}
 
 	// check that the user is an admin user
-	if err = ctx.GetClientIdentity().AssertAttributeValue(model.RoleAttribute, model.AdminRole); err != nil {
+	// only users with the attribute "blossom.admin=true" can call this function
+	if err = ctx.GetClientIdentity().AssertAttributeValue(model.AdminAttribute, "true"); err != nil {
 		return err
 	}
 
-	// the admin user for the graph will be the user that performs the initialization
-	adminUser, err := common.GetUser(ctx)
-	if err != nil {
-		return err
-	}
-
-	policyStore, err := pap.LoadCatalogPolicy(adminUser, adminmsp.AdminMSP)
+	policyStore, err := pap.LoadCatalogPolicy()
 	if err != nil {
 		return fmt.Errorf("error loading catalog policy: %w", err)
 	}
@@ -123,19 +118,27 @@ func check(ctx contractapi.TransactionContextInterface, target, permission strin
 		return err
 	}
 
-	// skip this step for users in the adminmsp as they dont have account roles
-	if account != adminmsp.AdminMSP {
+	userAttributes := make([]string, 0)
+	if account == adminmsp.AdminMSP {
+		// adminmsp users need to have the admin role
+		if err = ctx.GetClientIdentity().AssertAttributeValue(model.AdminAttribute, "true"); err != nil {
+			return fmt.Errorf("adminmsp users need to have the attribute blossom.admin=true")
+		}
+
+		userAttributes = append(userAttributes, pap.AdminUA())
+	} else {
+		// if user is not in the adminmsp, get the role they have in their account
 		role, err := getRole(ctx)
 		if err != nil {
 			return err
 		}
 
-		// assign the user to the account and role
-		if _, err = policyStore.Graph().CreateNode(user, policy.User, nil, pap.AccountUA(account), role); err != nil {
-			return fmt.Errorf("error assigning user %s to account UA %s: %v", user, account, err)
-		}
-	} else {
-		user = common.FormatUsername(user, account)
+		userAttributes = append(userAttributes, role)
+	}
+
+	// assign the user to the account and role
+	if _, err = policyStore.Graph().CreateNode(user, policy.User, nil, pap.AccountUA(account), userAttributes...); err != nil {
+		return fmt.Errorf("error assigning user %s to user attributes %s: %v", user, userAttributes, err)
 	}
 
 	decider := pdp.NewDecider(policyStore.Graph(), policyStore.Prohibitions())

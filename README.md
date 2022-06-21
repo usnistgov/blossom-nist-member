@@ -2,6 +2,7 @@
 This package contains the code for the Blossom Smart Contracts.
 
 ## Table of Contents
+- [User Identities, Roles, and Access Control](#access-control-and-user-identities)
 - [Local Testing](#local-testing)
 - [Deployment Steps](#chaincode-deployment-steps)
    - [Fabric 2.2](#fabric-22)
@@ -11,6 +12,66 @@ This package contains the code for the Blossom Smart Contracts.
 - [NGAC](#ngac)
 - [Smart Contract Usage](#usage)
 - [Private Data Collection Design Doc](docs/pdc-design.pdf)
+
+## Access Control and User Identities
+
+### NGAC
+Next Generation Access Control (NGAC) controls access to chaincode functions. Users are assigned to attributes reflecting
+their organization and their role within the organization. Organization accounts are assigned to attributes reflecting 
+their current status in the blossom system. The organization and role a user is assigned to is determined by the attributes
+in their Fabric identity. 
+
+There are two Fabric attributes supported by Blossom:
+
+   - `blossom.admin`: Specifies if the user is a blossom admin user (will also need to be in the Admin MSP)
+     
+      - true | false
+      
+   - `blossom.role`: Specifies the role for this user in an organization
+     
+      - SystemOwner | SystemAdministrator | AcquisitionSpecialist
+
+### Roles
+- **SystemOwner**: Can upload account ATOs
+- **SystemAdministrator**: Can check out/check in licenses and report/delete SWID tags
+- **AcquisitionSpecialist**: Can audit their account's licenses
+
+### User Registration
+Below are examples of registering a user with Blossom attributes.
+
+*Note: The users MSPID is determined by the Fabric CA the identity is registered with*
+
+- Using the node sdk
+   ```javascript
+   // create a blossom admin
+   const secret = await caClient.register({
+      affiliation: '',
+      enrollmentID: 'admin1', // the username
+      role: 'client',
+      [
+          {name: 'blossom.admin', value: 'true', ecert: true} // additional attribute for the blossom role
+      ]
+   }, adminUser);
+  
+   // create an organization system owner
+   const secret = await caClient.register({
+      affiliation: '',
+      enrollmentID: 'org1_sys_owner', // the username
+      role: 'client',
+      [
+          {name: 'blossom.role', value: 'SystemOwner', ecert: true} // additional attribute for the blossom role
+      ]
+   }, adminUser);
+   ```
+
+- Using the CLI
+   ```
+   # Create a blossom admin
+   ./fabric-ca-client register ... --id.attrs 'blossom.admin=true' ...
+  
+   # Create a system owner
+   ./fabric-ca-client register ... --id.attrs 'blossom.role=SystemOwner' ...
+   ```
 
 ## Local Testing
 
@@ -228,26 +289,6 @@ From the chaincode root directory run `go build`.
   - Account: Request a Blossom account and modify account information.
   - Asset: Onboard software assets and transact with them.
   - SwID: Report SwID tags.
-
-## NGAC
-### Administrative Users and Graph Initialization
-- The user that calls `InitNGAC` must be in the Administrative MSP defined when the chaincode was instantiated.
-
-### Policy Definition
-The NGAC policy can be found in [ngac/pap/policy.go](ngac/pap/policy.go). Below is a summary of the policy
-
-- The admin user has all permissions in the graph.
-- System Owners can UploadATO
-- System Admins can checkout/checkin licenses and report/delete swids
-- Only accounts assigned to the "authorized" attribute can read or checkout assets
-
-### Policy Decisions
-NGAC policy decisions are made in the PDP located in [ngac/pdp/pdp.go](ngac/pdp/pdp.go). The functions available in this
-package serve as helper functions to call the NGAC decision algorithm on nodes in the NGAC graphs described above.
-
-### Events
-NGAC event processing is done in the EPP located in [ngac/epp/epp.go](ngac/epp/epp.go). These functions also serve as helpers
-to process events in the underlying NGAC implementation. 
 
 ## Usage
 

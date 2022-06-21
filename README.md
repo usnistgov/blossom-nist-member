@@ -49,7 +49,7 @@ Below are examples of registering a user with Blossom attributes.
       enrollmentID: 'admin1', // the username
       role: 'client',
       [
-          {name: 'blossom.admin', value: 'true', ecert: true} // additional attribute for the blossom role
+          {name: 'blossom.admin', value: 'true', ecert: true} // set blossom.admin attribute for this user
       ]
    }, adminUser);
   
@@ -59,7 +59,7 @@ Below are examples of registering a user with Blossom attributes.
       enrollmentID: 'org1_sys_owner', // the username
       role: 'client',
       [
-          {name: 'blossom.role', value: 'SystemOwner', ecert: true} // additional attribute for the blossom role
+          {name: 'blossom.role', value: 'SystemOwner', ecert: true} // set blossom.role attribute for this user
       ]
    }, adminUser);
    ```

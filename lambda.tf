@@ -1,7 +1,6 @@
-
-
 resource "aws_lambda_function" "auth" {
   runtime          = "nodejs16.x"
+  function_name    = "handler"
   s3_bucket        = aws_s3_object.auth_lambda.id
   s3_key           = aws_s3_object.auth_lambda.key
   handler          = "handler.handle"

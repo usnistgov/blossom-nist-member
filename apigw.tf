@@ -1,4 +1,7 @@
-resource "aws_apigatewayv2_api" "blossom" {
+module "apigateway-v2" {
+  source  = "terraform-aws-modules/apigateway-v2/aws"
+  version = "2.0.0"
+
   name          = "${local.prefix}-gw"
   protocol_type = "HTTP"
 
@@ -8,22 +11,39 @@ resource "aws_apigatewayv2_api" "blossom" {
     allow_origins = ["*"]
   }
 
-  integrations = {
-    "POST /invoke" = {
-      integration_type = "HTTP_PROXY"
-      integration_uri  = "https://example.com"
-    }
-
-    "POST /query" = {
-      integration_type = "HTTP_PROXY"
-      integration_uri  = "https://example.com"
+  authorizers = {
+    "cognito" = {
+      name             = "${local.prefix}-identity-authorizer"
+      authorizer_type  = "JWT"
+      identity_sources = "$request.header.Authorization"
+      issuer           = "https://${aws_cognito_user_pool.identity.endpoint}"
     }
   }
-}
 
-resource "aws_apigatewayv2_stage" "blossom" {
-  name = "${local.prefix}-gw-stage"
+  integrations = {
+    "POST /invoke" = {
+      lambda_arn       = aws_lambda_function.auth
+      integration_type = "HTTP_PROXY"
+      authorizer_key   = "cognito"
+      request_parameters = jsonencode({
+        FORWARD_URL = "${module.vars.env.forward_url}/transaction/invoke"
+      })
+    }
 
-  api_id      = aws_apigatewayv2_api.blossom
-  auto_deploy = true
+    "POST /transaction/query" = {
+      lambda_arn       = aws_lambda_function.auth
+      integration_type = "HTTP_PROXY"
+      authorizer_key   = "cognito"
+      request_parameters = jsonencode({
+        FORWARD_URL = "${module.vars.env.forward_url}/transaction/query"
+      })
+    }
+
+    "$default" = {
+      integration_type = "HTTP"
+      integration_type = "${module.vars.env.forward_url}"
+    }
+  }
+
+  tags = local.tags
 }

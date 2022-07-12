@@ -5,10 +5,10 @@ module "vars" {
 }
 
 locals {
-  prefix = "b-${module.vars.env.network_name}-${module.vars.env.member_name}"
+  prefix = "b-${module.vars.env.network_name}-${lower(module.vars.env.member_name)}"
   tags = {
-    "Terraform" = "true"
+    "Terraform"            = "true"
     "Blossom_Network_Name" = module.vars.env.network_name
-    "Blossom_Member_Name" = module.vars.env.member_name
+    "Blossom_Member_Name"  = module.vars.env.member_name
   }
 }

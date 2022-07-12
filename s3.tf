@@ -1,8 +1,10 @@
 module "remote_state_bucket" {
   source = "../infrastructure/terraform/modules/aws/s3"
   # attach_public_policy = var.attach_public_policy
-  bucket = "${local.prefix}-lambda-bucket"
-  tags   = local.tags
+  bucket               = "${local.prefix}-lambda"
+  tags                 = local.tags
+  acl                  = "private"
+  attach_public_policy = false
   # server_side_encryption_configuration = try(lookup(var.server_side_encryption_configuration, "rule"), {
   #   "rule" : {
   #     "apply_server_side_encryption_by_default" : {

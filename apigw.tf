@@ -65,6 +65,7 @@ resource "aws_api_gateway_rest_api" "gw" {
       }
     }
   EOT
+  tags        = local.tags
 }
 
 resource "aws_api_gateway_deployment" "gw-deployment" {
@@ -83,6 +84,7 @@ resource "aws_api_gateway_stage" "gw-stage" {
   deployment_id = aws_api_gateway_deployment.gw-deployment.id
   rest_api_id   = aws_api_gateway_rest_api.gw.id
   stage_name    = "dev"
+  tags          = local.tags
 }
 
 # resource "aws_apigatewayv2_api" "gw" {

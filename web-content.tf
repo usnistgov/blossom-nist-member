@@ -11,7 +11,7 @@ module "s3_content_bucket" {
   tags                 = local.tags
   acl                  = "private"
   attach_public_policy = false
-  block_public_acls    = false
+  block_public_acls    = true
   # server_side_encryption_configuration = try(lookup(var.server_side_encryption_configuration, "rule"), {
   #   "rule" : {
   #     "apply_server_side_encryption_by_default" : {
@@ -22,15 +22,31 @@ module "s3_content_bucket" {
   # })
 }
 
+locals {
+  content_type_map = {
+    "html" = "text/html"
+    "css"  = "text/css"
+    "js"   = "text/javascript"
+    "png"  = "image/png"
+    "ico"  = "image/x-icon"
+    "txt"  = "text/plain"
+    "json" = "application/json"
+    # idk what this is
+    "map" = "application/json"
+  }
+}
+
 resource "aws_s3_object" "web-content" {
   bucket   = module.s3_content_bucket.s3_bucket_id
   for_each = fileset("../blossom-dashboard/client/build", "**/*")
   key      = each.value
   source   = "../blossom-dashboard/client/build/${each.value}"
   etag     = filemd5("../blossom-dashboard/client/build/${each.value}")
-  tags = {
+  tags = merge({
     "Purpose" = "blossom-frontend"
-  }
+  }, local.tags)
+  # extract the extension, apply it to the content_type_map
+  content_type = local.content_type_map[split(".", each.value)[length(split(".", each.value)) - 1]]
   # run npm build before uploading assets
   depends_on = [
     null_resource.build_blossom_dashboard

@@ -1,4 +1,4 @@
-module "remote_state_bucket" {
+module "lambda_bucket" {
   source = "../infrastructure/terraform/modules/aws/s3"
   # attach_public_policy = var.attach_public_policy
   bucket               = "${local.prefix}-lambda"
@@ -24,6 +24,7 @@ resource "aws_lambda_function" "auth" {
   handler          = "handler.handle"
   source_code_hash = data.archive_file.auth_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
+  tags             = local.tags
   # environment {
   #   variables = {
 
@@ -42,10 +43,10 @@ data "archive_file" "auth_lambda" {
 }
 
 resource "aws_s3_object" "auth_lambda" {
-  bucket = module.remote_state_bucket.s3_bucket_id
+  bucket = module.lambda_bucket.s3_bucket_id
 
   key    = "auth_lambda.zip"
   source = data.archive_file.auth_lambda.output_path
-
-  etag = filesha1(data.archive_file.auth_lambda.output_path)
+  tags   = local.tags
+  etag   = filesha1(data.archive_file.auth_lambda.output_path)
 }

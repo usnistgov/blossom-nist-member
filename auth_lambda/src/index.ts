@@ -1,25 +1,6 @@
 import { Context, APIGatewayProxyCallback, APIGatewayEvent } from 'aws-lambda';
-import { SecretsManager } from 'aws-sdk';
 import axios from 'axios';
-
-function getSecret(client: SecretsManager, key: string): Promise<string> {
-    // aws's secret API is a bit annoying so we're wrapping it in a promise
-    return new Promise((resolve, reject) => {
-        client.getSecretValue({ SecretId: key }, (err, data) => {
-            if (err) {
-                return reject(err);
-            }
-
-            if (data.SecretString) {
-                return resolve(data.SecretString);
-            } else if (data.SecretBinary) {
-                return resolve(data.SecretBinary.toString('ascii'));
-            } else {
-                return reject('Secret string or secret binary not provided');
-            }
-        })
-    });
-}
+import { getSecret } from './aws';
 
 export const handler = async (
     event: APIGatewayEvent,
@@ -31,13 +12,10 @@ export const handler = async (
 
     const forwardUrl = process.env['FORWARD_URL'];
 
-    // setup the client
-    const secrets = new SecretsManager();
-
     // grab secret from aws secrets
-    const cert = await getSecret(secrets, `/todo`);
-    const pk = await getSecret(secrets, `/todo`);
-    const mspid = await getSecret(secrets, `/todo`);
+    const cert = await getSecret(`/todo`);
+    const pk = await getSecret(`/todo`);
+    const mspid = await getSecret(`/todo`);
 
     const results = await axios.request({
         url: forwardUrl,

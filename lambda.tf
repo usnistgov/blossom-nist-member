@@ -16,13 +16,13 @@ module "lambda_bucket" {
   # })
 }
 
-resource "aws_lambda_function" "auth" {
+resource "aws_lambda_function" "query" {
   runtime          = "nodejs16.x"
   function_name    = "handler"
-  s3_bucket        = aws_s3_object.auth_lambda.bucket
-  s3_key           = aws_s3_object.auth_lambda.key
+  s3_bucket        = aws_s3_object.query_lambda.bucket
+  s3_key           = aws_s3_object.query_lambda.key
   handler          = "handler.handle"
-  source_code_hash = data.archive_file.auth_lambda.output_base64sha256
+  source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
   # environment {
@@ -32,21 +32,25 @@ resource "aws_lambda_function" "auth" {
   # }
 }
 
+locals {
+  query_lambda_filename = "query_lambda.zip"
+}
+
 data "aws_iam_role" "lambda_role" {
   name = "nistitlblossom-auto-tagging-lambda-role"
 }
 
-data "archive_file" "auth_lambda" {
+data "archive_file" "query_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/auth_lambda"
-  output_path = "${path.module}/auth_lambda.zip"
+  source_dir  = "${path.module}/lambdas/query"
+  output_path = "${path.module}/${local.query_lambda_filename}"
 }
 
-resource "aws_s3_object" "auth_lambda" {
+resource "aws_s3_object" "query_lambda" {
   bucket = module.lambda_bucket.s3_bucket_id
 
-  key    = "auth_lambda.zip"
-  source = data.archive_file.auth_lambda.output_path
+  key    = local.query_lambda_filename
+  source = data.archive_file.query_lambda.output_path
   tags   = local.tags
-  etag   = filesha1(data.archive_file.auth_lambda.output_path)
+  etag   = filesha1(data.archive_file.query_lambda.output_path)
 }

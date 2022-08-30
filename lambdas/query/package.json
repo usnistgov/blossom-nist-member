@@ -1,8 +1,8 @@
 {
-  "name": "blossom_auth_lambda",
+  "name": "blossom_query_lambda",
   "private": "true",
   "version": "1.0.0",
-  "description": "Blossom auth middleware Lambda",
+  "description": "Blossom query Lambda",
   "main": "index.js",
   "type": "module",
   "scripts": {

@@ -1,7 +1,7 @@
 # run npm build to build the dashboard
 resource "null_resource" "build_blossom_dashboard" {
   provisioner "local-exec" {
-    command = "cd ../blossom-dashboard/client; yarn; echo 0"
+    command = "cd ../blossom-dashboard/client; yarn; PUBLIC_URL=/dev echo 0"
   }
 }
 

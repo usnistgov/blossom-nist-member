@@ -1,0 +1,58 @@
+import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
+import { setupNetwork } from "./fabric-network";
+
+const CHANNEL_NAME = '';
+const CONTRACT_NAME = '';
+
+export type HandlerFunc = (event: APIGatewayEvent, bodyJson: any) => Promise<APIGatewayProxyResult>;
+
+function getUsername(event: APIGatewayEvent) {
+    return '';
+}
+
+type TransactionRequestBody = {
+    name: string;
+    args: string[];
+    transient?: Record<string, string>;
+}
+
+/**
+ * Convert string-string map to string-buffer
+ */
+function convertTransientToBuffer(transient: Record<string, string>) {
+    return Object.keys(transient).reduce<{
+        [key: string]: Buffer;
+    }>((acc, key) => {
+        acc[key] = Buffer.from(transient[key]);
+        return acc;
+    }, {})
+}
+
+const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: 'query' | 'invoke') => {
+    const body = bodyJson as TransactionRequestBody;
+    const username = getUsername(event);
+    const network = await setupNetwork(username, CHANNEL_NAME);
+
+    const transaction = network.getContract(CONTRACT_NAME).createTransaction(body.name);
+    if (body.transient) {
+        transaction.setTransient(convertTransientToBuffer(body.transient));
+    }
+
+    let result;
+    if (type === 'query') {
+        result = await transaction.evaluate(...body.args);
+    } else {
+        result = await transaction.submit(...body.args);
+    }
+
+    return {
+        body: result.toString(),
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        statusCode: 200
+    };
+}
+
+export const queryHandler: HandlerFunc = (event, bodyJson) => transactionHandler(event, bodyJson, 'query');
+export const invokeHandler: HandlerFunc = (event, bodyJson) => transactionHandler(event, bodyJson, 'invoke');

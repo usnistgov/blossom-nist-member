@@ -33,7 +33,7 @@ resource "aws_lambda_function" "query" {
 }
 
 locals {
-  query_lambda_filename = "query_lambda.zip"
+  lambda_filename = "lambda.zip"
 }
 
 data "aws_iam_role" "lambda_role" {
@@ -42,14 +42,14 @@ data "aws_iam_role" "lambda_role" {
 
 data "archive_file" "query_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambdas/query"
-  output_path = "${path.module}/${local.query_lambda_filename}"
+  source_dir  = "${path.module}/lambda"
+  output_path = "${path.module}/${local.lambda_filename}"
 }
 
 resource "aws_s3_object" "query_lambda" {
   bucket = module.lambda_bucket.s3_bucket_id
 
-  key    = local.query_lambda_filename
+  key    = local.lambda_filename
   source = data.archive_file.query_lambda.output_path
   tags   = local.tags
   etag   = filesha1(data.archive_file.query_lambda.output_path)

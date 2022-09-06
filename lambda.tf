@@ -25,11 +25,13 @@ resource "aws_lambda_function" "query" {
   source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
-  # environment {
-  #   variables = {
-
-  #   }
-  # }
+  environment {
+    variables = {
+      CHANNEL_NAME    = module.vars.env.channel_name
+      CONTRACT_NAME   = module.vars.env.contract_name
+      PROFILE_ENCODED = filebase64("${path.module}/conn-profile-${module.vars.env.network_name}-${module.vars.env.member_name}.yaml")
+    }
+  }
 }
 
 locals {

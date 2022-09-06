@@ -117,9 +117,6 @@ resource "aws_api_gateway_stage" "gw-stage" {
 #   api_id           = aws_apigatewayv2_api.gw.id
 #   integration_type = "AWS_PROXY"
 #   integration_uri  = aws_lambda_function.auth.invoke_arn
-#   # request_parameters = {
-#   #   FORWARD_URL = "${module.vars.env.forward_url}/transaction/query"
-#   # }
 # }
 
 # resource "aws_apigatewayv2_route" "query" {
@@ -134,9 +131,6 @@ resource "aws_api_gateway_stage" "gw-stage" {
 #   api_id           = aws_apigatewayv2_api.gw.id
 #   integration_type = "AWS_PROXY"
 #   integration_uri  = aws_lambda_function.auth.invoke_arn
-#   # request_parameters = {
-#   #   FORWARD_URL = "${module.vars.env.forward_url}/transaction/invoke"
-#   # }
 # }
 
 # resource "aws_apigatewayv2_route" "invoke" {

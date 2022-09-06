@@ -18,11 +18,15 @@ async function buildIdentity(username: string) {
     return { wallet, identity };
 }
 
-const CONN_PROFILE_PATH = path.join(__dirname, "./connection-profile.yaml")
-
 export async function setupNetwork(username: string, channel: string) {
     const { identity, wallet } = await buildIdentity(username);
-    const profile = YAML.parse(fs.readFileSync(CONN_PROFILE_PATH).toString());
+
+    const profile_raw = process.env.PROFILE_ENCODED;
+    if (profile_raw === undefined) {
+        throw new Error('The connection profile was not provided via the "PROFILE_ENCODED" env var');
+    }
+
+    const profile = YAML.parse(new Buffer(profile_raw).toString('base64'));
 
     const gateway = new Gateway();
     await gateway.connect(profile, {

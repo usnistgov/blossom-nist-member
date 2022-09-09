@@ -47,7 +47,7 @@ resource "aws_api_gateway_resource" "s3" {
 resource "aws_api_gateway_method" "s3" {
   rest_api_id   = aws_api_gateway_rest_api.gw.id
   resource_id   = aws_api_gateway_resource.s3.id
-  http_method   = "ANY"
+  http_method   = "GET"
   authorization = "NONE"
 
   request_parameters = {
@@ -83,7 +83,7 @@ resource "aws_api_gateway_integration" "s3" {
   }
 }
 
-resource "aws_api_gateway_integration_response" "s3-integration-response" {
+resource "aws_api_gateway_integration_response" "s3" {
   rest_api_id = aws_api_gateway_rest_api.gw.id
   resource_id = aws_api_gateway_resource.s3.id
   http_method = aws_api_gateway_method.s3.http_method

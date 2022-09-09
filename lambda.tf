@@ -25,6 +25,7 @@ resource "aws_lambda_function" "query" {
   source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
+  timeout          = 30
   environment {
     variables = {
       CHANNEL_NAME    = module.vars.env.channel_name
@@ -67,7 +68,7 @@ data "archive_file" "query_lambda" {
 resource "aws_s3_object" "query_lambda" {
   bucket = module.lambda_bucket.s3_bucket_id
 
-  key    = local.lambda_filename
+  key    = "lambda.zip"
   source = data.archive_file.query_lambda.output_path
   tags   = local.tags
   etag   = filesha1(data.archive_file.query_lambda.output_path)

@@ -18,10 +18,10 @@ module "lambda_bucket" {
 
 resource "aws_lambda_function" "query" {
   runtime          = "nodejs16.x"
-  function_name    = "handler"
+  function_name    = "${local.prefix}-lambda"
   s3_bucket        = aws_s3_object.query_lambda.bucket
   s3_key           = aws_s3_object.query_lambda.key
-  handler          = "handler.handle"
+  handler          = "index.handler"
   source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
@@ -35,17 +35,33 @@ resource "aws_lambda_function" "query" {
 }
 
 locals {
-  lambda_filename = "lambda.zip"
+  # the output zip file containing the packaged lambda contents
+  lambda_outpath = "${path.module}/lambda.zip"
+  # the input directory to build
+  lambda_srcdir = "${path.module}/lambda"
+  # the output directory for the built lambda
+  lambda_builddir = "${local.lambda_srcdir}/dist"
 }
 
 data "aws_iam_role" "lambda_role" {
   name = "nistitlblossom-auto-tagging-lambda-role"
 }
 
+# this resource builds the lambda
+resource "null_resource" "build-lambda" {
+  provisioner "local-exec" {
+    command = "cd ${local.lambda_srcdir}; npm i"
+  }
+}
+
 data "archive_file" "query_lambda" {
   type        = "zip"
-  source_dir  = "${path.module}/lambda"
-  output_path = "${path.module}/${local.lambda_filename}"
+  source_dir  = local.lambda_builddir
+  output_path = local.lambda_outpath
+
+  depends_on = [
+    null_resource.build-lambda
+  ]
 }
 
 resource "aws_s3_object" "query_lambda" {

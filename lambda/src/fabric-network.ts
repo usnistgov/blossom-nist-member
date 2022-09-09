@@ -1,6 +1,4 @@
-import { Gateway, Wallets, Wallet, Network, Contract } from 'fabric-network';
-import path from 'path';
-import * as fs from 'fs';
+import { Gateway, Wallets } from 'fabric-network';
 import YAML from 'yaml';
 import { getSecret } from './aws';
 

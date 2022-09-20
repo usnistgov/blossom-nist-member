@@ -7,6 +7,5 @@ locals {
     peer_node_id  = "m-PBIXMRU6BVHT7F7RYTQHC5L5UE"
     channel_name  = "acquisition2"
     contract_name = "blossom"
-    # Add as needed
   }
 }

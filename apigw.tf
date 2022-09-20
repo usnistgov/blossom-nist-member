@@ -14,6 +14,10 @@ resource "aws_api_gateway_deployment" "gw-deployment" {
       aws_api_gateway_method.s3.id,
       aws_api_gateway_integration.s3.id,
       aws_api_gateway_integration_response.s3.id,
+      # s3 root integration
+      aws_api_gateway_method.s3-root.id,
+      aws_api_gateway_integration.s3-root.id,
+      aws_api_gateway_integration_response.s3-root.id,
       # lambda integration
       aws_api_gateway_resource.lambda.id,
       aws_api_gateway_method.lambda.id,
@@ -36,7 +40,6 @@ resource "aws_api_gateway_stage" "gw-stage" {
 #############################
 # S3 Integration Definition #
 #############################
-
 
 resource "aws_api_gateway_resource" "s3" {
   rest_api_id = aws_api_gateway_rest_api.gw.id
@@ -95,6 +98,56 @@ resource "aws_api_gateway_integration_response" "s3" {
 
   depends_on = [
     aws_api_gateway_integration.s3
+  ]
+}
+
+##################################
+# S3 Root Integration Definition #
+##################################
+
+resource "aws_api_gateway_method" "s3-root" {
+  rest_api_id   = aws_api_gateway_rest_api.gw.id
+  resource_id   = aws_api_gateway_rest_api.gw.root_resource_id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_method_response" "s3-root" {
+  rest_api_id = aws_api_gateway_rest_api.gw.id
+  resource_id = aws_api_gateway_rest_api.gw.root_resource_id
+  http_method = aws_api_gateway_method.s3-root.http_method
+
+  status_code = 200
+  response_parameters = {
+    "method.response.header.Content-Type" = true
+  }
+}
+
+resource "aws_api_gateway_integration" "s3-root" {
+  rest_api_id = aws_api_gateway_rest_api.gw.id
+  resource_id = aws_api_gateway_rest_api.gw.root_resource_id
+  http_method = aws_api_gateway_method.s3-root.http_method
+
+  integration_http_method = "GET"
+  type                    = "AWS"
+  uri                     = "arn:aws:apigateway:us-east-1:s3:path/${module.s3_content_bucket.s3_bucket_id}/index.html"
+
+  credentials          = aws_iam_role.apigw-proxy.arn
+  passthrough_behavior = "WHEN_NO_MATCH"
+}
+
+resource "aws_api_gateway_integration_response" "s3-root" {
+  rest_api_id = aws_api_gateway_rest_api.gw.id
+  resource_id = aws_api_gateway_rest_api.gw.root_resource_id
+  http_method = aws_api_gateway_method.s3-root.http_method
+
+  status_code = 200
+  response_parameters = {
+    "method.response.header.Content-Type" = "integration.response.header.Content-Type"
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.s3-root
   ]
 }
 

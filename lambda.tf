@@ -50,8 +50,13 @@ data "aws_iam_role" "lambda_role" {
 
 # this resource builds the lambda
 resource "null_resource" "build-lambda" {
+  triggers = {
+    "package"      = sha256(file("${local.lambda_srcdir}/package.json"))
+    "package-lock" = sha256(file("${local.lambda_srcdir}/package-lock.json"))
+    "src"          = sha256(join("", [for f in fileset(local.lambda_srcdir, "src/**/*") : filesha256("${local.lambda_srcdir}/${f}")]))
+  }
   provisioner "local-exec" {
-    command = "cd ${local.lambda_srcdir}; npm i"
+    command = "cd ${local.lambda_srcdir}; npm i; npm run build"
   }
 }
 
@@ -71,5 +76,5 @@ resource "aws_s3_object" "query_lambda" {
   key    = "lambda.zip"
   source = data.archive_file.query_lambda.output_path
   tags   = local.tags
-  etag   = filesha1(data.archive_file.query_lambda.output_path)
+  # etag   = filesha256(data.archive_file.query_lambda.output_path)
 }

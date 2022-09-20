@@ -1,7 +1,34 @@
+locals {
+  content_type_map = {
+    "html" = "text/html"
+    "css"  = "text/css"
+    "js"   = "text/javascript"
+    "png"  = "image/png"
+    "ico"  = "image/x-icon"
+    "svg"  = "image/svg+xml"
+    "txt"  = "text/plain"
+    "json" = "application/json"
+    # idk what this is
+    "map" = "application/json"
+  }
+  webcontent_srcdir   = "${path.module}/../blossom-dashboard/client_rewrite"
+  webcontent_builddir = "${local.webcontent_srcdir}/dist"
+  webcontent_env = merge(module.vars.env.dashboard_envs, {
+    BASE_URL = "${aws_api_gateway_stage.gw-stage.stage_name}/"
+  })
+}
+
 # run npm build to build the dashboard
 resource "null_resource" "build_blossom_dashboard" {
+  triggers = {
+    "package"      = sha256(file("${local.webcontent_srcdir}/package.json"))
+    "package-lock" = sha256(file("${local.webcontent_srcdir}/package-lock.json"))
+    "src"          = sha256(join("", [for f in fileset(local.webcontent_srcdir, "src/**/*") : filesha256("${local.webcontent_srcdir}/${f}")]))
+    "env"          = jsonencode(local.webcontent_env)
+  }
   provisioner "local-exec" {
-    command = "cd ../blossom-dashboard/client; yarn; PUBLIC_URL=/dev echo 0"
+    command     = "cd ${local.webcontent_srcdir}; npm i; npm run build"
+    environment = local.webcontent_env
   }
 }
 
@@ -22,26 +49,12 @@ module "s3_content_bucket" {
   # })
 }
 
-locals {
-  content_type_map = {
-    "html" = "text/html"
-    "css"  = "text/css"
-    "js"   = "text/javascript"
-    "png"  = "image/png"
-    "ico"  = "image/x-icon"
-    "txt"  = "text/plain"
-    "json" = "application/json"
-    # idk what this is
-    "map" = "application/json"
-  }
-}
-
 resource "aws_s3_object" "web-content" {
   bucket   = module.s3_content_bucket.s3_bucket_id
-  for_each = fileset("../blossom-dashboard/client/build", "**/*")
+  for_each = fileset(local.webcontent_builddir, "**/*")
   key      = each.value
-  source   = "../blossom-dashboard/client/build/${each.value}"
-  etag     = filemd5("../blossom-dashboard/client/build/${each.value}")
+  source   = "${local.webcontent_builddir}/${each.value}"
+  etag     = filemd5("${local.webcontent_builddir}/${each.value}")
   tags = merge({
     "Purpose" = "blossom-frontend"
   }, local.tags)

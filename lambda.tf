@@ -1,3 +1,13 @@
+locals {
+  # the output zip file containing the packaged lambda contents
+  lambda_outpath = "${path.module}/lambda.zip"
+  # the input directory to build
+  lambda_srcdir = "${path.module}/lambda"
+  # the output directory for the built lambda
+  lambda_builddir = "${local.lambda_srcdir}/dist"
+}
+
+# This bucket stores the lambda's build artifacts
 module "lambda_bucket" {
   source = "../infrastructure/terraform/modules/aws/s3"
   # attach_public_policy = var.attach_public_policy
@@ -33,15 +43,7 @@ resource "aws_lambda_function" "query" {
       PROFILE_ENCODED = filebase64("${path.module}/conn-profile-${module.vars.env.network_name}-${module.vars.env.member_name}.yaml")
     }
   }
-}
 
-locals {
-  # the output zip file containing the packaged lambda contents
-  lambda_outpath = "${path.module}/lambda.zip"
-  # the input directory to build
-  lambda_srcdir = "${path.module}/lambda"
-  # the output directory for the built lambda
-  lambda_builddir = "${local.lambda_srcdir}/dist"
 }
 
 data "aws_iam_role" "lambda_role" {
@@ -56,7 +58,7 @@ resource "null_resource" "build-lambda" {
     "src"          = sha256(join("", [for f in fileset(local.lambda_srcdir, "src/**/*") : filesha256("${local.lambda_srcdir}/${f}")]))
   }
   provisioner "local-exec" {
-    command = "cd ${local.lambda_srcdir}; npm i; npm run build"
+    command = "pushd ${local.lambda_srcdir}; npm i; npm run build; popd; aws s3 cp s3://us-east-1.managedblockchain/etc/managedblockchain-tls-chain.pem ${local.lambda_builddir}"
   }
 }
 

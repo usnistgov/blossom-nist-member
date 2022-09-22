@@ -1,8 +1,8 @@
 locals {
   # the output zip file containing the packaged lambda contents
-  lambda_outpath = "${path.module}/lambda.zip"
+  lambda_outpath = "lambda.zip"
   # the input directory to build
-  lambda_srcdir = "${path.module}/lambda"
+  lambda_srcdir = "lambda"
   # the output directory for the built lambda
   lambda_builddir = "${local.lambda_srcdir}/dist"
 }
@@ -58,7 +58,10 @@ resource "null_resource" "build-lambda" {
     "src"          = sha256(join("", [for f in fileset(local.lambda_srcdir, "src/**/*") : filesha256("${local.lambda_srcdir}/${f}")]))
   }
   provisioner "local-exec" {
-    command = "pushd ${local.lambda_srcdir}; npm i; npm run build; popd; aws s3 cp s3://us-east-1.managedblockchain/etc/managedblockchain-tls-chain.pem ${local.lambda_builddir}"
+    command = "pushd ${local.lambda_srcdir}; npm i; npm run build; popd; aws s3 cp s3://us-east-1.managedblockchain/etc/managedblockchain-tls-chain.pem ${local.lambda_builddir}/"
+    interpreter = [
+      "bash", "-c"
+    ]
   }
 }
 

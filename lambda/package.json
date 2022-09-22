@@ -1,7 +1,7 @@
 {
   "name": "blossom_query_lambda",
   "private": "true",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Blossom query Lambda",
   "main": "index.js",
   "type": "module",
@@ -9,7 +9,7 @@
     "prebuild": "rm -fr dist",
     "build-esbuild": "esbuild src/index.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outfile=dist/index.js",
     "build-ncc": "ncc build src/index.ts -o dist",
-    "build": "npm run build-ncc"
+    "build": "tsc; cp --recursive node_modules/ dist/"
   },
   "author": {
     "name": "Nikita Wootten",

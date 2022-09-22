@@ -78,7 +78,7 @@ resource "aws_api_gateway_integration" "s3" {
   type                    = "AWS"
   uri                     = "arn:aws:apigateway:us-east-1:s3:path/${module.s3_content_bucket.s3_bucket_id}/{proxy}"
 
-  credentials          = aws_iam_role.apigw-proxy.arn
+  credentials          = data.aws_iam_role.apigw-proxy.arn
   passthrough_behavior = "WHEN_NO_MATCH"
 
   request_parameters = {
@@ -132,7 +132,7 @@ resource "aws_api_gateway_integration" "s3-root" {
   type                    = "AWS"
   uri                     = "arn:aws:apigateway:us-east-1:s3:path/${module.s3_content_bucket.s3_bucket_id}/index.html"
 
-  credentials          = aws_iam_role.apigw-proxy.arn
+  credentials          = data.aws_iam_role.apigw-proxy.arn
   passthrough_behavior = "WHEN_NO_MATCH"
 }
 

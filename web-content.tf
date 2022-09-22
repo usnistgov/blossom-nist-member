@@ -13,7 +13,12 @@ locals {
   }
   webcontent_srcdir   = "${path.module}/../blossom-dashboard/client_rewrite"
   webcontent_builddir = "${local.webcontent_srcdir}/dist"
-  webcontent_env = merge(module.vars.env.dashboard_envs, {
+  webcontent_env = merge({
+      VITE_CLIENT_ID     = data.aws_cognito_user_pool_client.main.id
+      VITE_CLIENT_SECRET = data.aws_cognito_user_pool_client.main.client_secret
+      VITE_AUTH_URL      = "https://blossomtest.auth.us-east-1.amazoncognito.com"
+  }, 
+  {
     BASE_URL = "${aws_api_gateway_stage.gw-stage.stage_name}/"
   })
 }

@@ -190,3 +190,12 @@ resource "aws_lambda_permission" "lambda-permission" {
   # within API Gateway REST API.
   source_arn = "${aws_api_gateway_rest_api.gw.execution_arn}/*/*/*"
 }
+
+resource "aws_api_gateway_authorizer" "cognito_integration" {
+  name                   = "blossom_test-cognito_integration"
+  type                   = "COGNITO_USER_POOLS"
+  rest_api_id            = aws_api_gateway_rest_api.gw.id
+  provider_arns          = [
+    tolist(data.aws_cognito_user_pools.identity.arns)[0]
+  ]
+}

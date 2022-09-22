@@ -1,7 +1,7 @@
 {
   "name": "blossom_query_lambda",
   "private": "true",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Blossom query Lambda",
   "main": "index.js",
   "type": "module",

@@ -81,5 +81,5 @@ resource "aws_s3_object" "query_lambda" {
   key    = "lambda.zip"
   source = data.archive_file.query_lambda.output_path
   tags   = local.tags
-  # etag   = filesha256(data.archive_file.query_lambda.output_path)
+  etag   = filesha256(data.archive_file.query_lambda.output_path)
 }

@@ -5,10 +5,10 @@ import { getSecret } from './aws';
 async function buildIdentity(username: string) {
     const identity = {
         credentials: {
-            certificate: await getSecret(`blossom/${username}/cert`),
-            privateKey: await getSecret(`blossom/${username}/pk`),
+            certificate: await getSecret(`/nist/blossom/dev/${username}/cert`),
+            privateKey: await getSecret(`/nist/blossom/dev/${username}/pk`),
         },
-        mspId: await getSecret(`blossom/${username}/mspId`),
+        mspId: await getSecret(`/nist/blossom/dev/${username}/mspId`),
         type: 'X.509'
     };
     const wallet = await Wallets.newInMemoryWallet();

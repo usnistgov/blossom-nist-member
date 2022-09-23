@@ -1,21 +1,18 @@
-import SecretsManager from "aws-sdk/clients/secretsmanager";
+import SSM from "aws-sdk/clients/ssm";
 
-const secrets = new SecretsManager();
+const ssm = new SSM();
 
 export function getSecret(key: string): Promise<string> {
     // aws's secret API is a bit annoying so we're wrapping it in a promise
     return new Promise((resolve, reject) => {
-        secrets.getSecretValue({ SecretId: key }, (err, data) => {
+        ssm.getParameter({ Name: key, WithDecryption: true }, (err, data) => {
             if (err) {
                 return reject(err);
             }
-
-            if (data.SecretString) {
-                return resolve(data.SecretString);
-            } else if (data.SecretBinary) {
-                return resolve(data.SecretBinary.toString('ascii'));
+            if (data.Parameter && data.Parameter.Value && data.Parameter.Type == 'SecureString') {
+                return resolve(data.Parameter.Value);
             } else {
-                return reject('Secret string or secret binary not provided');
+                return reject('SecureString not provided or unsupported unecrypted String or StringList provided');
             }
         })
     });

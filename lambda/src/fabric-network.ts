@@ -24,7 +24,7 @@ export async function setupNetwork(username: string, channel: string) {
         throw new Error('The connection profile was not provided via the "PROFILE_ENCODED" env var');
     }
 
-    const profile = YAML.parse(new Buffer(profile_raw).toString('base64'));
+    const profile = YAML.parse(Buffer.from(profile_raw, 'base64').toString());
 
     const gateway = new Gateway();
     await gateway.connect(profile, {

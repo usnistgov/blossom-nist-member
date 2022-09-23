@@ -28,7 +28,11 @@ export const handler = async (
             throw new Error('Request body "functionType" must be one of "query"');
     }
 
-    const result = await handlerFunc(event, bodyJson);
 
-    callback(null, result);
+    try {
+        const result = await handlerFunc(event, bodyJson);
+        callback(null, result);
+    } catch (error) {
+        callback(error as Error);
+    }
 };

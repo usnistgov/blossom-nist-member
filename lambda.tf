@@ -47,7 +47,7 @@ resource "aws_lambda_function" "query" {
 }
 
 data "aws_iam_role" "lambda_role" {
-  name = "nistitlblossom-auto-tagging-lambda-role"
+  name = "LambdaExecutionRole"
 }
 
 # this resource builds the lambda

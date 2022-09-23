@@ -7,9 +7,9 @@ const CONTRACT_NAME = process.env.CONTRACT_NAME ?? 'blossom';
 export type HandlerFunc = (event: APIGatewayEvent, bodyJson: any) => Promise<APIGatewayProxyResult>;
 
 function getUsername(event: APIGatewayEvent): string {
-    const username = event.requestContext.authorizer?.username;
+    const username = event.requestContext.identity.user;
     if (username === undefined || username === null) {
-        throw new Error(`Could not get username from requestContext (got ${event.requestContext.authorizer})`);
+        throw new Error(`Could not get username from requestContext (got ${JSON.stringify(event.requestContext.identity)})`);
     }
     return username as string;
 }

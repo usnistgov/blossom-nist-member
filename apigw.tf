@@ -10,18 +10,18 @@ resource "aws_api_gateway_deployment" "gw-deployment" {
   triggers = {
     redeployment = sha1(jsonencode([
       # s3 integration
-      aws_api_gateway_resource.s3.id,
-      aws_api_gateway_method.s3.id,
-      aws_api_gateway_integration.s3.id,
-      aws_api_gateway_integration_response.s3.id,
+      aws_api_gateway_resource.s3,
+      aws_api_gateway_method.s3,
+      aws_api_gateway_integration.s3,
+      aws_api_gateway_integration_response.s3,
       # s3 root integration
-      aws_api_gateway_method.s3-root.id,
-      aws_api_gateway_integration.s3-root.id,
-      aws_api_gateway_integration_response.s3-root.id,
+      aws_api_gateway_method.s3-root,
+      aws_api_gateway_integration.s3-root,
+      aws_api_gateway_integration_response.s3-root,
       # lambda integration
-      aws_api_gateway_resource.lambda.id,
-      aws_api_gateway_method.lambda.id,
-      aws_api_gateway_integration.lambda.id
+      aws_api_gateway_resource.lambda,
+      aws_api_gateway_method.lambda,
+      aws_api_gateway_integration.lambda
     ]))
   }
 

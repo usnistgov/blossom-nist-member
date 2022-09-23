@@ -7,9 +7,9 @@ const CONTRACT_NAME = process.env.CONTRACT_NAME ?? 'blossom';
 export type HandlerFunc = (event: APIGatewayEvent, bodyJson: any) => Promise<APIGatewayProxyResult>;
 
 function getUsername(event: APIGatewayEvent): string {
-    const username = event.requestContext.identity.user;
+    const username = event.requestContext.authorizer?.claims.username;
     if (username === undefined || username === null) {
-        throw new Error(`Could not get username from requestContext (got ${JSON.stringify(event.requestContext.identity)})`);
+        throw new Error(`Could not get username from requestContext (got ${JSON.stringify(event.requestContext.authorizer)})`);
     }
     return username as string;
 }
@@ -42,19 +42,27 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
         transaction.setTransient(convertTransientToBuffer(body.transient));
     }
 
-    let result;
-    if (type === 'query') {
-        result = await transaction.evaluate(...body.args);
-    } else {
-        result = await transaction.submit(...body.args);
+    try {
+        let result;
+        if (type === 'query') {
+            result = await transaction.evaluate(...body.args);
+        } else {
+            result = await transaction.submit(...body.args);
+        }
+        return {
+            body: result.toString(),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            statusCode: 200
+        };
+    } catch (e) {
+        return {
+            body: `${e}`,
+            headers: {},
+            statusCode: 200,
+        }
     }
-    return {
-        body: result.toString(),
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        statusCode: 200
-    };
 }
 
 export const queryHandler: HandlerFunc = (event, bodyJson) => transactionHandler(event, bodyJson, 'query');

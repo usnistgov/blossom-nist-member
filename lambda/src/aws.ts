@@ -12,7 +12,7 @@ export function getSecret(key: string): Promise<string> {
             if (data.Parameter && data.Parameter.Value && data.Parameter.Type == 'SecureString') {
                 return resolve(data.Parameter.Value);
             } else {
-                return reject('SecureString not provided or unsupported unecrypted String or StringList provided');
+                return reject('SecureString not provided or unsupported unencrypted String or StringList provided');
             }
         })
     });

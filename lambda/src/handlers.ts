@@ -32,7 +32,7 @@ function convertTransientToBuffer(transient: Record<string, string>) {
     }, {})
 }
 
-const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: 'query' | 'invoke') => {
+const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: 'query' | 'invoke'): ReturnType<HandlerFunc> => {
     const body = bodyJson as TransactionRequestBody;
     const username = getUsername(event);
     const network = await setupNetwork(username, CHANNEL_NAME);
@@ -42,20 +42,27 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
         transaction.setTransient(convertTransientToBuffer(body.transient));
     }
 
-    let result;
-    if (type === 'query') {
-        result = await transaction.evaluate(...body.args);
-    } else {
-        result = await transaction.submit(...body.args);
+    try {
+        let result;
+        if (type === 'query') {
+            result = await transaction.evaluate(...body.args);
+        } else {
+            result = await transaction.submit(...body.args);
+        }
+        return {
+            body: result.toString(),
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            statusCode: 200
+        };
+    } catch (e) {
+        return {
+            body: `${e}`,
+            headers: {},
+            statusCode: 500
+        };
     }
-
-    return {
-        body: result.toString(),
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        statusCode: 200
-    };
 }
 
 export const queryHandler: HandlerFunc = (event, bodyJson) => transactionHandler(event, bodyJson, 'query');

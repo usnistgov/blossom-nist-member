@@ -167,7 +167,8 @@ resource "aws_api_gateway_method" "lambda" {
   resource_id = aws_api_gateway_resource.lambda.id
 
   http_method   = "POST"
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito_integration.id
 }
 
 resource "aws_api_gateway_integration" "lambda" {

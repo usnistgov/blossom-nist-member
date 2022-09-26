@@ -29,13 +29,25 @@ module "lambda_bucket" {
 resource "aws_lambda_function" "query" {
   runtime          = "nodejs16.x"
   function_name    = "${local.prefix}-lambda"
+  memory_size      = 512
+  publish          = true
   s3_bucket        = aws_s3_object.query_lambda.bucket
   s3_key           = aws_s3_object.query_lambda.key
   handler          = "index.handler"
   source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
-  timeout          = 30
+  timeout          = 300 
+  vpc_config {
+    subnet_ids = [
+      "subnet-0e55c3a77dad7f698",
+      "subnet-09e992c8f703e3662"
+    ]
+    security_group_ids = [
+      "sg-0b94936c423b8e9ee",
+      "sg-064e0191188232c57"
+    ]
+  }
   environment {
     variables = {
       CHANNEL_NAME    = module.vars.env.channel_name

@@ -33,15 +33,18 @@ function convertTransientToBuffer(transient: Record<string, string>) {
 }
 
 const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: 'query' | 'invoke'): ReturnType<HandlerFunc> => {
+    console.log('Getting username...');
     const body = bodyJson as TransactionRequestBody;
     const username = getUsername(event);
+    console.log('Setting up network...');
     const network = await setupNetwork(username, CHANNEL_NAME);
-
+    console.log('Setting up contract...');
     const transaction = network.getContract(CONTRACT_NAME).createTransaction(body.name);
     if (body.transient) {
         transaction.setTransient(convertTransientToBuffer(body.transient));
     }
 
+    console.log('Evaluating/submitting transaction...');
     try {
         let result;
         if (type === 'query') {
@@ -58,7 +61,7 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
         };
     } catch (e) {
         return {
-            body: `${e}`,
+            body: `Error: ${e}`,
             headers: {},
             statusCode: 200,
         }

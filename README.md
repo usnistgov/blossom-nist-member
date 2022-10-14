@@ -1,4 +1,4 @@
-# BloSS@M Core
+# BloSS@M NIST Member
 
 ## CN-19-0103
 

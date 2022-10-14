@@ -37,8 +37,6 @@ categories:
   # - visualization
 
 themes:
-  - Information Technology
-    - Data and informatics
   # - Advanced communications
   #     - Optical communications
   #     - Quantum communications
@@ -128,20 +126,20 @@ themes:
   #     - Precision medicine
   #     - Regenerative medicine
   #
-  # - Information Technology
+  - Information Technology:
   #     - Artificial intelligence
   #     - Biometrics
-  #     - Cloud computing and virtualization
+    - Cloud computing and virtualization
   #     - Complex systems
   #     - Computational science
   #     - Conformance testing
   #     - Cyber-physical systems
   #         - Smart cities
-  #     - Cybersecurity
-  #         - Configuration and vulnerability management
+    - Cybersecurity:
+      - Configuration and vulnerability management
   #         - Cryptography
   #         - Cybersecurity Education and Workforce Development
-  #         - Risk management
+      - Risk management
   #     - Data and informatics
   #         - Human language technology
   #         - Information retrieval
@@ -163,10 +161,10 @@ themes:
   #         - Protocol Design and Standardization
   #         - Software-defined and virtual networks
   #     - Privacy
-  #     - Software research
-  #         - Software assurance
+    - Software research:
+      - Software assurance
   #         - Software performance
-  #         - Software testing
+      - Software testing
   #     - Usability and human factors
   #         - Accessibility
   #     - Video analytics

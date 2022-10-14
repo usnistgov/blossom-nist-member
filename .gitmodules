@@ -1,0 +1,3 @@
+[submodule "oscal"]
+	path = oscal
+	url = git@github.com:usnistgov/blossom-oscal.git

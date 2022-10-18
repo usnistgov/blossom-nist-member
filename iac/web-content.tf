@@ -11,7 +11,7 @@ locals {
     # idk what this is
     "map" = "application/json"
   }
-  webcontent_srcdir   = "${path.module}/../blossom-dashboard"
+  webcontent_srcdir   = "${path.module}/../dashboard"
   webcontent_builddir = "${local.webcontent_srcdir}/dist"
   webcontent_env = merge({
     VITE_CLIENT_ID     = data.aws_cognito_user_pool_client.main.id
@@ -38,7 +38,7 @@ resource "null_resource" "build_blossom_dashboard" {
 }
 
 module "s3_content_bucket" {
-  source               = "../infrastructure/terraform/modules/aws/s3"
+  source               = "./module/s3"
   bucket               = "${local.prefix}-content"
   tags                 = local.tags
   acl                  = "private"

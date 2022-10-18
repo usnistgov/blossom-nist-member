@@ -9,7 +9,7 @@ locals {
 
 # This bucket stores the lambda's build artifacts
 module "lambda_bucket" {
-  source = "../infrastructure/terraform/modules/aws/s3"
+  source = "./module/s3"
   # attach_public_policy = var.attach_public_policy
   bucket               = "${local.prefix}-lambda"
   tags                 = local.tags
@@ -37,7 +37,7 @@ resource "aws_lambda_function" "query" {
   source_code_hash = data.archive_file.query_lambda.output_base64sha256
   role             = data.aws_iam_role.lambda_role.arn
   tags             = local.tags
-  timeout          = 300 
+  timeout          = 300
   vpc_config {
     subnet_ids = [
       "subnet-0e55c3a77dad7f698",
@@ -70,7 +70,7 @@ resource "null_resource" "build-lambda" {
     "src"          = sha256(join("", [for f in fileset(local.lambda_srcdir, "src/**/*") : filesha256("${local.lambda_srcdir}/${f}")]))
   }
   provisioner "local-exec" {
-    command = "pushd ${local.lambda_srcdir}; npm i; npm run build; popd; aws s3 cp s3://us-east-1.managedblockchain/etc/managedblockchain-tls-chain.pem ${local.lambda_builddir}/"
+    command = "pushd ${local.lambda_srcdir}; npm i; npm run build"
     interpreter = [
       "bash", "-c"
     ]

@@ -44,6 +44,8 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
         transaction.setTransient(convertTransientToBuffer(body.transient));
     }
 
+    transaction.setEndorsingOrganizations(network.getGateway().getIdentity().mspId);
+
     console.log('Evaluating/submitting transaction...');
     try {
         let result;
@@ -63,7 +65,7 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
         return {
             body: `Error: ${e}`,
             headers: {},
-            statusCode: 200,
+            statusCode: 500,
         }
     }
 }

@@ -33,6 +33,11 @@ export async function setupNetwork(username: string, channel: string) {
         discovery: {
             asLocalhost: false,
             enabled: false,
+        },
+        // No handler strategy prevents the transaction submit from hanging
+        eventHandlerOptions: {
+            commitTimeout: 100,
+            strategy: null
         }
     });
 

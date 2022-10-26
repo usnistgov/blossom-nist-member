@@ -67,6 +67,8 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
             headers: {},
             statusCode: 500,
         }
+    } finally {
+        network.getGateway().disconnect();
     }
 }
 

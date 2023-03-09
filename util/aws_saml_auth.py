@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from os import environ
+import os
 import sys
 import boto3
 import requests
@@ -18,8 +19,10 @@ from urllib.parse import urlparse, urlunparse
 # Variables
 
 # region: The default AWS region that this script will connect
+# endregion:
 # to for all API calls
-region = environ.get('AWS_DEFAULT_REGION', environ.get('AWS_REGION', 'us-east-1'))
+region = environ.get('AWS_DEFAULT_REGION',
+                     environ.get('AWS_REGION', 'us-east-1'))
 
 # output format: The AWS CLI output format that will be configured in the
 # saml profile (affects subsequent CLI calls)
@@ -27,7 +30,8 @@ outputformat = environ.get('AWS_DEFAULT_OUTPUT', 'json')
 
 # awsconfigfile: The file where this script will store the temp
 # credentials under the saml profile
-filename = environ.get('AWS_SHARED_CREDENTIALS_FILE', f"{expanduser('~')}/.aws/credentials")
+filename = environ.get('AWS_SHARED_CREDENTIALS_FILE',
+                       f"{expanduser('~')}/.aws/credentials")
 
 section = environ.get('AWS_PROFILE_SECTION', 'saml')
 
@@ -36,13 +40,29 @@ section = environ.get('AWS_PROFILE_SECTION', 'saml')
 sslverification = environ.get('IDP_VERIFY_TLS', True)
 
 # idpentryurl: The initial url that starts the authentication process.
-idpentryurl = environ.get('IDP_ENTRY_URL', 
-    'https://auth.nist.gov/adfs/ls/idpinitiatedsignon.aspx?loginToRp=urn:amazon:webservices&RequestedAuthenticationContext=urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport')
+idpentryurl = environ.get('IDP_ENTRY_URL',
+                          'https://auth.nist.gov/adfs/ls/idpinitiatedsignon.aspx?loginToRp=urn:amazon:webservices&RequestedAuthenticationContext=urn:oasis:names:tc:SAML:2.0:ac:classes:PasswordProtectedTransport')
 
 # Uncomment to enable low level debugging
-#logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 ##########################################################################
+
+
+def safe_save_config(config_file: str, config_template):
+    """ Simply writes down the configuration of the AWS
+    Args:
+        config_file (str): The config File Name
+    """
+    # Write the updated config file
+    if not os.path.exists(config_file) and not os.path.isdir(os.path.dirname(config_file)):
+        os.mkdir(os.path.dirname(config_file))
+
+    with open(config_file, 'w+') as current_file:
+        config.write(current_file)
+
+# ----------------------------------------------------------
+
 
 realm = environ.get('IDP_REALM', 'nist')
 uid = environ.get('IDP_USER')
@@ -71,33 +91,33 @@ idpauthformsubmiturl = formresponse.url
 
 # Extract all the necessary values
 # in order to build a dictionary of all of the form values the IdP expects
-formsoup = BeautifulSoup(formresponse.text,'html.parser')
+formsoup = BeautifulSoup(formresponse.text, 'html.parser')
 payload = {}
 
 for inputtag in formsoup.find_all(re.compile('(INPUT|input)')):
-    name = inputtag.get('name','')
-    value = inputtag.get('value','')
+    name = inputtag.get('name', '')
+    value = inputtag.get('value', '')
     if "user" in name.lower():
-        #Make an educated guess that this is the right field for the username
+        # Make an educated guess that this is the right field for the username
         payload[name] = username
     elif "email" in name.lower():
-        #Some IdPs also label the username field as 'email'
+        # Some IdPs also label the username field as 'email'
         payload[name] = username
     elif "pass" in name.lower():
-        #Make an educated guess that this is the right field for the password
+        # Make an educated guess that this is the right field for the password
         payload[name] = password
     else:
-        #Simply populate the parameter with the existing value (picks up hidden fields in the login form)
+        # Simply populate the parameter with the existing value (picks up hidden fields in the login form)
         payload[name] = value
 
 # Debug the parameter payload if needed
 # Use with caution since this will print sensitive output to the screen
-#print payload
+# print payload
 
 # Some IdPs don't explicitly set a form action, but if one is set we should
-# build the idpauthformsubmiturl by combining the scheme and hostname 
+# build the idpauthformsubmiturl by combining the scheme and hostname
 # from the entry url with the form action target
-# If the action tag doesn't exist, we just stick with the 
+# If the action tag doesn't exist, we just stick with the
 # idpauthformsubmiturl above
 for inputtag in formsoup.find_all(re.compile('(FORM|form)')):
     action = inputtag.get('action')
@@ -120,19 +140,19 @@ del username
 del password
 
 # Extract the SAML assertion
-soup = BeautifulSoup(response.text,'html.parser')
+soup = BeautifulSoup(response.text, 'html.parser')
 assertion = ''
 
 # Look for the SAMLResponse attribute of the input tag (determined by
 # analyzing the debug print lines above)
 for inputtag in soup.find_all('input'):
     if(inputtag.get('name') == 'SAMLResponse'):
-        #print(inputtag.get('value'))
+        # print(inputtag.get('value'))
         assertion = inputtag.get('value')
 
 # Better error handling is required for production use.
 if (assertion == ''):
-    #TODO: Insert valid error checking/handling
+    # TODO: Insert valid error checking/handling
     print('Response did not contain a valid SAML assertion')
     sys.exit(0)
 
@@ -183,7 +203,8 @@ else:
 
 # Use the assertion to get an AWS STS token using Assume Role with SAML
 sts_client = boto3.client('sts')
-token = sts_client.assume_role_with_saml(RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion)
+token = sts_client.assume_role_with_saml(
+    RoleArn=role_arn, PrincipalArn=principal_arn, SAMLAssertion=assertion)
 
 # Read in the existing config file
 config = configparser.RawConfigParser()
@@ -204,6 +225,4 @@ config.set(section, 'aws_access_key_id', key_id)
 config.set(section, 'aws_secret_access_key', secret_key)
 config.set(section, 'aws_session_token', session_token)
 
-# Write the updated config file
-with open(filename, 'w+') as configfile:
-    config.write(configfile)
+safe_save_config(config_file=filename, config_template=config)

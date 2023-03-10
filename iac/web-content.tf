@@ -11,30 +11,18 @@ locals {
     # idk what this is
     "map" = "application/json"
   }
-  webcontent_srcdir   = "${path.module}/../dashboard"
-  webcontent_builddir = "${local.webcontent_srcdir}/dist"
-  webcontent_env = merge({
-    VITE_CLIENT_ID     = data.aws_cognito_user_pool_client.main.id
-    VITE_CLIENT_SECRET = data.aws_cognito_user_pool_client.main.client_secret
-    VITE_AUTH_URL      = "https://blossomtest.auth.us-east-1.amazoncognito.com"
-    },
-    {
-      BASE_URL = "${aws_api_gateway_stage.gw-stage.stage_name}/"
-  })
+  webcontent_builddir = "${path.module}/../dashboard/dist"
 }
 
-# run npm build to build the dashboard
-resource "null_resource" "build_blossom_dashboard" {
-  triggers = {
-    "package"      = sha256(file("${local.webcontent_srcdir}/package.json"))
-    "package-lock" = sha256(file("${local.webcontent_srcdir}/package-lock.json"))
-    "src"          = sha256(join("", [for f in fileset(local.webcontent_srcdir, "src/**/*") : filesha256("${local.webcontent_srcdir}/${f}")]))
-    "env"          = jsonencode(local.webcontent_env)
-  }
-  provisioner "local-exec" {
-    command     = "cd ${local.webcontent_srcdir}; npm i; npm run build"
-    environment = local.webcontent_env
-  }
+output "vite_dev_env" {
+  value       = <<-EOT
+  VITE_CLIENT_ID=${data.aws_cognito_user_pool_client.main.id}
+  VITE_CLIENT_SECRET=${data.aws_cognito_user_pool_client.main.client_secret}
+  VITE_AUTH_URL=https://${data.aws_cognito_user_pools.identity.name}.auth.${var.aws_region}.amazoncognito.com
+  PROXY_URL=${resource.aws_api_gateway_deployment.gw-deployment.invoke_url}
+  EOT
+  description = "The developer environment used by the dashboard"
+  sensitive   = true
 }
 
 module "s3_content_bucket" {
@@ -65,8 +53,4 @@ resource "aws_s3_object" "web-content" {
   }, local.tags)
   # extract the extension, apply it to the content_type_map
   content_type = local.content_type_map[split(".", each.value)[length(split(".", each.value)) - 1]]
-  # run npm build before uploading assets
-  depends_on = [
-    null_resource.build_blossom_dashboard
-  ]
 }

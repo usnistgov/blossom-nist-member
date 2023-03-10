@@ -30,6 +30,18 @@ resource "aws_api_gateway_deployment" "gw-deployment" {
   }
 }
 
+output "gw_url" {
+  value       = resource.aws_api_gateway_deployment.gw-deployment.invoke_url
+  description = "The URL of the active APIGW deployment"
+  sensitive   = true
+}
+
+output "base_url" {
+  value       = "/${aws_api_gateway_stage.gw-stage.stage_name}/"
+  description = "The base URL links should resolve against in the dashboard"
+  sensitive   = false
+}
+
 resource "aws_api_gateway_stage" "gw-stage" {
   deployment_id = aws_api_gateway_deployment.gw-deployment.id
   rest_api_id   = aws_api_gateway_rest_api.gw.id

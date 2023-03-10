@@ -5,11 +5,7 @@
   "description": "Blossom query Lambda",
   "main": "index.js",
   "type": "module",
-  "scripts": {
-    "prebuild": "rm -fr dist",
-    "build": "tsc; cp -r node_modules dist",
-    "postbuild": "aws s3 cp s3://us-east-1.managedblockchain/etc/managedblockchain-tls-chain.pem dist"
-  },
+  "scripts": {},
   "author": {
     "name": "Nikita Wootten",
     "email": "nikita.wootten@nist.gov"

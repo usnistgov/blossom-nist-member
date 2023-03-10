@@ -1,10 +1,8 @@
 locals {
   # the output zip file containing the packaged lambda contents
   lambda_outpath = "lambda.zip"
-  # the input directory to build
-  lambda_srcdir = "lambda"
   # the output directory for the built lambda
-  lambda_builddir = "${local.lambda_srcdir}/dist"
+  lambda_builddir = "lambda/dist"
 }
 
 # This bucket stores the lambda's build artifacts
@@ -49,42 +47,25 @@ resource "aws_lambda_function" "query" {
     ]
   }
   environment {
-    variables = {
+    # ugly ternary that optionally adds HFC_LOGGING to lambda if hlf_debug variable is set
+    variables = merge({
       CHANNEL_NAME    = module.vars.env.channel_name
       CONTRACT_NAME   = module.vars.env.contract_name
       PROFILE_ENCODED = filebase64("${path.module}/conn-profile-${module.vars.env.network_name}-${module.vars.env.member_name}.yaml")
-    }
+      }, var.hlf_debug ? {
+      HFC_LOGGING = "{\"debug\":\"console\",\"error\":\"console\",\"info\":\"console\",\"warning\":\"console\"}"
+    } : {})
   }
-
 }
 
 data "aws_iam_role" "lambda_role" {
   name = "LambdaExecutionRole"
 }
 
-# this resource builds the lambda
-resource "null_resource" "build-lambda" {
-  triggers = {
-    "package"      = sha256(file("${local.lambda_srcdir}/package.json"))
-    "package-lock" = sha256(file("${local.lambda_srcdir}/package-lock.json"))
-    "src"          = sha256(join("", [for f in fileset(local.lambda_srcdir, "src/**/*") : filesha256("${local.lambda_srcdir}/${f}")]))
-  }
-  provisioner "local-exec" {
-    command = "pushd ${local.lambda_srcdir}; npm i; npm run build"
-    interpreter = [
-      "bash", "-c"
-    ]
-  }
-}
-
 data "archive_file" "query_lambda" {
   type        = "zip"
   source_dir  = local.lambda_builddir
   output_path = local.lambda_outpath
-
-  depends_on = [
-    null_resource.build-lambda
-  ]
 }
 
 resource "aws_s3_object" "query_lambda" {

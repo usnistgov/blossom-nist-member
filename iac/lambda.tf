@@ -52,6 +52,7 @@ resource "aws_lambda_function" "query" {
       CHANNEL_NAME    = module.vars.env.channel_name
       CONTRACT_NAME   = module.vars.env.contract_name
       PROFILE_ENCODED = filebase64("${path.module}/conn-profile-${module.vars.env.network_name}-${module.vars.env.member_name}.yaml")
+      SSM_PREFIX      = module.vars.env.identities_ssm_prefix
       }, var.hlf_debug ? {
       HFC_LOGGING = "{\"debug\":\"console\",\"error\":\"console\",\"info\":\"console\",\"warning\":\"console\"}"
     } : {})

@@ -4,6 +4,12 @@
 
 To provision or update the infrastructure, perform the following steps:
 
+1. If you cloned the repository without initializing submodules, do so now:
+
+    ```
+    $ git submodule update --init --recursive
+    ```
+
 1. Select the correct workspace:
 
     This project uses [Terraform Workspaces](https://developer.hashicorp.com/terraform/language/state/workspaces) to segment member-specific configuration & state.
@@ -29,7 +35,7 @@ To provision or update the infrastructure, perform the following steps:
     In order to provision the infrastructure, run:
 
     ```
-    make apply
+    $ make apply
     ```
 
 ### Running other Terraform commands

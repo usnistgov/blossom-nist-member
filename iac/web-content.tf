@@ -26,20 +26,16 @@ output "vite_dev_env" {
 }
 
 module "s3_content_bucket" {
-  source               = "./module/s3"
+  source               = "terraform-aws-modules/s3-bucket/aws"
+  version              = "3.8.2"
   bucket               = "${local.prefix}-content"
   tags                 = local.tags
   acl                  = "private"
   attach_public_policy = false
   block_public_acls    = true
-  # server_side_encryption_configuration = try(lookup(var.server_side_encryption_configuration, "rule"), {
-  #   "rule" : {
-  #     "apply_server_side_encryption_by_default" : {
-  #       "sse_algorithm" : "aws:kms"
-  #       "kms_master_key_id" : data.aws_kms_alias.s3.arn
-  #     }
-  #   }
-  # })
+
+  # Allow deletion of non-empty bucket
+  force_destroy = true
 }
 
 resource "aws_s3_object" "web-content" {

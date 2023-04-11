@@ -8,5 +8,6 @@ locals {
     channel_name          = "blossom1"
     contract_name         = "blossom"
     identities_ssm_prefix = "/nist/blossom/dev/user"
+    cognito_domain_prefix = "blossomtest"
   }
 }

@@ -4,13 +4,11 @@ SHELL := /bin/bash
 amb_cert_file := dist/managedblockchain-tls-chain.pem
 aws_profile := saml
 
-.PHONY: build
-build: node_modules prebuild
-	npx tsc; cp -r node_modules dist
+.PHONY: zip build clean
 
-.PHONY: prebuild
-prebuild: $(amb_cert_file) dist/node_modules
-	rm -f dist/*.js
+# Built in a way that does not update modification times unless necessary (prevents spuriously triggered re-uploads)
+build: node_modules dist/node_modules $(amb_cert_file)
+	npx tsc --build; rsync -a node_modules dist
 
 $(amb_cert_file):
 	@echo Downloading Amazon Managed Blockchain TLS Certificate
@@ -29,6 +27,5 @@ dist/node_modules: package.json package-lock.json
 	npm install --prefix dist/node_modules --omit=dev
 	rm dist/node_modules/{package,package-lock}.json
 
-.PHONY: clean
 clean:
 	rm -fr dist node_modules

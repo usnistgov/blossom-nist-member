@@ -33,7 +33,7 @@ resource "aws_api_gateway_deployment" "gw-deployment" {
 output "gw_url" {
   value       = resource.aws_api_gateway_deployment.gw-deployment.invoke_url
   description = "The URL of the active APIGW deployment"
-  sensitive   = true
+  sensitive   = false
 }
 
 output "base_url" {

@@ -18,7 +18,7 @@ output "vite_dev_env" {
   value       = <<-EOT
   VITE_CLIENT_ID=${data.aws_cognito_user_pool_client.main.id}
   VITE_CLIENT_SECRET=${data.aws_cognito_user_pool_client.main.client_secret}
-  VITE_AUTH_URL=https://${data.aws_cognito_user_pools.identity.name}.auth.${var.aws_region}.amazoncognito.com
+  VITE_AUTH_URL=https://${module.vars.env.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com
   PROXY_URL=${resource.aws_api_gateway_deployment.gw-deployment.invoke_url}
   EOT
   description = "The developer environment used by the dashboard"

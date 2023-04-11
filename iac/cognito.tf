@@ -22,6 +22,6 @@ output "client_secret" {
 }
 
 output "auth_url" {
-  value     = "https://${data.aws_cognito_user_pools.identity.name}.auth.${var.aws_region}.amazoncognito.com"
+  value     = "https://${module.vars.env.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com"
   sensitive = false
 }

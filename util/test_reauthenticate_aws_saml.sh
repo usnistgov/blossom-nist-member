@@ -25,15 +25,15 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"
 
 (
-    cd $SCRIPT_DIR
+    cd "$SCRIPT_DIR"
 
-    if [ ! -d $SCRIPT_DIR/venv ] ; then
+    if [ ! -d "$SCRIPT_DIR"/venv ] ; then
         msg "Setting up the Python virtual environment"
-        (
+        {
             python3 -m venv venv
             source ./venv/bin/activate
             python3 -m pip install -r ./requirements.txt
-        )
+        }
         msg ""
     fi
 

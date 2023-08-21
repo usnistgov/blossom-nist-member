@@ -6,7 +6,7 @@ To provision or update the infrastructure, perform the following steps:
 
 1. If you cloned the repository without initializing submodules, do so now:
 
-    ```
+    ```sh
     $ git submodule update --init --recursive
     ```
 
@@ -17,13 +17,13 @@ To provision or update the infrastructure, perform the following steps:
 
     You can view the available workspaces using the command:
 
-    ```
+    ```sh
     $ ./ter.sh workspace list
     ```
 
     You can select the appropriate workspace using the command:
 
-    ```
+    ```sh
     $ ./ter.sh workspace select <workspace>
     ```
 
@@ -34,9 +34,14 @@ To provision or update the infrastructure, perform the following steps:
 
     In order to provision the infrastructure, run:
 
-    ```
+    ```sh
     $ make apply
     ```
+
+### Makefile targets
+
+This project provides several utility Makefile targets.
+For more details, run `make help`.
 
 ### Running other Terraform commands
 

@@ -1,4 +1,6 @@
 SHELL:=/bin/bash
+
+AWS_PROFILE:=saml
 TERRAFORM_CMD:=./ter.sh
 
 LAMBDA_DIR:=./lambda
@@ -33,7 +35,7 @@ refresh: ## Refresh Terraform outputs
 build: build-lambda build-dashboard ## Build all dependencies
 
 .PHONY: clean
-clean: clean-dashboard clean-lambda ## Clean dependenies of all artifacts
+clean: clean-dashboard clean-lambda clean-connection-profile ## Clean dependenies of all artifacts
 
 # Dashboard
 
@@ -43,7 +45,7 @@ DASHBOARD_PRODENV_FILE:=$(DASHBOARD_DIR)/.env.prod
 .PHONY: build-dashboard
 build-dashboard: $(DASHBOARD_PRODENV_FILE) ## Build the dashboard
 	@echo Building the dashboard project...
-	$(MAKE) -C "$(DASHBOARD_DIR)" build
+	$(MAKE) -C "$(DASHBOARD_DIR)" build AWS_PROFILE="$(AWS_PROFILE)"
 
 .PHONY: environment-dashboard
 environment-dashboard: $(DASHBOARD_DEVENV_FILE) $(DASHBOARD_PRODENV_FILE) ## Produce dashboard environment files
@@ -65,8 +67,35 @@ clean-dashboard: ## Clean dashboard build artifacts and environment files
 .PHONY: build-lambda
 build-lambda: ## Build the lambda source
 	@echo Building the lambda project...
-	$(MAKE) -C "$(LAMBDA_DIR)" build
+	$(MAKE) -C "$(LAMBDA_DIR)" build AWS_PROFILE="$(AWS_PROFILE)"
 
 .PHONY: clean-lambda
 clean-lambda: ## Clean lambda build artifacts
 	$(MAKE) -C "$(LAMBDA_DIR)" clean
+
+# Connection Profile
+
+CONNECTION_PROFILE_FILE:=$(shell $(TERRAFORM_CMD) output -raw connection_profile_file)
+
+.PHONY: connection-profile
+connection-profile: $(CONNECTION_PROFILE_FILE) ## Generate the connection profile for the given workspace
+
+UTIL_DIR:=../util
+VIRTUAL_ENV_ACTIVATION:=$(UTIL_DIR)/venv/bin/activate
+
+$(VIRTUAL_ENV_ACTIVATION):
+	python3 -m venv "$(UTIL_DIR)/venv"
+	source "$(VIRTUAL_ENV_ACTIVATION)" && \
+		python3 -m pip install -r "$(UTIL_DIR)/requirements.txt"
+
+$(CONNECTION_PROFILE_FILE): $(VIRTUAL_ENV_ACTIVATION)
+	source $(VIRTUAL_ENV_ACTIVATION) && \
+		AWS_PROFILE=$(AWS_PROFILE) $(UTIL_DIR)/gen-connection-profile.py \
+			--network_id "$(shell $(TERRAFORM_CMD) output -raw network_id)" \
+			--channels "$(shell $(TERRAFORM_CMD) output -raw channel_name)" \
+			--tlsCaCertPath "./managedblockchain-tls-chain.pem" \
+		> $(CONNECTION_PROFILE_FILE)
+
+.PHONY: clean-connection-profile
+clean-connection-profile: ## Clean the connection profile
+	rm -f $(CONNECTION_PROFILE_FILE)

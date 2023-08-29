@@ -15,8 +15,4 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
-  # cannot be specified on our config due to permission issues :/
-  # default_tags {
-  #   tags = local.tags
-  # }
 }

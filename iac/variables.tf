@@ -21,6 +21,13 @@ variable "hlf_debug" {
   description = "Enables HFC debug logging on the query lambda"
 }
 
+variable "cognito_debug" {
+  type        = bool
+  default     = true
+  sensitive   = false
+  description = "Enables localhost callback URLs in the Cognito user pool client"
+}
+
 variable "aws_region" {
   type        = string
   default     = "us-east-1"

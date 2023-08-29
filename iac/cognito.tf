@@ -1,27 +1,48 @@
 data "aws_cognito_user_pools" "identity" {
-  name = "blossom_test"
+  name = module.vars.env.cognito_user_pool_name
 }
 
-data "aws_cognito_user_pool_clients" "identity" {
-  user_pool_id = tolist(data.aws_cognito_user_pools.identity.ids)[0]
+locals {
+  cognito_user_pool_id = tolist(data.aws_cognito_user_pools.identity.ids)[0]
+  debug_callback_url   = "http://localhost:5173/"
 }
 
-data "aws_cognito_user_pool_client" "main" {
-  user_pool_id = tolist(data.aws_cognito_user_pools.identity.ids)[0]
-  client_id    = data.aws_cognito_user_pool_clients.identity.client_ids[0]
+resource "aws_cognito_user_pool_client" "client" {
+  name                                 = "${local.prefix}-user-pool-client"
+  user_pool_id                         = local.cognito_user_pool_id
+  generate_secret                      = true
+  callback_urls                        = var.cognito_debug ? [local.apigw_url, local.debug_callback_url] : [local.apigw_url]
+  logout_urls                          = var.cognito_debug ? [local.apigw_url, local.debug_callback_url] : [local.apigw_url]
+  explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
+  enable_token_revocation              = true
+  prevent_user_existence_errors        = "ENABLED"
+  allowed_oauth_flows_user_pool_client = true
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid"]
+  supported_identity_providers         = ["COGNITO"]
 }
 
 output "client_id" {
-  value     = data.aws_cognito_user_pool_client.main.id
+  value     = resource.aws_cognito_user_pool_client.client.id
   sensitive = false
 }
 
 output "client_secret" {
-  value     = data.aws_cognito_user_pool_client.main.client_secret
+  value     = resource.aws_cognito_user_pool_client.client.client_secret
   sensitive = true
 }
 
+locals {
+  cognito_domain_prefix = "${module.vars.env.network_name}-${lower(module.vars.env.member_name)}"
+}
+
+resource "aws_cognito_user_pool_domain" "domain" {
+  # e.x. blosson-nist2.auth.us-east-1.amazoncognito.com
+  domain       = local.cognito_domain_prefix
+  user_pool_id = local.cognito_user_pool_id
+}
+
 output "auth_url" {
-  value     = "https://${module.vars.env.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com"
+  value     = "https://${local.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com"
   sensitive = false
 }

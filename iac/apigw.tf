@@ -30,8 +30,12 @@ resource "aws_api_gateway_deployment" "gw-deployment" {
   }
 }
 
+locals {
+  apigw_url = "${resource.aws_api_gateway_deployment.gw-deployment.invoke_url}${aws_api_gateway_stage.gw-stage.stage_name}/"
+}
+
 output "gw_url" {
-  value       = resource.aws_api_gateway_deployment.gw-deployment.invoke_url
+  value       = local.apigw_url
   description = "The URL of the active APIGW deployment"
   sensitive   = false
 }

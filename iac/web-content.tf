@@ -16,10 +16,10 @@ locals {
 
 output "vite_dev_env" {
   value       = <<-EOT
-  VITE_CLIENT_ID=${data.aws_cognito_user_pool_client.main.id}
-  VITE_CLIENT_SECRET=${data.aws_cognito_user_pool_client.main.client_secret}
-  VITE_AUTH_URL=https://${module.vars.env.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com
-  PROXY_URL=${resource.aws_api_gateway_deployment.gw-deployment.invoke_url}/${aws_api_gateway_stage.gw-stage.stage_name}/
+  VITE_CLIENT_ID=${resource.aws_cognito_user_pool_client.client.id}
+  VITE_CLIENT_SECRET=${resource.aws_cognito_user_pool_client.client.client_secret}
+  VITE_AUTH_URL=https://${local.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com
+  PROXY_URL=${local.apigw_url}
   EOT
   description = "The developer environment used by the dashboard"
   sensitive   = true
@@ -27,9 +27,9 @@ output "vite_dev_env" {
 
 output "vite_prod_env" {
   value       = <<-EOT
-  VITE_CLIENT_ID=${data.aws_cognito_user_pool_client.main.id}
-  VITE_CLIENT_SECRET=${data.aws_cognito_user_pool_client.main.client_secret}
-  VITE_AUTH_URL=https://${module.vars.env.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com
+  VITE_CLIENT_ID=${resource.aws_cognito_user_pool_client.client.id}
+  VITE_CLIENT_SECRET=${resource.aws_cognito_user_pool_client.client.client_secret}
+  VITE_AUTH_URL=https://${local.cognito_domain_prefix}.auth.${var.aws_region}.amazoncognito.com
   BASE_URL=/${aws_api_gateway_stage.gw-stage.stage_name}/
   EOT
   description = "The production environment used by the dashboard"

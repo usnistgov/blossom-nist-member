@@ -3,6 +3,8 @@ locals {
   lambda_outpath = "lambda.zip"
   # the output directory for the built lambda
   lambda_builddir = "lambda/dist"
+
+  connection_profile_path = "${path.module}/connection_profiles/${terraform.workspace}.json"
 }
 
 # This bucket stores the lambda's build artifacts
@@ -46,7 +48,7 @@ resource "aws_lambda_function" "query" {
     variables = merge({
       CHANNEL_NAME    = module.vars.env.channel_name
       CONTRACT_NAME   = module.vars.env.contract_name
-      PROFILE_ENCODED = filebase64("${path.module}/conn-profile-${module.vars.env.network_name}-${module.vars.env.member_name}.yaml")
+      PROFILE_ENCODED = filebase64(local.connection_profile_path)
       SSM_PREFIX      = module.vars.env.identities_ssm_prefix
       }, var.hlf_debug ? {
       HFC_LOGGING = "{\"debug\":\"console\",\"error\":\"console\",\"info\":\"console\",\"warning\":\"console\"}"

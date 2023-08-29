@@ -1,7 +1,8 @@
 module "vars" {
   source = "./module/vars"
   # Use the selected terraform workspace to select the environment
-  environment = terraform.workspace
+  environment       = terraform.workspace
+  configuration_dir = "./configurations"
 }
 
 locals {

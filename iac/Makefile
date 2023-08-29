@@ -32,7 +32,7 @@ refresh: ## Refresh Terraform outputs
 	$(TERRAFORM_CMD) refresh
 
 .PHONY: build
-build: build-lambda build-dashboard ## Build all dependencies
+build: build-lambda build-dashboard connection-profile ## Build all dependencies
 
 .PHONY: clean
 clean: clean-dashboard clean-lambda clean-connection-profile ## Clean dependenies of all artifacts
@@ -75,26 +75,22 @@ clean-lambda: ## Clean lambda build artifacts
 
 # Connection Profile
 
-CONNECTION_PROFILE_FILE:=$(shell $(TERRAFORM_CMD) output -raw connection_profile_file)
+TERRAFORM_WORKSPACE:=$(shell $(TERRAFORM_CMD) workspace show)
+CONNECTION_PROFILES_DIR:=connection_profiles
+CONNECTION_PROFILE_FILE:=$(CONNECTION_PROFILES_DIR)/$(TERRAFORM_WORKSPACE).json
+
+ENVIRONMENT_CONFIGURATION=configurations/$(TERRAFORM_WORKSPACE).json
 
 .PHONY: connection-profile
 connection-profile: $(CONNECTION_PROFILE_FILE) ## Generate the connection profile for the given workspace
 
-UTIL_DIR:=../util
-VIRTUAL_ENV_ACTIVATION:=$(UTIL_DIR)/venv/bin/activate
-
-$(VIRTUAL_ENV_ACTIVATION):
-	python3 -m venv "$(UTIL_DIR)/venv"
-	source "$(VIRTUAL_ENV_ACTIVATION)" && \
-		python3 -m pip install -r "$(UTIL_DIR)/requirements.txt"
-
-$(CONNECTION_PROFILE_FILE): $(VIRTUAL_ENV_ACTIVATION)
-	source $(VIRTUAL_ENV_ACTIVATION) && \
-		AWS_PROFILE=$(AWS_PROFILE) $(UTIL_DIR)/gen-connection-profile.py \
-			--network_id "$(shell $(TERRAFORM_CMD) output -raw network_id)" \
-			--channels "$(shell $(TERRAFORM_CMD) output -raw channel_name)" \
-			--tlsCaCertPath "./managedblockchain-tls-chain.pem" \
-		> $(CONNECTION_PROFILE_FILE)
+$(CONNECTION_PROFILE_FILE): $(ENVIRONMENT_CONFIGURATION)
+	@mkdir -p $(CONNECTION_PROFILES_DIR)
+	set pipefail; ../util/gen-connection-profile.sh \
+		--network_id "$(shell jq -r .network_id $(ENVIRONMENT_CONFIGURATION))" \
+		--channels "$(shell jq -r .channel_name $(ENVIRONMENT_CONFIGURATION))" \
+		--tlsCaCertPath "./managedblockchain-tls-chain.pem" \
+	> $(CONNECTION_PROFILE_FILE)
 
 .PHONY: clean-connection-profile
 clean-connection-profile: ## Clean the connection profile

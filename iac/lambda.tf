@@ -56,8 +56,9 @@ resource "aws_lambda_function" "query" {
   }
 }
 
+# NIST OISM team manages IAM roles externally, consult docs for details
 data "aws_iam_role" "lambda_role" {
-  name = "LambdaExecutionRole"
+  name = module.vars.env.lambda_execution_iam_role_name
 }
 
 data "archive_file" "query_lambda" {

@@ -7,5 +7,7 @@
     "channel_name": "blossom1",
     "contract_name": "blossom",
     "identities_ssm_prefix": "/nist/blossom/dev/user",
-    "cognito_user_pool_name": "blossom_test"
+    "cognito_user_pool_name": "blossom_test",
+    "apigw_s3_integration_iam_role_name": "frontend-apigw-s3-integration-role",
+    "lambda_execution_iam_role_name": "LambdaExecutionRole"
 }

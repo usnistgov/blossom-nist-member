@@ -8,8 +8,7 @@ locals {
     "svg"  = "image/svg+xml"
     "txt"  = "text/plain"
     "json" = "application/json"
-    # idk what this is
-    "map" = "application/json"
+    "map"  = "application/json"
   }
   webcontent_builddir = "${path.module}/../dashboard/dist"
 }

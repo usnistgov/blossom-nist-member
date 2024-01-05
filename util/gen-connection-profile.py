@@ -90,7 +90,7 @@ def gen_connection_profile(network_id: str, channels: 'list[str]', tlsCaCertPath
     network = client.get_network(NetworkId=network_id)['Network']
     # get a list of member summaries, then get the actual member objects
     members = [
-        client.get_member(NetworkId=network_id, MemberId='m-PBIXMRU6BVHT7F7RYTQHC5L5UE')['Member']
+        client.get_member(NetworkId=network_id, MemberId='m-DTLKIKVWWZER3DUHQUDH43I7YQ')['Member']
     ]
 
     # members = [

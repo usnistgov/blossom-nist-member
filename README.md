@@ -9,3 +9,17 @@ The goal of this project is to demonstrate, through a proof of concept applicati
 ## Code status, pre-release, production.
 
 The project is under development
+
+### In order to clone the full project, init and update all project submodules recursively
+
+- After the first repository pull run the following command to **init and update** submodules
+
+```
+git submodule update --init --recursive
+```
+
+- For **updating** submodules after the initial update you can simply run the following pull command:
+
+```
+git pull --recurse-submodules
+```

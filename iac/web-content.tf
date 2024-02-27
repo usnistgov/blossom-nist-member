@@ -37,7 +37,7 @@ output "vite_prod_env" {
 
 module "s3_content_bucket" {
   source               = "terraform-aws-modules/s3-bucket/aws"
-  version              = "3.8.2"
+  version              = "4.1.0"
   bucket               = "${local.prefix}-content"
   tags                 = local.tags
   acl                  = "private"

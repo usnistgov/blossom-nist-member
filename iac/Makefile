@@ -18,6 +18,13 @@ help: ## Show this help message
 	} \
 	{ printf "\033[32m%-30s\033[0m %s\n", $$1, $$2 }'
 
+.PHONY: init
+# Initializes Terraform environment and updates the list of providers required for configuration
+# Do not .gitignore the .terraform.lock.hcl file, but pay attention if it changes unexpectedly !!!! 
+# See https://stackoverflow.com/questions/67963719/should-terraform-lock-hcl-be-included-in-the-gitignore-file
+init: ## Init terraform  configuration
+	$(TERRAFORM_CMD) init
+
 .PHONY: plan
 plan: build ## Preview the Terraform plan
 	$(TERRAFORM_CMD) plan

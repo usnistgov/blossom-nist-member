@@ -10,7 +10,7 @@ locals {
 # This bucket stores the lambda's build artifacts
 module "lambda_bucket" {
   source               = "terraform-aws-modules/s3-bucket/aws"
-  version              = "3.8.2"
+  version              = "4.1.0"
   bucket               = "${local.prefix}-lambda"
   tags                 = local.tags
   acl                  = "private"

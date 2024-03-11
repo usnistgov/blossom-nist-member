@@ -15,7 +15,9 @@ function getUsername(event: APIGatewayEvent): string {
 }
 
 type TransactionRequestBody = {
-    name: string;
+    channel: string;
+    contract: string;
+    functionName: string;
     args: string[];
     transient?: Record<string, string>;
 }
@@ -37,9 +39,9 @@ const transactionHandler = async (event: APIGatewayEvent, bodyJson: any, type: '
     const body = bodyJson as TransactionRequestBody;
     const username = getUsername(event);
     console.log('Setting up network...');
-    const network = await setupNetwork(username, CHANNEL_NAME);
+    const network = await setupNetwork(username, body.channel);
     console.log('Setting up contract...');
-    const transaction = network.getContract(CONTRACT_NAME).createTransaction(body.name);
+    const transaction = network.getContract(body.contract).createTransaction(body.functionName);
     if (body.transient) {
         transaction.setTransient(convertTransientToBuffer(body.transient));
     }

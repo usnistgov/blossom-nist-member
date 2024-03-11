@@ -35,18 +35,37 @@ output "vite_prod_env" {
   sensitive   = true
 }
 
+# # [3:45 PM] Lee, Li-Hui (Fed)
+# # take out this too, "attach_public_policy = false"
+# # [3:46 PM] Lee, Li-Hui (Fed)
+# # or don't use the "terraform-aws-modules/s3-bucket/aws" module to create the bucket
+# #
+# # [3:47 PM] Lee, Li-Hui (Fed)
+# # use terraform Resource: aws_s3_bucket instead
+# # resource "aws_s3_bucket" "s3_content_bucket" {
+# #     bucket = "${local.prefix}-content"
+# #     tags     = local.tags
+# #     }
+# #     
+# #    
+
 module "s3_content_bucket" {
   source               = "terraform-aws-modules/s3-bucket/aws"
   version              = "4.1.0"
   bucket               = "${local.prefix}-content"
   tags                 = local.tags
-  acl                  = "private"
-  attach_public_policy = false
-  block_public_acls    = true
+  # acl                  = "private"
+  # attach_public_policy = false
+  # block_public_acls    = true
 
   # Allow deletion of non-empty bucket
   force_destroy = true
 }
+
+# resource "aws_s3_bucket" "s3_content_bucket" {
+#   bucket = "${local.prefix}-content"
+#   tags     = local.tags
+# }
 
 resource "aws_s3_object" "web-content" {
   bucket   = module.s3_content_bucket.s3_bucket_id

@@ -13,13 +13,14 @@ module "lambda_bucket" {
   version              = "4.1.0"
   bucket               = "${local.prefix}-lambda"
   tags                 = local.tags
-  acl                  = "private"
-  attach_public_policy = false
-  block_public_acls    = true
+  # acl                  = "private"
+  # attach_public_policy = false
+  # block_public_acls    = true
 
   # Allow deletion of non-empty bucket
   force_destroy = true
 }
+
 
 resource "aws_lambda_function" "query" {
   runtime          = "nodejs16.x"

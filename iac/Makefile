@@ -42,7 +42,7 @@ refresh: ## Refresh Terraform outputs
 build: build-lambda build-dashboard connection-profile ## Build all dependencies
 
 .PHONY: clean
-clean: clean-dashboard clean-lambda clean-connection-profile ## Clean dependenies of all artifacts
+clean: clean-dashboard clean-lambda clean-connection-profile ## Clean dependencies of all artifacts
 
 # Dashboard
 

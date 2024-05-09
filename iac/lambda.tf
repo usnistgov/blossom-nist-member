@@ -23,7 +23,7 @@ module "lambda_bucket" {
 
 
 resource "aws_lambda_function" "query" {
-  runtime          = "nodejs16.x"
+  runtime          = "nodejs20.x"
   function_name    = "${local.prefix}-lambda"
   memory_size      = 512
   publish          = true
@@ -37,11 +37,13 @@ resource "aws_lambda_function" "query" {
   vpc_config {
     subnet_ids = [
       "subnet-0e55c3a77dad7f698",
-      "subnet-09e992c8f703e3662"
+      "subnet-09e992c8f703e3662",
     ]
     security_group_ids = [
-      "sg-0b94936c423b8e9ee",
-      "sg-064e0191188232c57"
+      # "sg-0b94936c423b8e9ee",
+      # "sg-064e0191188232c57"
+      "sg-0684c5e7745022782",
+      "sg-0fd219d83dfeb68ff",
     ]
   }
   environment {

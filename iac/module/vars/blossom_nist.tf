@@ -1,5 +1,6 @@
 locals {
   BLOSSOM_NIST = {
+  
     network_id            = "n-FLXXKM7INVCDXGQMUAH633E6PQ"
     network_name          = "Blossom"
 
@@ -7,8 +8,11 @@ locals {
     member_name           = "NIST"
 
     peer_node_id          = "nd-BURDFKAXHRFD3JHWFTPPPEJJ4M"
-    channel_name          = "blossom1"
-    contract_name         = "blossom"
+
+//    channel_name          = "blossom1"
+//    contract_name         = "blossom"
+    channel_name          = "authorization"
+    contract_name         = "authorization"
 
     identities_ssm_prefix = "/nist/blossom/dev/user"
     cognito_domain_prefix = "blossomtest"

@@ -4,7 +4,7 @@ locals {
   # the output directory for the built lambda
   lambda_builddir = "lambda/dist"
 
-  connection_profile_path = "${path.module}/connection_profiles/${terraform.workspace}.json"
+  connection_profile_path = "${path.module}/configurations/${terraform.workspace}.json"
 }
 
 # This bucket stores the lambda's build artifacts
@@ -18,7 +18,7 @@ module "lambda_bucket" {
   # block_public_acls    = true
 
   # Allow deletion of non-empty bucket
-  force_destroy = true
+  # force_destroy = true 
 }
 
 
@@ -46,6 +46,7 @@ resource "aws_lambda_function" "query" {
       "sg-0fd219d83dfeb68ff",
     ]
   }
+  
   environment {
     # ugly ternary that optionally adds HFC_LOGGING to lambda if hlf_debug variable is set
     variables = merge({

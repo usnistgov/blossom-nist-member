@@ -1,6 +1,6 @@
 {
     "network_id": "n-FLXXKM7INVCDXGQMUAH633E6PQ",
-    "network_name": "blossom",
+    "network_name": "Blossom",
     
     "member_id": "m-DTLKIKVWWZER3DUHQUDH43I7YQ",
     "member_name": "NIST",
@@ -8,7 +8,7 @@
     
 
     "channel_name": "authorization",
-    "contract_name": "authorization",
+    "contract_name": "blossom",
     "identities_ssm_prefix": "/nist/blossom/dev/user",
     "cognito_user_pool_name": "blossom_test",
 

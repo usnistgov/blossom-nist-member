@@ -2,3 +2,4 @@
 .terraform
 terraform.tfstate.d
 connection_profiles/
+*node_modules/*

@@ -1,8 +1,10 @@
 import { APIGatewayEvent, APIGatewayProxyResult } from "aws-lambda";
 import { setupNetwork } from "./fabric-network";
 
-const CHANNEL_NAME = process.env.CHANNEL_NAME ?? 'acquisition';
-const CONTRACT_NAME = process.env.CONTRACT_NAME ?? 'blossom';
+// const CHANNEL_NAME = process.env.CHANNEL_NAME ?? 'acquisition';
+// const CONTRACT_NAME = process.env.CONTRACT_NAME ?? 'blossom';
+const CHANNEL_NAME = process.env.CHANNEL_NAME ?? 'asset';
+const CONTRACT_NAME = process.env.CONTRACT_NAME ?? 'authorization';
 
 export type HandlerFunc = (event: APIGatewayEvent, bodyJson: any) => Promise<APIGatewayProxyResult>;
 

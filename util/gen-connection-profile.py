@@ -113,7 +113,7 @@ def gen_connection_profile(network_id: str, channels: 'list[str]', tlsCaCertPath
     return {
         'name': network_name,
         'x-type': 'hlfv1',
-        'description': f'Generated connecction profile',
+        'description': f'Generated connection profile',
         'version': '1.0',
         'channels': gen_channels(channels, orderer_name, nodes),
         'orderers': gen_orderers(network, tlsCaCertPath),

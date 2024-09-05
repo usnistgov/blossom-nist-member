@@ -4,7 +4,8 @@ data "aws_cognito_user_pools" "identity" {
 
 locals {
   cognito_user_pool_id = tolist(data.aws_cognito_user_pools.identity.ids)[0]
-  debug_callback_url   = "http://localhost:5173/"
+  #   debug_callback_url   = "http://localhost:5173/"
+  debug_callback_url   = "http://localhost:4000/"
 }
 
 resource "aws_cognito_user_pool_client" "client" {
@@ -13,13 +14,28 @@ resource "aws_cognito_user_pool_client" "client" {
   generate_secret                      = true
   callback_urls                        = var.cognito_debug ? [local.apigw_url, local.debug_callback_url] : [local.apigw_url]
   logout_urls                          = var.cognito_debug ? [local.apigw_url, local.debug_callback_url] : [local.apigw_url]
+  
+  supported_identity_providers         = ["COGNITO"]
+  
   explicit_auth_flows                  = ["ALLOW_CUSTOM_AUTH", "ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_USER_SRP_AUTH"]
+  allowed_oauth_flows                  = ["code"]
+  allowed_oauth_scopes                 = ["email", "openid"]
+  
   enable_token_revocation              = true
   prevent_user_existence_errors        = "ENABLED"
   allowed_oauth_flows_user_pool_client = true
-  allowed_oauth_flows                  = ["code"]
-  allowed_oauth_scopes                 = ["email", "openid"]
-  supported_identity_providers         = ["COGNITO"]
+  
+
+  # Covering the questionable gaps
+  access_token_validity                 = 3600
+  id_token_validity                     = 60
+  refresh_token_validity                = 10
+  # Adding the units for the the questionable gaps - otherwise even plan fails
+  token_validity_units{
+    access_token    = "seconds"
+    id_token        = "minutes"
+    refresh_token   = "days"
+  }
 }
 
 output "client_id" {
